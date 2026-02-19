@@ -17,6 +17,8 @@ The following commands set up a personal user on a machine:
 ### Create user with password:
 ```bash
 USERNAME=your_username_here # Set your username
+```
+```bash
 adduser $USERNAME
 # Add to needed groups
 adduser $USERNAME sudo # For sudo
@@ -30,6 +32,8 @@ pkill -u $USERNAME -f "cursor-server" # restart Cursor's termainal server in ord
 #### Enable SSH between hosts
 ```bash
 USERNAME=your_username_here # Set your username
+```
+```bash
 ssh-keygen -t ed25519
 ssh-copy-id $USERNAME@172.30.160.150
 
