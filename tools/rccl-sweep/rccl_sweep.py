@@ -526,6 +526,16 @@ def run_sweep(args, config: Dict[str, Any]):
                             
                             # Insert per-message-size metrics (granular data)
                             if parsed['success'] and parsed.get('metrics'):
+                                # GPU-107: our rccl-tests build emits no -M algo/proto/channel columns,
+                                # so the parser can't detect them. Stamp each per-size row with the
+                                # run's known forced values so optimize/generate steps have them.
+                                for _m in parsed['metrics']:
+                                    if not _m.get('nchannels'):
+                                        _m['nchannels'] = actual_nchannels
+                                    if not _m.get('algo'):
+                                        _m['algo'] = algo
+                                    if not _m.get('proto'):
+                                        _m['proto'] = proto
                                 db.insert_metrics(run_id, parsed['metrics'])
         
         # Complete session
