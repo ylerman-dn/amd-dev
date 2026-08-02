@@ -11,7 +11,7 @@
 # the configuration space.
 sweep:
   # Node range to sweep (e.g., "1-2", "1-4", "2")
-  nodes: "1-2"
+  nodes: "1-3"
   
   # Channel sweep range in format START:END:STEP
   channels: "32:256:32"
@@ -19,7 +19,6 @@ sweep:
   # Collectives to tune (with or without _perf suffix)
   collectives:
     - all_reduce
-    - all_gather
   
   # Algorithms to sweep
   algos:
@@ -29,6 +28,8 @@ sweep:
   # Protocols to sweep
   protos:
     - SIMPLE
+    - LL
+    - LL128
   
   # Message size range
   min_size: "1M"

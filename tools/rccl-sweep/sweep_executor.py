@@ -139,7 +139,8 @@ class SweepExecutor:
         
         # Set library paths using the single path
         env_vars['LD_LIBRARY_PATH'] = f"/usr/local/lib:{rccl_path}/:/opt/rocm/bin"
-        env_vars['LD_PRELOAD'] = f"{rccl_path}/librccl-net.so:{rccl_path}/librccl.so"
+        # GPU-107: our bin/ has no librccl-net.so (built-in net_ib works on this fabric); preload only librccl.so
+        env_vars['LD_PRELOAD'] = f"{rccl_path}/librccl.so"
         
         # Build base mpirun command
         mpirun_path = mpi_config.get('mpirun_path', '/opt/ompi-4.1.6/bin/mpirun')
