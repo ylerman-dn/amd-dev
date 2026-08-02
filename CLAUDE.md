@@ -31,6 +31,16 @@
 - Never report busbw numbers from a run whose parameter selection wasn't verified.
 
 # Cluster
+- Partition `XAI`, nodes `amd-mi355x-1..9`, 8 GPUs per node. Skip node2
+  (orchestrator) and node9 (no ssh key).
+- Binaries (`all_reduce_perf` etc.) are at `/opt/shared/ylerman/GPU-107/bin`,
+  which the sweep reads as `$MY_PATH`.
+- `/opt/shared` is NFS on the cluster nodes and is **not** mounted on this dev VM.
+  To see or move a file there, go through a cluster node.
+- Check `squeue -p XAI` before booking. A co-tenant sharing the fabric makes
+  multi-node numbers meaningless.
+- A job that dies mid-run is usually `NODE_FAIL` (transient cluster infra), not
+  preemption and not an idle timeout. Check `sacct -j <id>` before theorising.
 - Allocate once at the start of the session and hold it for the whole session —
   not per sweep, not per phase. Release once at the end.
 - Book the largest node count needed, then run smaller scales on a subset of the
