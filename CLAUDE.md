@@ -7,15 +7,16 @@
 - Everything under `/home/dn/ylerman/tasks/GPU-107/` is **unverified**. Do not cite
   a number from it, do not build on it, do not carry its conclusions forward.
 - If one of those results is needed, reproduce it from scratch.
-- Archive of the 2026-07-29/30 run:
-  `/home/dn/ylerman/tasks/GPU-107/archive/2026-07-29_30-abv2-autonomous.tar.gz`
+- Archived under `/home/dn/ylerman/tasks/GPU-107/archive/`:
+  `2026-07-12_28-pre-reset.tar.gz` (early harnesses and A/B attempts) and
+  `2026-07-29_30-abv2-autonomous.tar.gz` (the overnight run and its conclusions).
 
 # Directory discipline
 - NEVER create new top-level directories, except `results-tuning/`.
 - All sweep outputs go to `results-tuning/<date>-<short-name>/` only.
   (Not `results/` — that holds unrelated upstream content.)
-- Driver/wrapper scripts live in `tools/rccl-sweep/scripts/` only. Prefer editing
-  an existing script over creating a new one.
+- The tool is one flat directory: `tools/rccl-sweep/`. New scripts go there too —
+  no subfolders. Prefer a flag on an existing script over a new script.
 - Never commit run output (gitignored, but never `git add -f` it either).
 
 # Evidence
