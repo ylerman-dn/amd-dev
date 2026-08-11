@@ -16,11 +16,29 @@ test_defaults:
   max_bytes: "16G"          # -e parameter
   step_factor: 2            # -f parameter
   gpus_per_rank: 1          # -g parameter
-  iterations: 5             # -n parameter
+  # GPU-107: -n 20 -w 5 matches every trusted measurement in results-tuning/.
+  # Measured on busbw_ip across 540 (size, algo, proto, channels) points, 3 repeats
+  # each, 1 node -- comparing the -n 5 sweep against the -n 20 sweep:
+  #            median spread   p90     points over 5%
+  #   -n 5       0.95%        6.06%    65 of 540 (12%)
+  #   -n 20      0.64%        2.59%    18 of 540 ( 3%)
+  # The median is already fine at -n 5; what -n 20 buys is the TAIL. Points whose
+  # own spread exceeds optimize_metrics.py's 5% tolerance can win that comparison
+  # by luck, and -n 20 cuts them from 12% to 3%.
+  # Cost is ~25% wall time, not 4x: per-run fixed cost (process start, RCCL init,
+  # 18 size setups) dominates the iteration loop. See results-tuning/TIMINGS.md.
+  # Evidence: results-tuning/2026-08-04-1-sweep1node/{merged.csv,superseded-n5/merged.csv}
+  iterations: 20            # -n parameter
   warmup_iters: 5           # -w parameter
   check_iters: 1            # -c parameter
-  report_cputime: 1         # -R parameter (report CPU time)
-  show_algo_proto_channels: 1 # -M parameter (show algorithm, protocol, and channels)
+  # GPU-107: MUST stay 0. -C/--report_cputime replaces the time column with CPU
+  # launch time (~constant regardless of collective duration), which makes
+  # time-based ranking meaningless. busbw is unaffected, but leave this off so the
+  # time column stays wall-clock and usable.
+  report_cputime: 0         # -C parameter (report CPU time) - keep 0
+  # GPU-107: emitted as -A (--output_algo_proto_channels) on this build, NOT -M.
+  # Here -M is --memory_report. Upstream rccl-tests uses -M; ours moved it.
+  show_algo_proto_channels: 1 # -A parameter (show algorithm, protocol, and channels)
   timeout: 600              # seconds per test
 
 # Node Configuration

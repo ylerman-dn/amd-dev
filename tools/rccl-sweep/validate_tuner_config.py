@@ -117,8 +117,16 @@ def run_once(args, nodes, conf_path, log_path):
     """Run the benchmark once. Returns (busbw_by_size, seconds, hung?)."""
     env = dict(os.environ)
     env["LD_LIBRARY_PATH"] = f"{os.path.dirname(args.binary)}:{env.get('LD_LIBRARY_PATH','')}"
-    # NCCL_DEBUG must stay quiet: INFO-level logging distorts the timings we are about to compare.
-    env["NCCL_DEBUG"] = "VERSION"
+    # GPU-107: INFO to a FILE is free -- measured mean -0.06% across 18 sizes with
+    # min/max ranges overlapping 18/18 (results-tuning/2026-08-03-5-lognoise/). Only
+    # INFO on *stdout* costs (up to 4% at small sizes). We need INFO because it is the
+    # only proof that the tuner plugin actually fired ("TUNER/Plugin: Applied config")
+    # and the only source of real channel counts. Both arms get it identically, so any
+    # residual bias cannot create a fake winner.
+    env["NCCL_DEBUG"] = "INFO"
+    env["NCCL_DEBUG_SUBSYS"] = "INIT,TUNING,ENV"
+    if log_path:
+        env["NCCL_DEBUG_FILE"] = os.path.splitext(log_path)[0] + "_dbg_%p.log"
     # LD_PRELOAD matters when several librccl builds are present on the node.
     lib = os.path.join(os.path.dirname(args.binary), "librccl.so")
     if os.path.exists(lib):
@@ -132,10 +140,26 @@ def run_once(args, nodes, conf_path, log_path):
         env["NCCL_TUNER_CONFIG_FILE"] = conf_path
 
     cmd = args.launcher.split() + [
-        "-N", str(nodes), "--ntasks-per-node=1", "--gres=gpu:8", "--mpi=pmix", "--export=ALL",
+        "-N", str(nodes),
+    ]
+    # GPU-107: run inside the existing allocation rather than requesting a new one.
+    if args.jobid:
+        cmd += [f"--jobid={args.jobid}"]
+    if args.nodelist:
+        cmd += [f"--nodelist={args.nodelist}"]
+    cmd += [
+        # GPU-107: 8 ranks x 1 GPU, NOT 1 rank x 8 GPUs. Every measurement in
+        # results-tuning/ uses 8x1; the original 1x8 here would have produced an A/B
+        # that is not comparable to the sweep that generated the config.
+        f"--ntasks-per-node={args.ranks_per_node}", "--gres=gpu:8", "--mpi=pmix", "--export=ALL",
         args.binary, "-b", str(args.min_bytes), "-e", str(args.max_bytes),
-        "-f", "2", "-g", "8", "-n", str(args.iters), "-w", str(args.warmup),
-        "-c", "1", "-M", "1", "-R", "1",
+        "-f", "2", "-g", str(args.gpus_per_rank),
+        "-n", str(args.iters), "-w", str(args.warmup),
+        # GPU-107: -A is --output_algo_proto_channels on this build. -M here is
+        # --memory_report and -R is --local_register (which silently changes
+        # performance), so the original "-M 1 -R 1" both failed to report selection
+        # and perturbed the measurement.
+        "-c", "1", "-A", "1",
     ]
     started = time.time()
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
@@ -151,6 +175,25 @@ def run_once(args, nodes, conf_path, log_path):
         with open(log_path, "w") as fh:
             fh.write(text)
     data = parse_busbw(text)
+
+    # GPU-107: for a config arm, prove the plugin loaded AND applied a rule. A config
+    # that silently fails to load would otherwise be A/B'd against itself and reported
+    # as "no difference".
+    if conf_path and args.plugin_must_fire:
+        import glob as _glob
+        applied = False
+        for f in _glob.glob(os.path.splitext(log_path)[0] + "_dbg_*.log"):
+            try:
+                if "TUNER/Plugin: Applied config" in open(f, errors="ignore").read():
+                    applied = True
+                    break
+            except OSError:
+                pass
+        if not applied:
+            print(f"    !! plugin did NOT apply any rule for {os.path.basename(log_path)} "
+                  f"-- treating as failed rather than as 'no difference'")
+            return {}, elapsed, True
+
     return data, elapsed, not data  # no data rows == hung or failed
 
 
@@ -174,6 +217,15 @@ def main():
     ap.add_argument("--plugin", default=os.environ.get("NCCL_TUNER_PLUGIN", ""),
                     help="path to the tuner plugin .so")
     ap.add_argument("--launcher", default="srun", help="launcher prefix (default: srun)")
+    # GPU-107 additions
+    ap.add_argument("--jobid", default="", help="run inside this existing Slurm allocation")
+    ap.add_argument("--nodelist", default="", help="pin to these nodes (comma separated)")
+    ap.add_argument("--ranks-per-node", type=int, default=8,
+                    help="ranks per node; 8 matches every measurement in results-tuning/")
+    ap.add_argument("--gpus-per-rank", type=int, default=1,
+                    help="-g value; 1 with 8 ranks/node = 8 GPUs, matching the sweep")
+    ap.add_argument("--plugin-must-fire", action="store_true",
+                    help="fail unless the INFO log proves the tuner plugin applied the config")
     ap.add_argument("--repeats", type=int, default=7,
                     help="repeats per variant; 7 is the practical floor for P(sup) to mean anything")
     ap.add_argument("--min-psup", type=float, default=0.95,

@@ -183,11 +183,22 @@ class SweepExecutor:
         cmd.extend(['-n', str(test_defaults.get('iterations', 20))])
         cmd.extend(['-w', str(test_defaults.get('warmup_iters', 5))])
         cmd.extend(['-c', str(test_defaults.get('check_iters', 1))])
-        cmd.extend(['-M', str(test_defaults.get('show_algo_proto_channels', 1))])
-        
+        # GPU-107: the selection-reporting flag on this build is -A
+        # (--output_algo_proto_channels). It is NOT -M: here -M is --memory_report.
+        # Upstream rccl-tests uses -M; ours moved it. Verified via --help and by
+        # observing 13-field rows with -M vs 16-field rows with -A.
+        cmd.extend(['-A', str(test_defaults.get('show_algo_proto_channels', 1))])
+
+        # GPU-107: -R on this build is --local_register (buffer registration), NOT
+        # --report_cputime (that is -C). Passing -R silently changed performance.
         if test_defaults.get('report_cputime'):
-            cmd.extend(['-R', str(test_defaults.get('report_cputime', 1))])
-        
+            cmd.extend(['-C', str(test_defaults.get('report_cputime', 1))])
+
+        # Results on a separate stream: NCCL_DEBUG=INFO interleaves with stdout and
+        # destroys whole-line parsing of the data rows.
+        if test_defaults.get('csv_report'):
+            cmd.extend(['-Z', 'csv', '-X', str(test_defaults.get('csv_report'))])
+
         return cmd, env_vars
     
     def execute_test(self,
