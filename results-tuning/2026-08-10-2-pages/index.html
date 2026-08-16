@@ -1,0 +1,13 @@
+<!doctype html><meta charset=utf-8><title>GPU-107 — RCCL tuned vs default</title>
+<style>body{font:16px/1.6 system-ui,sans-serif;max-width:46rem;margin:4rem auto;padding:0 1.5rem;
+color:#1a1f24;background:#fbfcfd}@media(prefers-color-scheme:dark){body{color:#e6edf3;background:#151a1f}}
+a{display:block;padding:1rem 1.25rem;margin:.6rem 0;border:1px solid #8883;border-radius:8px;
+text-decoration:none;color:inherit}a:hover{border-color:#4a9eff}b{font-size:1.05rem}
+code{font:14px ui-monospace,monospace;opacity:.75}</style>
+<h1>GPU-107 — tuned RCCL config vs default</h1>
+<p>all_reduce on MI355X, RCCL 2.28.3-develop:2e42aa8. 7 interleaved repeats per arm,
+kept only at P(sup) &ge; 0.95 and &gt;2% median gain.</p>
+<a href="1-node.html"><b>1 node &mdash; 8 of 12 rules verified</b><br><code>+12.5% to +63.0% across 4K&ndash;1M</code></a>
+<a href="2-node.html"><b>2 nodes &mdash; 1 of 13 rules verified</b><br><code>+11.1% at 32M; defaults already tight</code></a>
+<a href="3-node.html"><b>3 nodes &mdash; 2 of 13 rules verified</b><br><code>+8.7% at 32M, +10.2% at 64M&ndash;128M; default dips at 128M</code></a>
+<p><code>results-tuning/2026-08-04-7-validated/validated_all_scales.conf</code> &mdash; the 11 shipped rules.</p>
