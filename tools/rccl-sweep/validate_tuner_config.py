@@ -166,6 +166,61 @@ def parse_busbw(text):
     return out
 
 
+def preflight(args, scales):
+    """Measure whether the machine can currently produce a decidable answer, before spending an A/B.
+
+    Runs the DEFAULT configuration a handful of times at each scale and looks at how much its own
+    repeats disagree. Nothing is being compared here -- identical runs should give identical numbers,
+    so any large spread is the environment, not the config.
+
+    Why this exists: on 2026-08-16 a 2-node A/B ran to completion and reported "0 of 11 rules kept,
+    RCCL's defaults are already optimal" when the real cause was a co-tenant job saturating the
+    shared fabric -- the same configuration measured 1.48-25.36 GB/s at 1M. A five-run probe of the
+    same nodes showed 210% spread at 8M in 40 seconds. That is the cost of knowing, versus ~5 minutes
+    per scale to produce a result that has to be thrown away.
+
+    Returns True when every scale looks decidable.
+    """
+    print(f"preflight: {args.preflight} default runs per scale, checking the machine can decide "
+          f"anything before spending an A/B\n", flush=True)
+    ok = True
+    for nodes in scales:
+        seen = defaultdict(list)
+        for i in range(1, args.preflight + 1):
+            data, _, hung = run_once(args, nodes, None,
+                                     os.path.join(args.logdir, f"{nodes}n_preflight_r{i}.log"))
+            if hung:
+                print(f"  {nodes}n preflight run {i} HUNG", flush=True)
+                ok = False
+                continue
+            for size, bw in data.items():
+                seen[size].append(bw)
+        worst, worst_size = 0.0, None
+        for size, vals in seen.items():
+            if len(vals) >= 2 and min(vals) > 0:
+                sp = (max(vals) - min(vals)) / min(vals) * 100
+                if sp > worst:
+                    worst, worst_size = sp, size
+        if not seen:
+            print(f"  {nodes}n: no data from any preflight run")
+            ok = False
+        elif worst > args.max_arm_spread:
+            print(f"  {nodes}n: WORST SPREAD {worst:.0f}% at {worst_size} bytes "
+                  f"(limit {args.max_arm_spread:.0f}%) -- NOT usable")
+            ok = False
+        else:
+            print(f"  {nodes}n: worst spread {worst:.1f}% -- usable")
+    if not ok:
+        print("\n*** PREFLIGHT FAILED. Repeats of the SAME configuration disagree by more than the\n"
+              "    effect an A/B would be measuring, so any verdict would be noise.\n"
+              "    Usual causes: a co-tenant saturating the shared fabric (check squeue -p XAI),\n"
+              "    GPUs on idle clocks (raise --warmup-runs), or another run competing for these\n"
+              "    nodes. Fix the cause and retry; pass --no-preflight to override. ***")
+    else:
+        print("preflight OK\n")
+    return ok
+
+
 def psup(a, b):
     """Probability that a random draw from `a` exceeds a random draw from `b` (ties count half)."""
     if not a or not b:
@@ -296,6 +351,12 @@ def main():
     ap.add_argument("--max-noisy-fraction", type=float, default=0.20,
                     help="if more than this fraction of points are noisy, the run is reported as "
                          "NOT VALID and exits 2 instead of issuing verdicts (default 0.20)")
+    ap.add_argument("--preflight", type=int, default=3,
+                    help="default-config runs per scale before the A/B, to check the machine can "
+                         "decide anything at all (default 3). Repeats of one config that disagree "
+                         "more than --max-arm-spread mean the environment is unusable. 0 disables.")
+    ap.add_argument("--no-preflight", action="store_true",
+                    help="skip the preflight and run the A/B regardless")
     ap.add_argument("--warmup-runs", type=int, default=4,
                     help="discarded full runs before the measured repeats, to bring the GPUs off "
                          "idle clocks (default 4). Distinct from -w/--warmup, which is iterations "
@@ -341,13 +402,22 @@ def main():
     os.makedirs(args.logdir, exist_ok=True)
 
     scales = sorted({r["nodes"] for r in rules})
-    if max(scales) > 1 and not any("IFNAME" in e or "IB_" in e for e in args.env):
+    # GPU-107: check the ACTUAL environment too, not just --env. srun runs with --export=ALL, so
+    # fabric settings exported by the calling shell are inherited and are perfectly valid. Looking
+    # only at --env made this warn on correctly-configured runs, which trains the reader to ignore it.
+    _fabric_set = (any("IFNAME" in e or "IB_" in e for e in args.env)
+                   or any(k.startswith("NCCL_IB_") or k == "NCCL_SOCKET_IFNAME" for k in os.environ))
+    if max(scales) > 1 and not _fabric_set:
         print("WARNING: validating multi-node rules but no fabric settings passed via --env. "
               "On most clusters 2+ node runs then produce no output and are miscounted as hangs.\n",
               file=sys.stderr, flush=True)
     print(f"validating {len(rules)} rule(s) across node counts {scales}, "
           f"{args.repeats} repeats each, keeping P(sup) >= {args.min_psup} and gain > {args.min_gain}%\n",
           flush=True)
+
+    if args.preflight and not args.no_preflight:
+        if not preflight(args, scales):
+            return 3
 
     measured = {}   # nodes -> variant -> size -> [busbw]
     hangs = defaultdict(int)
