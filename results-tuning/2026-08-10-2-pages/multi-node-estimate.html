@@ -163,7 +163,9 @@ it comes from data already on disk.</p>
 <figure>
   <div class="scroll"><svg id="c2" viewBox="0 0 940 300" role="img"
     aria-label="Estimated percent change versus default per message size."></svg></div>
-  <figcaption>Bars marked with a dot clear both thresholds an A/B would apply: gain ≥2% and P(sup) 1.00.</figcaption>
+  <figcaption>Bars marked with a dot clear both thresholds an A/B would apply: gain ≥2% and P(sup) 1.00.
+  <strong>Grey bars are sizes where the config picks the same setting as the default</strong> — there is
+  nothing to compare, so any percentage there is repeat-to-repeat noise.</figcaption>
 </figure>
 
 <h2>What the sweep measured, per size</h2>
@@ -178,6 +180,18 @@ it comes from data already on disk.</p>
     </thead>
     <tbody></tbody>
   </table>
+</div>
+
+<div class="note">
+<p><strong>Where config and default agree, ignore the percentage.</strong> At several sizes the config
+selects exactly what RCCL already does — 2-node 32K is <code>TREE/LL/16</code> on both sides, yet the
+numbers differ by 9.3%. That is not a regression: shipping such a rule changes nothing. The gap is
+between an <em>unforced</em> run and a run <em>forced</em> to the same values by environment variable
+(1.510/1.490/1.510 against 1.500/1.370/1.370), across only 3 repeats.</p>
+<p>Whether forcing genuinely changes what executes cannot be settled from this data: <code>-A 1</code>
+reports a planned channel ceiling rather than what ran, and the sweep did not keep its
+<code>NCCL_DEBUG=INFO</code> logs, so the real <code>channel{Lo..Hi}</code> spans are unrecoverable.
+Those rows are drawn grey and dashed out of the table for that reason.</p>
 </div>
 
 <h2>How to read the two scales</h2>
@@ -319,10 +333,11 @@ function draw(){
   yl2.textContent="estimated change"; s2.appendChild(yl2);
   R.forEach((r,i)=>{
     const cx=L+bw*i+bw/2,top=Math.min(y2(0),y2(r[5])),hg=Math.abs(y2(r[5])-y2(0));
+    const same = r[1]===r[3];
     s2.appendChild(el("rect",{x:cx-bw*0.32,y:top,width:bw*0.64,height:Math.max(hg,1.5),rx:4,
-      fill:r[5]>=0?"var(--pos)":"var(--neg)"}));
+      fill:same?"var(--mid)":(r[5]>=0?"var(--pos)":"var(--neg)")}));
     if(good(r)) s2.appendChild(el("circle",{cx:cx,cy:top-9,r:3.5,fill:"var(--good)"}));
-    if(Math.abs(r[5])>=2){const t=el("text",{x:cx,y:r[5]>=0?top-16:top+hg+15,class:"tk","text-anchor":"middle"});
+    if(Math.abs(r[5])>=2 && !same){const t=el("text",{x:cx,y:r[5]>=0?top-16:top+hg+15,class:"tk","text-anchor":"middle"});
       t.textContent=(r[5]>0?"+":"")+r[5].toFixed(0); s2.appendChild(t);}
     const lt=el("text",{x:cx,y:T+ph2+20,class:"tk","text-anchor":"middle"});
     lt.textContent=fmt(r[0]); s2.appendChild(lt);
@@ -344,7 +359,7 @@ function draw(){
        <td style="${mono}">${r[1]}</td><td>${r[2].toFixed(2)}</td>
        <td style="${mono}${r[1]!==r[3]?';color:var(--text-primary);font-weight:600':''}">${r[3]}</td>
        <td>${r[4].toFixed(2)}</td>
-       <td class="${r[5]>=2?'up':r[5]<=-2?'dn':''}">${r[5]>=0?'+':''}${r[5].toFixed(1)}%</td>
+       <td class="${r[1]===r[3]?'':r[5]>=2?'up':r[5]<=-2?'dn':''}" ${r[1]===r[3]?'style="color:var(--text-muted)" title="config picks the same setting as the default here, so this is repeat-to-repeat noise, not a comparison"':''}>${r[1]===r[3]?'—':(r[5]>=0?'+':'')+r[5].toFixed(1)+'%'}</td>
        <td>${r[6].toFixed(2)}</td>
        <td style="${noisy?'color:var(--warning);font-weight:600':'color:var(--text-muted)'}">${r[7].toFixed(0)}/${r[8].toFixed(0)}%</td></tr>`);
   });
