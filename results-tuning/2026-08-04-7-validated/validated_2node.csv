@@ -1,0 +1,17 @@
+# Validated by validate_tuner_config.py: only rules that beat RCCL default
+# with P(sup) >= 0.95 over 7 repeats, gain > 2.0%,
+# and no size in range regressing more than 2.0%.
+# dropped: allreduce,4096,4096,tree,ll,2,2,16,-1,-1   (best gain only +0.0%)
+# dropped: allreduce,8192,8192,tree,ll,4,2,16,-1,-1   (best gain only +0.0%)
+# dropped: allreduce,16384,16384,tree,ll,8,2,16,-1,-1   (best gain only -1.3%)
+# dropped: allreduce,32768,32768,tree,ll,16,2,16,-1,-1   (best gain only -0.7%)
+# dropped: allreduce,65536,65536,tree,ll,32,2,16,-1,-1   (best gain only -0.3%)
+# dropped: allreduce,131072,262144,tree,ll128,16,2,16,-1,-1   (contains a regression of -2.8% (landmine))
+# dropped: allreduce,524288,1048576,tree,ll128,24,2,16,-1,-1   (contains a regression of -3.4% (landmine))
+# dropped: allreduce,2097152,2097152,tree,ll128,32,2,16,-1,-1   (contains a regression of -3.9% (landmine))
+# dropped: allreduce,4194304,8388608,tree,ll128,40,2,16,-1,-1   (contains a regression of -3.6% (landmine))
+# dropped: allreduce,16777216,16777216,tree,ll128,48,2,16,-1,-1   (best gain only -0.5%)
+# dropped: allreduce,67108864,67108864,ring,ll128,48,2,16,-1,-1   (best gain only -0.4%)
+# dropped: allreduce,134217728,536870912,ring,simple,32,2,16,-1,-1   (contains a regression of -3.6% (landmine))
+collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff
+allreduce,33554432,33554432,ring,ll128,40,2,16,-1,-1

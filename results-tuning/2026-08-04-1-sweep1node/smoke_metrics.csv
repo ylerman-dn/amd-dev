@@ -1,0 +1,5 @@
+collective,num_nodes,num_gpus,size_bytes,count,data_type,redop,time_oop_us,algbw_oop,busbw_oop,errors_oop,time_ip_us,algbw_ip,busbw_ip,errors_ip,algo,proto,nchannels,requested_algo,requested_proto,requested_nchannels,substituted,measured_algo_raw,nchannels_source
+all_reduce_perf,1,8,268435456,67108864,float,sum,25.35,185.59,324.77,0,7.9,185.7,324.97,0,RING,SIMPLE,32,RING,SIMPLE,32,0,RING*,A_flag_ceiling
+all_reduce_perf,1,8,536870912,134217728,float,sum,7.87,189.21,331.12,0,16.04,189.14,331.0,0,RING,SIMPLE,32,RING,SIMPLE,32,0,RING*,A_flag_ceiling
+all_reduce_perf,1,8,268435456,67108864,float,sum,27.14,183.34,320.84,0,7.95,186.22,325.88,0,RING,SIMPLE,32,TREE,SIMPLE,32,1,RING*,A_flag_ceiling
+all_reduce_perf,1,8,536870912,134217728,float,sum,7.83,189.27,331.22,0,21.27,188.79,330.38,0,RING,SIMPLE,32,TREE,SIMPLE,32,1,RING*,A_flag_ceiling

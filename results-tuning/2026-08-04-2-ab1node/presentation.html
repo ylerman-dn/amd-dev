@@ -1,0 +1,1001 @@
+<title>RCCL allreduce: default vs tuned tuner config &mdash; 1-node A/B, amd-mi355x-7</title>
+<style>
+:root{
+  color-scheme: light;
+  --plane:#eef1f5; --surface:#fbfcfd; --surface2:#f4f7fa;
+  --ink:#0d1117; --ink2:#444e5a; --ink3:#6b7684;
+  --grid:#dfe5ec; --axis:#b9c2cd; --hair:rgba(13,17,23,.10); --hair2:rgba(13,17,23,.06);
+  --sD:#2a78d6; --sC:#eb6834; --good:#0ca30c; --crit:#d03b3b;
+  --washWin:rgba(42,120,214,.045); --washFlat:rgba(107,118,132,.05); --washColl:rgba(208,59,59,.075);
+  --shadow:0 1px 2px rgba(13,17,23,.05), 0 8px 24px -12px rgba(13,17,23,.12);
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --plane:#090c10; --surface:#151a1f; --surface2:#1b2127;
+    --ink:#f2f5f8; --ink2:#b3bdc8; --ink3:#8a949f;
+    --grid:#262d35; --axis:#38414b; --hair:rgba(255,255,255,.10); --hair2:rgba(255,255,255,.06);
+    --sD:#3987e5; --sC:#d95926; --good:#0ca30c; --crit:#d03b3b;
+    --washWin:rgba(57,135,229,.075); --washFlat:rgba(138,148,159,.06); --washColl:rgba(208,59,59,.10);
+    --shadow:0 1px 2px rgba(0,0,0,.5), 0 8px 24px -12px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --plane:#090c10; --surface:#151a1f; --surface2:#1b2127;
+  --ink:#f2f5f8; --ink2:#b3bdc8; --ink3:#8a949f;
+  --grid:#262d35; --axis:#38414b; --hair:rgba(255,255,255,.10); --hair2:rgba(255,255,255,.06);
+  --sD:#3987e5; --sC:#d95926; --good:#0ca30c; --crit:#d03b3b;
+  --washWin:rgba(57,135,229,.075); --washFlat:rgba(138,148,159,.06); --washColl:rgba(208,59,59,.10);
+  --shadow:0 1px 2px rgba(0,0,0,.5), 0 8px 24px -12px rgba(0,0,0,.7);
+}
+
+/* ---- faces: mono is the data/label voice (rccl-tests is a columnar mono dump),
+        sans carries prose only ---- */
+:root{
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "DejaVu Sans Mono", "Liberation Mono", monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.pg{
+  background:var(--plane); color:var(--ink); font-family:var(--sans);
+  font-size:15px; line-height:1.6; -webkit-text-size-adjust:100%;
+  padding:0 20px 72px; overflow-x:hidden;
+}
+.wrap{max-width:1140px; margin:0 auto;}
+.pg p{margin:0; max-width:66ch;}
+.pg h1,.pg h2,.pg h3{margin:0; text-wrap:balance;}
+.stack{display:flex; flex-direction:column;}
+
+/* eyebrow / label voice */
+.eyebrow{
+  font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--ink3); font-weight:600;
+}
+
+/* ---------------- masthead ---------------- */
+.mast{
+  display:flex; flex-direction:column; gap:22px;
+  padding:44px 0 30px; border-bottom:1px solid var(--hair);
+}
+.mast-top{display:flex; flex-wrap:wrap; gap:14px 26px; align-items:baseline;}
+.mast h1{
+  font-family:var(--mono); font-size:clamp(26px,4.1vw,42px); line-height:1.08;
+  font-weight:680; letter-spacing:-.025em;
+}
+.mast h1 .vs{color:var(--ink3); font-weight:400;}
+.mast h1 .cfgw{color:var(--sC);}
+.mast h1 .defw{color:var(--sD);}
+.sub{color:var(--ink2); font-size:16.5px; max-width:70ch;}
+.provenance{
+  font-family:var(--mono); font-size:11.5px; color:var(--ink3);
+  display:flex; flex-wrap:wrap; gap:6px 16px;
+}
+.provenance b{color:var(--ink2); font-weight:600;}
+
+/* ---------------- readout tiles ---------------- */
+.readout{
+  display:grid; gap:1px; background:var(--hair);
+  grid-template-columns:repeat(auto-fit,minmax(184px,1fr));
+  border:1px solid var(--hair); border-radius:3px; overflow:hidden; margin-top:30px;
+}
+.tile{background:var(--surface); padding:16px 18px 15px; display:flex; flex-direction:column; gap:5px;}
+.tile .k{font-family:var(--mono); font-size:10.5px; letter-spacing:.13em; text-transform:uppercase; color:var(--ink3); font-weight:600;}
+.tile .v{font-family:var(--mono); font-size:29px; line-height:1.05; font-weight:660; letter-spacing:-.03em;}
+.tile .n{font-size:12.5px; color:var(--ink3); line-height:1.45;}
+.tile.t-good .v{color:var(--good);}
+.tile.t-crit .v{color:var(--crit);}
+
+/* ---------------- sections ---------------- */
+.sec{padding:52px 0 0;}
+.sec-head{display:flex; flex-direction:column; gap:9px; margin-bottom:22px;}
+.sec-head h2{
+  font-family:var(--mono); font-size:19px; font-weight:660; letter-spacing:-.012em;
+}
+.sec-head .src{
+  font-family:var(--mono); font-size:11px; color:var(--ink3);
+  padding-left:11px; border-left:2px solid var(--hair);
+}
+
+/* ---------------- chart shell ---------------- */
+.panel{
+  background:var(--surface); border:1px solid var(--hair); border-radius:3px;
+  box-shadow:var(--shadow); padding:20px 20px 16px;
+}
+.legend{display:flex; flex-wrap:wrap; gap:8px 22px; align-items:center; margin-bottom:6px;}
+.lg{display:inline-flex; align-items:center; gap:8px; font-family:var(--mono); font-size:12px; color:var(--ink2);}
+.lg i{width:22px; height:0; border-top-width:2.5px; border-top-style:solid; display:inline-block; position:relative; vertical-align:middle; flex:none;}
+.lg i::after{
+  content:""; position:absolute; left:7px; top:-4.2px; width:8px; height:8px; border-radius:50%;
+  background:currentColor; box-shadow:0 0 0 2px var(--surface);
+}
+.lg.lgD{color:var(--sD);} .lg.lgD i{border-top-color:var(--sD);}
+.lg.lgC{color:var(--sC);} .lg.lgC i{border-top-color:var(--sC);}
+.lg.lgB{color:var(--ink3);} .lg.lgB i{border-top:none; height:9px; width:22px; border-radius:2px; background:var(--ink3); opacity:.22;}
+.lg.lgB i::after{display:none;}
+.lg span{color:var(--ink2);}
+
+.scroller{overflow-x:auto; overflow-y:hidden; position:relative; padding-bottom:6px;}
+.scroller>.inner{min-width:760px;}
+.chart{display:block; width:100%; height:auto; font-family:var(--mono);}
+.regimes{position:relative; height:19px; min-width:760px; margin-bottom:2px;}
+.rgl{
+  position:absolute; top:0; font-family:var(--mono); font-size:9.5px; letter-spacing:.11em;
+  font-weight:600; text-align:center; padding:2px 0; border-radius:2px; white-space:nowrap; overflow:hidden;
+}
+.rgl-win{color:var(--sD); background:var(--washWin);}
+.rgl-flat{color:var(--ink3); background:var(--washFlat);}
+.rgl-coll{color:var(--crit); background:var(--washColl);}
+
+/* svg marks */
+.chart .grid{stroke:var(--grid); stroke-width:1;}
+.chart .axis{stroke:var(--axis); stroke-width:1;}
+.chart .zero{stroke:var(--ink2); stroke-width:1.5;}
+.chart .tick{fill:var(--ink3); font-size:10px;}
+.chart .tick-y{font-size:10px;}
+.chart .axname{fill:var(--ink3); font-size:9.5px; letter-spacing:.1em; text-transform:uppercase;}
+.chart .rg-win{fill:var(--washWin);} .chart .rg-flat{fill:var(--washFlat);} .chart .rg-coll{fill:var(--washColl);}
+.chart .lineD{fill:none; stroke:var(--sD); stroke-width:2; stroke-linejoin:round;}
+.chart .lineC{fill:none; stroke:var(--sC); stroke-width:2; stroke-linejoin:round;}
+.chart .bandD{fill:var(--sD); opacity:.20; stroke:none;}
+.chart .bandC{fill:var(--sC); opacity:.20; stroke:none;}
+.chart .dotD{fill:var(--sD); stroke:var(--surface); stroke-width:2;}
+.chart .dotC{fill:var(--sC); stroke:var(--surface); stroke-width:2;}
+.chart .endD{fill:var(--sD); font-size:12px; font-weight:670;}
+.chart .endC{fill:var(--sC); font-size:12px; font-weight:670;}
+.chart .xhair{stroke:var(--ink3); stroke-width:1; stroke-dasharray:3 3; pointer-events:none;}
+.chart .hit{fill:transparent; cursor:crosshair;}
+.chart .barUp{fill:var(--good);}
+.chart .barDn{fill:var(--crit);}
+.chart .barDnHatch{fill:url(#hatchC2); opacity:.5;}
+.chart .dlab{font-size:10px; font-weight:660;}
+.chart .dlabUp{fill:var(--good);} .chart .dlabDn{fill:var(--crit);}
+
+/* tooltip */
+.plot{position:relative;}
+.tip{
+  position:absolute; top:4px; transform:translateX(-50%); pointer-events:none; opacity:0;
+  background:var(--surface); border:1px solid var(--hair); border-radius:3px;
+  box-shadow:var(--shadow); padding:9px 11px; font-family:var(--mono); font-size:11.5px;
+  line-height:1.55; white-space:nowrap; z-index:5; transition:opacity .09s linear;
+}
+.tip.on{opacity:1;}
+.tip .ts{font-weight:680; font-size:12.5px; display:block; margin-bottom:4px; color:var(--ink);}
+.tip .tr{display:flex; justify-content:space-between; gap:16px; color:var(--ink2);}
+.tip .tr b{font-weight:660;}
+.tip .tD b{color:var(--sD);} .tip .tC b{color:var(--sC);}
+.tip .tg{margin-top:4px; padding-top:4px; border-top:1px solid var(--hair2); color:var(--ink2);}
+.tip .pos{color:var(--good); font-weight:680;} .tip .neg{color:var(--crit); font-weight:680;}
+.tip .tsel{color:var(--ink3); font-size:10.5px;}
+@media (prefers-reduced-motion: reduce){ .tip{transition:none;} }
+
+.cap{font-size:12.5px; color:var(--ink3); margin-top:12px; max-width:88ch; line-height:1.55;}
+.cap code{font-family:var(--mono); font-size:11.5px; color:var(--ink2);}
+
+/* ---------------- callout ---------------- */
+.callout{
+  border:1px solid var(--crit); border-left-width:4px; border-radius:3px;
+  background:var(--surface); box-shadow:var(--shadow); padding:22px 24px;
+  display:flex; flex-direction:column; gap:14px;
+}
+.callout .ctag{
+  font-family:var(--mono); font-size:10.5px; letter-spacing:.14em; text-transform:uppercase;
+  font-weight:680; color:var(--crit); display:flex; align-items:center; gap:8px;
+}
+.callout h3{font-family:var(--mono); font-size:17px; font-weight:660; letter-spacing:-.01em;}
+.callout p{color:var(--ink2); font-size:14.5px;}
+.callout .corr{
+  font-size:13.5px; color:var(--ink2); background:var(--surface2);
+  border:1px solid var(--hair2); border-radius:3px; padding:12px 14px; max-width:none;
+}
+.callout .corr b{color:var(--ink); font-weight:660;}
+.ev{
+  font-family:var(--mono); font-size:11.5px; line-height:1.65; color:var(--ink2);
+  background:var(--surface2); border:1px solid var(--hair2); border-radius:3px;
+  padding:12px 14px; overflow-x:auto; white-space:pre;
+}
+.ev .hi{color:var(--ink); font-weight:680;}
+.ev .lbl{color:var(--ink3);}
+.mech{display:grid; gap:1px; background:var(--hair); border:1px solid var(--hair); border-radius:3px; overflow:hidden;
+  grid-template-columns:repeat(auto-fit,minmax(210px,1fr));}
+.mech>div{background:var(--surface2); padding:13px 15px;}
+.mech .mk{font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink3); font-weight:600;}
+.mech .mv{font-family:var(--mono); font-size:19px; font-weight:660; margin-top:4px; letter-spacing:-.02em;}
+.mech .mn{font-size:12px; color:var(--ink3); margin-top:3px; line-height:1.45;}
+.mech .isD .mv{color:var(--sD);} .mech .isC .mv{color:var(--sC);}
+
+/* ---------------- tables ---------------- */
+.tbl{width:100%; border-collapse:separate; border-spacing:0; font-size:13px;}
+.tbl caption{
+  text-align:left; font-family:var(--mono); font-size:11px; letter-spacing:.13em;
+  text-transform:uppercase; color:var(--ink3); font-weight:600; padding:0 0 10px;
+}
+.tbl th,.tbl td{padding:7px 11px; text-align:left; border-bottom:1px solid var(--hair2); white-space:nowrap;}
+.tbl thead th{
+  font-family:var(--mono); font-size:10.5px; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--ink3); font-weight:600; background:var(--surface);
+  border-bottom:1px solid var(--hair); position:sticky; top:0; z-index:2;
+}
+.tbl thead tr.grp th{
+  font-size:10px; letter-spacing:.13em; border-bottom:1px solid var(--hair2);
+  color:var(--ink2); padding-bottom:4px;
+}
+.tbl thead tr.grp th.gD{color:var(--sD); box-shadow:inset 0 -2px 0 var(--sD);}
+.tbl thead tr.grp th.gC{color:var(--sC); box-shadow:inset 0 -2px 0 var(--sC);}
+.tbl tbody tr:nth-child(even){background:var(--surface2);}
+.tbl tbody tr:hover{background:var(--washFlat);}
+.tbl .num{font-family:var(--mono); font-variant-numeric:tabular-nums; text-align:right;}
+.tbl .sz{font-weight:680; color:var(--ink); text-align:right;}
+.tbl .bw{font-weight:600;}
+.tbl .bw.d{color:var(--sD);} .tbl .bw.c{color:var(--sC);}
+.tbl .delta{font-weight:680;}
+.tbl .delta.pos{color:var(--good);} .tbl .delta.neg{color:var(--crit);} .tbl .delta.zero{color:var(--ink3);}
+.tbl .sp{color:var(--ink3); font-size:11.5px;}
+.tbl .psup{color:var(--ink2);}
+.tbl td.sel,.tbl td.rq{font-family:var(--mono); font-size:11.5px;}
+.tbl td.sel.mm{background:var(--washColl);}
+.chip{
+  display:inline-block; font-family:var(--mono); font-size:10.5px; font-weight:640;
+  padding:1.5px 5px; border-radius:2px; margin-right:4px; letter-spacing:.02em;
+  border:1px solid var(--hair); color:var(--ink2); background:var(--surface);
+}
+.chip.k-proto{color:var(--ink3);}
+.chip.k-req{border-style:dashed; color:var(--ink3); background:transparent;}
+.ch{font-family:var(--mono); font-variant-numeric:tabular-nums; font-weight:640; color:var(--ink);}
+.warnmark{color:var(--crit); margin-left:6px; font-size:10px;}
+.pill{
+  display:inline-block; font-family:var(--mono); font-size:10.5px; font-weight:680;
+  padding:2px 7px; border-radius:2px; letter-spacing:.05em; border:1px solid;
+}
+.p-keep{color:var(--good); border-color:var(--good); background:rgba(12,163,12,.09);}
+.p-drop{color:var(--ink3); border-color:var(--hair); background:var(--surface2);}
+.p-mine{color:var(--crit); border-color:var(--crit); background:rgba(208,59,59,.09);}
+.reason{color:var(--ink3); font-size:11.5px; margin-left:9px; white-space:normal;}
+.tbl tr.v-drop th.sz,.tbl tr.v-drop td{color:var(--ink3);}
+.tbl tr.v-drop th.sz{color:var(--ink2);}
+
+/* ---------------- method ---------------- */
+.method{
+  margin-top:56px; padding-top:26px; border-top:1px solid var(--hair);
+  display:grid; gap:26px 40px; grid-template-columns:repeat(auto-fit,minmax(268px,1fr));
+}
+.mblock .eyebrow{margin-bottom:9px; display:block;}
+.mblock ul{margin:0; padding-left:0; list-style:none; display:flex; flex-direction:column; gap:7px;}
+.mblock li{font-size:12.5px; color:var(--ink2); line-height:1.5; display:flex; gap:9px;}
+.mblock li::before{content:"—"; color:var(--ink3); flex:none;}
+.mblock code{font-family:var(--mono); font-size:11.5px; color:var(--ink);}
+.caveat{
+  grid-column:1/-1; font-size:12.5px; color:var(--ink2); line-height:1.6;
+  background:var(--surface2); border:1px solid var(--hair2); border-left:3px solid var(--axis);
+  border-radius:3px; padding:14px 16px; max-width:none;
+}
+.caveat b{color:var(--ink); font-weight:660;}
+.foot{margin-top:30px; font-family:var(--mono); font-size:11px; color:var(--ink3);}
+
+:where(a,button,[tabindex]):focus-visible{outline:2px solid var(--sD); outline-offset:2px; border-radius:2px;}
+@media (max-width:560px){
+  .pg{padding:0 14px 56px;} .sec{padding-top:40px;}
+  .tile .v{font-size:24px;}
+}
+</style>
+<div class="pg"><div class="wrap">
+
+<header class="mast">
+  <div class="stack" style="gap:16px">
+    <span class="eyebrow">1-node A/B &middot; 8 ranks &times; 1 GPU &middot; amd-mi355x-7 &middot; 7 interleaved repeats</span>
+    <h1><span class="defw">RCCL default</span> <span class="vs">vs</span> <span class="cfgw">tuned config</span></h1>
+    <p class="sub">A 12-rule tuner config measured against stock RCCL across 18 message
+    sizes. <b>8 of 12 rules hold up</b> &mdash; large gains from 4K to 1M.
+    The other 4 do not, and one of them is a genuine landmine that costs
+    66% of peak bandwidth. Every bandwidth number below is paired with the
+    algorithm, protocol and channel count that actually executed.</p>
+  </div>
+  <div class="provenance">
+    <span><b>RCCL</b> 2.28.3-develop:2e42aa8</span>
+    <span><b>rccl-tests</b> 2.17.9-develop:2e42aa8</span>
+    <span><b>iters</b> 5 (+5 warmup)</span>
+    <span><b>correctness</b> 0 wrong / 252 rows</span>
+    <span><b>hangs</b> default 0/7 = 0%, config 0/7 = 0%</span>
+  </div>
+</header>
+
+<div class="readout">
+  <div class="tile t-good">
+    <span class="k">Rules kept</span><span class="v">8 / 12</span>
+    <span class="n">P(sup) = 1.00 on every one</span>
+  </div>
+  <div class="tile t-good">
+    <span class="k">Best verified gain</span><span class="v">+63.0%</span>
+    <span class="n">at 512K: 21.20 &rarr; 34.56 GB/s
+    &middot; band +12.5% to +63.0% across 4K&ndash;1M</span>
+  </div>
+  <div class="tile t-crit">
+    <span class="k">Worst regression</span><span class="v">-65.7%</span>
+    <span class="n">at 512M: 396.1 &rarr; 136.0 GB/s</span>
+  </div>
+  <div class="tile t-crit">
+    <span class="k">Whole-sweep avg busbw</span><span class="v">-37.2%</span>
+    <span class="n">143.9 &rarr; 90.4 GB/s &mdash; the config as written is a net loss</span>
+  </div>
+</div>
+
+<section class="sec">
+  <div class="sec-head">
+    <h2>Bandwidth across the size sweep</h2>
+    <span class="src">median of 7 repeats per point &middot; in-place busbw &middot; logs/1n_&#123;default,config&#125;_r&#123;1..7&#125;.log</span>
+  </div>
+  <div class="panel">
+    <div class="legend">
+      <span class="lg lgD"><i></i><span>RCCL default</span></span>
+      <span class="lg lgC"><i></i><span>tuned config</span></span>
+      <span class="lg lgB"><i></i><span>min&ndash;max of 7 repeats</span></span>
+    </div>
+    <div class="scroller"><div class="inner">
+      <div class="regimes" aria-hidden="true"><span class="rgl rgl-win"  style="left:6.20%;width:43.00%">WIN &middot; 4K&ndash;1M</span><span class="rgl rgl-flat" style="left:49.20%;width:23.89%">FLAT &middot; 2M&ndash;32M</span><span class="rgl rgl-coll" style="left:73.09%;width:19.11%">COLLAPSE &middot; 64M&ndash;512M</span></div>
+      <div class="plot" id="plotMain">
+        <svg class="chart" viewBox="0 0 1000 406" role="img" aria-label="Bus bandwidth versus message size, log-log. Default RCCL rises from 0.32 to 396.12 GB/s. The tuned config is higher from 4K to 1M and collapses to about 136 GB/s from 64M up. Exact values in the table below.">
+<defs><pattern id="hatchC" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse"><rect width="7" height="7" fill="none"/><line x1="0" y1="0" x2="0" y2="7" stroke="#d03b3b" stroke-width="3"/></pattern><pattern id="hatchG" width="7" height="7" patternTransform="rotate(-45)" patternUnits="userSpaceOnUse"><rect width="7" height="7" fill="none"/><line x1="0" y1="0" x2="0" y2="7" stroke="#0ca30c" stroke-width="3"/></pattern></defs>
+<rect class="rg rg-win"  x="62.0" y="24.0" width="430.0" height="330.0"/>
+<rect class="rg rg-flat" x="492.0" y="24.0" width="238.9" height="330.0"/>
+<rect class="rg rg-coll" x="730.9" y="24.0" width="191.1" height="330.0"/>
+<line class="grid" x1="62.0" y1="346.0" x2="922.0" y2="346.0"/>
+<text class="tick tick-y" x="52.0" y="349.4" text-anchor="end">0.3</text>
+<line class="grid" x1="62.0" y1="293.5" x2="922.0" y2="293.5"/>
+<text class="tick tick-y" x="52.0" y="296.9" text-anchor="end">1</text>
+<line class="grid" x1="62.0" y1="245.5" x2="922.0" y2="245.5"/>
+<text class="tick tick-y" x="52.0" y="248.9" text-anchor="end">3</text>
+<line class="grid" x1="62.0" y1="193.0" x2="922.0" y2="193.0"/>
+<text class="tick tick-y" x="52.0" y="196.4" text-anchor="end">10</text>
+<line class="grid" x1="62.0" y1="145.0" x2="922.0" y2="145.0"/>
+<text class="tick tick-y" x="52.0" y="148.4" text-anchor="end">30</text>
+<line class="grid" x1="62.0" y1="92.5" x2="922.0" y2="92.5"/>
+<text class="tick tick-y" x="52.0" y="95.9" text-anchor="end">100</text>
+<line class="grid" x1="62.0" y1="44.5" x2="922.0" y2="44.5"/>
+<text class="tick tick-y" x="52.0" y="47.9" text-anchor="end">300</text>
+<text class="axname" x="52.0" y="14.0" text-anchor="end">GB/s</text>
+<line class="axis" x1="62.0" y1="354.0" x2="922.0" y2="354.0"/>
+<path class="bandD" d="M 85.9,341.9 133.7,318.8 181.4,299.6 229.2,269.8 277.0,241.6 324.8,212.4 372.6,182.8 420.3,160.0 468.1,130.4 515.9,102.3 563.7,81.5 611.4,62.6 659.2,49.3 707.0,41.9 754.8,36.9 802.6,34.2 850.3,33.0 898.1,32.4 L898.1,32.4 850.3,33.2 802.6,34.3 754.8,37.2 707.0,42.1 659.2,49.4 611.4,62.8 563.7,81.8 515.9,102.7 468.1,130.8 420.3,160.4 372.6,185.2 324.8,213.8 277.0,242.0 229.2,270.6 181.4,301.1 133.7,321.2 85.9,343.2 Z"/>
+<path class="bandC" d="M 85.9,336.9 133.7,307.8 181.4,280.7 229.2,249.8 277.0,220.8 324.8,198.9 372.6,168.2 420.3,138.7 468.1,124.2 515.9,102.9 563.7,82.7 611.4,63.0 659.2,49.4 707.0,42.0 754.8,80.9 802.6,79.4 850.3,79.2 898.1,79.0 L898.1,79.1 850.3,79.4 802.6,79.5 754.8,81.1 707.0,42.2 659.2,49.6 611.4,63.3 563.7,83.0 515.9,103.4 468.1,125.8 420.3,139.4 372.6,168.7 324.8,201.9 277.0,221.5 229.2,253.8 181.4,285.9 133.7,309.1 85.9,340.6 Z"/>
+<polyline class="lineD" points="85.9,343.2 133.7,319.6 181.4,300.1 229.2,270.1 277.0,241.8 324.8,213.1 372.6,183.1 420.3,160.2 468.1,130.7 515.9,102.5 563.7,81.6 611.4,62.7 659.2,49.3 707.0,42.0 754.8,37.1 802.6,34.2 850.3,33.1 898.1,32.4"/>
+<polyline class="lineC" points="85.9,338.1 133.7,308.4 181.4,283.7 229.2,250.6 277.0,221.2 324.8,200.9 372.6,168.5 420.3,138.8 468.1,124.6 515.9,103.1 563.7,82.8 611.4,63.2 659.2,49.5 707.0,42.1 754.8,81.0 802.6,79.4 850.3,79.4 898.1,79.1"/>
+<circle class="dotD" cx="85.9" cy="343.2" r="4"/>
+<circle class="dotC" cx="85.9" cy="338.1" r="4"/>
+<circle class="dotD" cx="133.7" cy="319.6" r="4"/>
+<circle class="dotC" cx="133.7" cy="308.4" r="4"/>
+<circle class="dotD" cx="181.4" cy="300.1" r="4"/>
+<circle class="dotC" cx="181.4" cy="283.7" r="4"/>
+<circle class="dotD" cx="229.2" cy="270.1" r="4"/>
+<circle class="dotC" cx="229.2" cy="250.6" r="4"/>
+<circle class="dotD" cx="277.0" cy="241.8" r="4"/>
+<circle class="dotC" cx="277.0" cy="221.2" r="4"/>
+<circle class="dotD" cx="324.8" cy="213.1" r="4"/>
+<circle class="dotC" cx="324.8" cy="200.9" r="4"/>
+<circle class="dotD" cx="372.6" cy="183.1" r="4"/>
+<circle class="dotC" cx="372.6" cy="168.5" r="4"/>
+<circle class="dotD" cx="420.3" cy="160.2" r="4"/>
+<circle class="dotC" cx="420.3" cy="138.8" r="4"/>
+<circle class="dotD" cx="468.1" cy="130.7" r="4"/>
+<circle class="dotC" cx="468.1" cy="124.6" r="4"/>
+<circle class="dotD" cx="515.9" cy="102.5" r="4"/>
+<circle class="dotC" cx="515.9" cy="103.1" r="4"/>
+<circle class="dotD" cx="563.7" cy="81.6" r="4"/>
+<circle class="dotC" cx="563.7" cy="82.8" r="4"/>
+<circle class="dotD" cx="611.4" cy="62.7" r="4"/>
+<circle class="dotC" cx="611.4" cy="63.2" r="4"/>
+<circle class="dotD" cx="659.2" cy="49.3" r="4"/>
+<circle class="dotC" cx="659.2" cy="49.5" r="4"/>
+<circle class="dotD" cx="707.0" cy="42.0" r="4"/>
+<circle class="dotC" cx="707.0" cy="42.1" r="4"/>
+<circle class="dotD" cx="754.8" cy="37.1" r="4"/>
+<circle class="dotC" cx="754.8" cy="81.0" r="4"/>
+<circle class="dotD" cx="802.6" cy="34.2" r="4"/>
+<circle class="dotC" cx="802.6" cy="79.4" r="4"/>
+<circle class="dotD" cx="850.3" cy="33.1" r="4"/>
+<circle class="dotC" cx="850.3" cy="79.4" r="4"/>
+<circle class="dotD" cx="898.1" cy="32.4" r="4"/>
+<circle class="dotC" cx="898.1" cy="79.1" r="4"/>
+<text class="tick" x="85.9" y="372.0" text-anchor="middle">4K</text>
+<text class="tick" x="133.7" y="372.0" text-anchor="middle">8K</text>
+<text class="tick" x="181.4" y="372.0" text-anchor="middle">16K</text>
+<text class="tick" x="229.2" y="372.0" text-anchor="middle">32K</text>
+<text class="tick" x="277.0" y="372.0" text-anchor="middle">64K</text>
+<text class="tick" x="324.8" y="372.0" text-anchor="middle">128K</text>
+<text class="tick" x="372.6" y="372.0" text-anchor="middle">256K</text>
+<text class="tick" x="420.3" y="372.0" text-anchor="middle">512K</text>
+<text class="tick" x="468.1" y="372.0" text-anchor="middle">1M</text>
+<text class="tick" x="515.9" y="372.0" text-anchor="middle">2M</text>
+<text class="tick" x="563.7" y="372.0" text-anchor="middle">4M</text>
+<text class="tick" x="611.4" y="372.0" text-anchor="middle">8M</text>
+<text class="tick" x="659.2" y="372.0" text-anchor="middle">16M</text>
+<text class="tick" x="707.0" y="372.0" text-anchor="middle">32M</text>
+<text class="tick" x="754.8" y="372.0" text-anchor="middle">64M</text>
+<text class="tick" x="802.6" y="372.0" text-anchor="middle">128M</text>
+<text class="tick" x="850.3" y="372.0" text-anchor="middle">256M</text>
+<text class="tick" x="898.1" y="372.0" text-anchor="middle">512M</text>
+<text class="axname" x="922.0" y="394.0" text-anchor="end">message size (bytes, powers of 2)</text>
+<text class="endD" x="909.1" y="36.4">396</text>
+<text class="endC" x="909.1" y="83.1">136</text>
+<line id="xh" class="xhair" x1="0" y1="0" x2="0" y2="0" style="opacity:0"/>
+<rect class="hit" data-i="0" data-f="0.0859" x="62.0" y="24.0" width="47.8" height="330.0"/>
+<rect class="hit" data-i="1" data-f="0.1337" x="109.8" y="24.0" width="47.8" height="330.0"/>
+<rect class="hit" data-i="2" data-f="0.1814" x="157.6" y="24.0" width="47.8" height="330.0"/>
+<rect class="hit" data-i="3" data-f="0.2292" x="205.3" y="24.0" width="47.8" height="330.0"/>
+<rect class="hit" data-i="4" data-f="0.2770" x="253.1" y="24.0" width="47.8" height="330.0"/>
+<rect class="hit" data-i="5" data-f="0.3248" x="300.9" y="24.0" width="47.8" height="330.0"/>
+<rect class="hit" data-i="6" data-f="0.3726" x="348.7" y="24.0" width="47.8" height="330.0"/>
+<rect class="hit" data-i="7" data-f="0.4203" x="396.4" y="24.0" width="47.8" height="330.0"/>
+<rect class="hit" data-i="8" data-f="0.4681" x="444.2" y="24.0" width="47.8" height="330.0"/>
+<rect class="hit" data-i="9" data-f="0.5159" x="492.0" y="24.0" width="47.8" height="330.0"/>
+<rect class="hit" data-i="10" data-f="0.5637" x="539.8" y="24.0" width="47.8" height="330.0"/>
+<rect class="hit" data-i="11" data-f="0.6114" x="587.6" y="24.0" width="47.8" height="330.0"/>
+<rect class="hit" data-i="12" data-f="0.6592" x="635.3" y="24.0" width="47.8" height="330.0"/>
+<rect class="hit" data-i="13" data-f="0.7070" x="683.1" y="24.0" width="47.8" height="330.0"/>
+<rect class="hit" data-i="14" data-f="0.7548" x="730.9" y="24.0" width="47.8" height="330.0"/>
+<rect class="hit" data-i="15" data-f="0.8026" x="778.7" y="24.0" width="47.8" height="330.0"/>
+<rect class="hit" data-i="16" data-f="0.8503" x="826.4" y="24.0" width="47.8" height="330.0"/>
+<rect class="hit" data-i="17" data-f="0.8981" x="874.2" y="24.0" width="47.8" height="330.0"/>
+</svg>
+        <div class="tip" id="tip" role="status" aria-live="off"></div>
+      </div>
+    </div></div>
+    <p class="cap">Both axes are logarithmic &mdash; bandwidth spans 0.32 to
+    396.1 GB/s. The min&ndash;max band is drawn but is thinner than the line at most
+    sizes: median repeat spread is 1.0% of the median. The one loose point is
+    16K on the config arm at 12%
+    (1.19&ndash;1.34 GB/s across 7 repeats) &mdash; it is kept
+    in, not dropped. Hover any size for its exact values.</p>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="sec-head">
+    <h2>Change per size, config vs default</h2>
+    <span class="src">(median config &minus; median default) / median default &middot; linear scale &middot; bars above the line are gains, hatched bars below are losses</span>
+  </div>
+  <div class="panel">
+    <div class="scroller"><div class="inner"><svg class="chart" viewBox="0 0 1000 250" role="img" aria-label="Change in bus bandwidth, tuned config versus default, per message size. Gains from +63.0 percent at 512K down to -65.7 percent at 512M. Exact values in the table below.">
+<defs><pattern id="hatchC2" width="6" height="6" patternTransform="rotate(45)" patternUnits="userSpaceOnUse"><rect width="6" height="6" fill="none"/><line x1="0" y1="0" x2="0" y2="6" stroke="#d03b3b" stroke-width="2.6"/></pattern></defs>
+<rect class="rg rg-win"  x="62.0" y="20.0" width="430.0" height="176.0"/>
+<rect class="rg rg-flat" x="492.0" y="20.0" width="238.9" height="176.0"/>
+<rect class="rg rg-coll" x="730.9" y="20.0" width="191.1" height="176.0"/>
+<line class="grid" x1="62.0" y1="183.4" x2="922.0" y2="183.4"/>
+<text class="tick tick-y" x="52.0" y="186.8" text-anchor="end">-60</text>
+<line class="grid" x1="62.0" y1="158.3" x2="922.0" y2="158.3"/>
+<text class="tick tick-y" x="52.0" y="161.7" text-anchor="end">-40</text>
+<line class="grid" x1="62.0" y1="133.1" x2="922.0" y2="133.1"/>
+<text class="tick tick-y" x="52.0" y="136.5" text-anchor="end">-20</text>
+<line class="grid" x1="62.0" y1="82.9" x2="922.0" y2="82.9"/>
+<text class="tick tick-y" x="52.0" y="86.3" text-anchor="end">+20</text>
+<line class="grid" x1="62.0" y1="57.7" x2="922.0" y2="57.7"/>
+<text class="tick tick-y" x="52.0" y="61.1" text-anchor="end">+40</text>
+<line class="grid" x1="62.0" y1="32.6" x2="922.0" y2="32.6"/>
+<text class="tick tick-y" x="52.0" y="36.0" text-anchor="end">+60</text>
+<text class="axname" x="52.0" y="12.0" text-anchor="end">% change</text>
+<path class="barUp" d="M73.9,108.0 L73.9,96.3 Q73.9,92.3 77.9,92.3 L93.8,92.3 Q97.8,92.3 97.8,96.3 L97.8,108.0 Z"/>
+<text class="dlab dlabUp" x="85.9" y="85.3" text-anchor="middle">+12.5</text>
+<path class="barUp" d="M121.7,108.0 L121.7,75.4 Q121.7,71.4 125.7,71.4 L141.6,71.4 Q145.6,71.4 145.6,75.4 L145.6,108.0 Z"/>
+<text class="dlab dlabUp" x="133.7" y="64.4" text-anchor="middle">+29.1</text>
+<path class="barUp" d="M169.5,108.0 L169.5,55.0 Q169.5,51.0 173.5,51.0 L189.4,51.0 Q193.4,51.0 193.4,55.0 L193.4,108.0 Z"/>
+<text class="dlab dlabUp" x="181.4" y="44.0" text-anchor="middle">+45.3</text>
+<path class="barUp" d="M217.3,108.0 L217.3,41.4 Q217.3,37.4 221.3,37.4 L237.2,37.4 Q241.2,37.4 241.2,41.4 L241.2,108.0 Z"/>
+<text class="dlab dlabUp" x="229.2" y="30.4" text-anchor="middle">+56.1</text>
+<path class="barUp" d="M265.1,108.0 L265.1,36.3 Q265.1,32.3 269.1,32.3 L284.9,32.3 Q288.9,32.3 288.9,36.3 L288.9,108.0 Z"/>
+<text class="dlab dlabUp" x="277.0" y="25.3" text-anchor="middle">+60.2</text>
+<path class="barUp" d="M312.8,108.0 L312.8,71.4 Q312.8,67.4 316.8,67.4 L332.7,67.4 Q336.7,67.4 336.7,71.4 L336.7,108.0 Z"/>
+<text class="dlab dlabUp" x="324.8" y="60.4" text-anchor="middle">+32.3</text>
+<path class="barUp" d="M360.6,108.0 L360.6,62.3 Q360.6,58.3 364.6,58.3 L380.5,58.3 Q384.5,58.3 384.5,62.3 L384.5,108.0 Z"/>
+<text class="dlab dlabUp" x="372.6" y="51.3" text-anchor="middle">+39.5</text>
+<path class="barUp" d="M408.4,108.0 L408.4,32.8 Q408.4,28.8 412.4,28.8 L428.3,28.8 Q432.3,28.8 432.3,32.8 L432.3,108.0 Z"/>
+<text class="dlab dlabUp" x="420.3" y="21.8" text-anchor="middle">+63.0</text>
+<path class="barUp" d="M456.2,108.0 L456.2,93.4 Q456.2,89.4 460.2,89.4 L476.1,89.4 Q480.1,89.4 480.1,93.4 L480.1,108.0 Z"/>
+<text class="dlab dlabUp" x="468.1" y="82.4" text-anchor="middle">+14.8</text>
+<path class="barDn" d="M503.9,108.0 L503.9,108.0 Q503.9,109.5 505.5,109.5 L526.3,109.5 Q527.8,109.5 527.8,108.0 L527.8,108.0 Z"/>
+<path class="barDnHatch" d="M503.9,108.0 L503.9,108.0 Q503.9,109.5 505.5,109.5 L526.3,109.5 Q527.8,109.5 527.8,108.0 L527.8,108.0 Z"/>
+<text class="dlab dlabDn" x="515.9" y="123.5" text-anchor="middle">-1.2</text>
+<path class="barDn" d="M551.7,108.0 L551.7,108.0 Q551.7,111.4 555.1,111.4 L572.2,111.4 Q575.6,111.4 575.6,108.0 L575.6,108.0 Z"/>
+<path class="barDnHatch" d="M551.7,108.0 L551.7,108.0 Q551.7,111.4 555.1,111.4 L572.2,111.4 Q575.6,111.4 575.6,108.0 L575.6,108.0 Z"/>
+<text class="dlab dlabDn" x="563.7" y="125.4" text-anchor="middle">-2.7</text>
+<path class="barDn" d="M599.5,108.0 L599.5,108.0 Q599.5,109.5 601.0,109.5 L621.9,109.5 Q623.4,109.5 623.4,108.0 L623.4,108.0 Z"/>
+<path class="barDnHatch" d="M599.5,108.0 L599.5,108.0 Q599.5,109.5 601.0,109.5 L621.9,109.5 Q623.4,109.5 623.4,108.0 L623.4,108.0 Z"/>
+<text class="dlab dlabDn" x="611.4" y="123.5" text-anchor="middle">-1.2</text>
+<path class="barDn" d="M647.3,108.0 L647.3,108.0 Q647.3,108.6 647.8,108.6 L670.6,108.6 Q671.2,108.6 671.2,108.0 L671.2,108.0 Z"/>
+<path class="barDnHatch" d="M647.3,108.0 L647.3,108.0 Q647.3,108.6 647.8,108.6 L670.6,108.6 Q671.2,108.6 671.2,108.0 L671.2,108.0 Z"/>
+<text class="dlab dlabDn" x="659.2" y="122.6" text-anchor="middle">-0.4</text>
+<path class="barDn" d="M695.1,108.0 L695.1,108.0 Q695.1,108.3 695.3,108.3 L718.7,108.3 Q718.9,108.3 718.9,108.0 L718.9,108.0 Z"/>
+<path class="barDnHatch" d="M695.1,108.0 L695.1,108.0 Q695.1,108.3 695.3,108.3 L718.7,108.3 Q718.9,108.3 718.9,108.0 L718.9,108.0 Z"/>
+<text class="dlab dlabDn" x="707.0" y="122.3" text-anchor="middle">-0.2</text>
+<path class="barDn" d="M742.8,108.0 L742.8,183.7 Q742.8,187.7 746.8,187.7 L762.7,187.7 Q766.7,187.7 766.7,183.7 L766.7,108.0 Z"/>
+<path class="barDnHatch" d="M742.8,108.0 L742.8,183.7 Q742.8,187.7 746.8,187.7 L762.7,187.7 Q766.7,187.7 766.7,183.7 L766.7,108.0 Z"/>
+<text class="dlab dlabDn" x="754.8" y="201.7" text-anchor="middle">-63.4</text>
+<path class="barDn" d="M790.6,108.0 L790.6,185.1 Q790.6,189.1 794.6,189.1 L810.5,189.1 Q814.5,189.1 814.5,185.1 L814.5,108.0 Z"/>
+<path class="barDnHatch" d="M790.6,108.0 L790.6,185.1 Q790.6,189.1 794.6,189.1 L810.5,189.1 Q814.5,189.1 814.5,185.1 L814.5,108.0 Z"/>
+<text class="dlab dlabDn" x="802.6" y="203.1" text-anchor="middle">-64.5</text>
+<path class="barDn" d="M838.4,108.0 L838.4,186.2 Q838.4,190.2 842.4,190.2 L858.3,190.2 Q862.3,190.2 862.3,186.2 L862.3,108.0 Z"/>
+<path class="barDnHatch" d="M838.4,108.0 L838.4,186.2 Q838.4,190.2 842.4,190.2 L858.3,190.2 Q862.3,190.2 862.3,186.2 L862.3,108.0 Z"/>
+<text class="dlab dlabDn" x="850.3" y="204.2" text-anchor="middle">-65.4</text>
+<path class="barDn" d="M886.2,108.0 L886.2,186.6 Q886.2,190.6 890.2,190.6 L906.1,190.6 Q910.1,190.6 910.1,186.6 L910.1,108.0 Z"/>
+<path class="barDnHatch" d="M886.2,108.0 L886.2,186.6 Q886.2,190.6 890.2,190.6 L906.1,190.6 Q910.1,190.6 910.1,186.6 L910.1,108.0 Z"/>
+<text class="dlab dlabDn" x="898.1" y="204.6" text-anchor="middle">-65.7</text>
+<line class="zero" x1="62.0" y1="108.0" x2="922.0" y2="108.0"/>
+<text class="tick" x="85.9" y="122.0" text-anchor="middle">4K</text>
+<text class="tick" x="133.7" y="122.0" text-anchor="middle">8K</text>
+<text class="tick" x="181.4" y="122.0" text-anchor="middle">16K</text>
+<text class="tick" x="229.2" y="122.0" text-anchor="middle">32K</text>
+<text class="tick" x="277.0" y="122.0" text-anchor="middle">64K</text>
+<text class="tick" x="324.8" y="122.0" text-anchor="middle">128K</text>
+<text class="tick" x="372.6" y="122.0" text-anchor="middle">256K</text>
+<text class="tick" x="420.3" y="122.0" text-anchor="middle">512K</text>
+<text class="tick" x="468.1" y="122.0" text-anchor="middle">1M</text>
+<text class="tick" x="515.9" y="102.0" text-anchor="middle">2M</text>
+<text class="tick" x="563.7" y="102.0" text-anchor="middle">4M</text>
+<text class="tick" x="611.4" y="102.0" text-anchor="middle">8M</text>
+<text class="tick" x="659.2" y="102.0" text-anchor="middle">16M</text>
+<text class="tick" x="707.0" y="102.0" text-anchor="middle">32M</text>
+<text class="tick" x="754.8" y="102.0" text-anchor="middle">64M</text>
+<text class="tick" x="802.6" y="102.0" text-anchor="middle">128M</text>
+<text class="tick" x="850.3" y="102.0" text-anchor="middle">256M</text>
+<text class="tick" x="898.1" y="102.0" text-anchor="middle">512M</text>
+</svg></div></div>
+    <p class="cap">The three regimes are the finding: the config wins decisively up to
+    1M, is inside noise from 2M to 32M
+    (-2.7% to -0.2%), and falls off a
+    cliff from 64M up. Sign is carried by bar direction, the 45&deg; hatch and the
+    signed label, not by hue alone.</p>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="callout">
+    <span class="ctag">&#9650; The one rule you must not ship</span>
+    <h3>allreduce 64M&ndash;512M &rarr; -65.7% at 512M</h3>
+    <p>Four sizes, all four badly regressed (-65.7% to
+    -63.4%), P(sup) 0.00.
+    This single rule is what drags the whole-sweep average to -37.2%. It is the reason the
+    config is validated rule-by-rule instead of shipped whole.</p>
+
+    <div class="corr"><b>Correction to the working note.</b> This run was recorded as regressing
+    because the config &ldquo;forced plain <code>ring</code> and lost RCCL&rsquo;s WarpSpeed
+    (<code>RING*</code>) addon&rdquo;. The logs do not support that. Both arms print
+    <code>RING*</code> from 64M up, and the WarpSpeed enable line appears in
+    56/56 default and 56/56 config per-rank INFO
+    logs &mdash; identical in both. <b>WarpSpeed was never lost.</b> What the config lost is channel
+    width.</div>
+
+    <div class="mech">
+      <div class="isD"><div class="mk">default, 64M+</div><div class="mv">56</div>
+        <div class="mn">channels reported by the selection column</div></div>
+      <div><div class="mk">config requested</div><div class="mv">48</div>
+        <div class="mn">from candidate.conf, applied by the plugin</div></div>
+      <div class="isC"><div class="mk">config, 64M+</div><div class="mv">12</div>
+        <div class="mn">the only range where selected &ne; requested</div></div>
+      <div><div class="mk">WarpSpeed multiplier</div><div class="mv">&times;4</div>
+        <div class="mn">56&times;4=56565656 vs 12&times;4=48 channels</div></div>
+    </div>
+
+    <div class="ev"><span class="lbl"># both arms, every rank &mdash; WarpSpeed is on:</span>
+default  WarpSpeed enabled: <span class="hi">warpSpeedChannelMultiplier 4, maxNchannels 448, nc 224</span>
+config   WarpSpeed enabled: <span class="hi">warpSpeedChannelMultiplier 4, maxNchannels 448, nc 224</span>
+<span class="lbl"># config arm &mdash; the rule the plugin loaded and applied:</span>
+DN-TUNER/Plugin: Loaded config: allreduce [67108864-536870912] ring/simple channels=48 nodes=1 ranks=8 pipeOps=any regBuff=any
+DN-TUNER/Plugin: Applied config for collType=allreduce, bytes=67108864, pipeOps=1, regBuff=0: algo=ring, proto=simple, channels=48 (nodes=1, ranks=8)</div>
+
+    <p><b>Reading of the evidence</b> (mechanism, not a logged fact): the requested
+    <code>channels=48</code> lands where WarpSpeed would otherwise have expanded
+    56 base channels by &times;4. 48&nbsp;&divide;&nbsp;4&nbsp;=&nbsp;12,
+    which is exactly the number that appears in the selection column, and 64M&ndash;512M
+    is the only range in the sweep where the selected channel count differs from the requested one.
+    That is consistent with the request being consumed as the post-multiplier total, starving the
+    collective of roughly 56565656&nbsp;&rarr;&nbsp;48 channels. Confirming
+    it needs a channel-span read, not this column.</p>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="sec-head">
+    <h2>What actually ran, per size, per arm</h2>
+    <span class="src">selection columns from the run&rsquo;s own output (-A 1 reporter) &middot; requested values from candidate.conf</span>
+  </div>
+  <div class="panel">
+    <div class="scroller"><table class="tbl">
+      <caption>Requested is not the same as selected &mdash; RCCL substitutes silently, so both are shown</caption>
+      <thead>
+        <tr class="grp">
+          <th></th><th colspan="2" class="gD">RCCL default</th>
+          <th colspan="3" class="gC">tuned config</th><th colspan="2"></th>
+        </tr>
+        <tr>
+          <th scope="col" style="text-align:right">size</th>
+          <th scope="col">selected algo/proto/ch</th>
+          <th scope="col" style="text-align:right">busbw</th>
+          <th scope="col">requested</th>
+          <th scope="col">selected algo/proto/ch</th>
+          <th scope="col" style="text-align:right">busbw</th>
+          <th scope="col" style="text-align:right">&Delta;</th>
+          <th scope="col" style="text-align:right">spread d/c %</th>
+        </tr>
+      </thead>
+      <tbody><tr>
+<th scope="row" class="num sz">4K</th>
+<td class="sel"><span class="chip k-algo">TREE</span><span class="chip k-proto">LL</span><span class="ch">1</span></td>
+<td class="num bw d">0.32</td>
+<td class="rq"><span class="chip k-req">TREE</span><span class="chip k-req">LL</span><span class="ch">2</span></td>
+<td class="sel"><span class="chip k-algo">TREE</span><span class="chip k-proto">LL</span><span class="ch">2</span></td>
+<td class="num bw c">0.36</td>
+<td class="num delta pos">+12.5%</td>
+<td class="num sp">3.1 / 8.3</td>
+</tr><tr>
+<th scope="row" class="num sz">8K</th>
+<td class="sel"><span class="chip k-algo">TREE</span><span class="chip k-proto">LL</span><span class="ch">1</span></td>
+<td class="num bw d">0.55</td>
+<td class="rq"><span class="chip k-req">TREE</span><span class="chip k-req">LL</span><span class="ch">4</span></td>
+<td class="sel"><span class="chip k-algo">TREE</span><span class="chip k-proto">LL</span><span class="ch">4</span></td>
+<td class="num bw c">0.71</td>
+<td class="num delta pos">+29.1%</td>
+<td class="num sp">5.5 / 2.8</td>
+</tr><tr>
+<th scope="row" class="num sz">16K</th>
+<td class="sel"><span class="chip k-algo">TREE</span><span class="chip k-proto">LL</span><span class="ch">1</span></td>
+<td class="num bw d">0.86</td>
+<td class="rq"><span class="chip k-req">TREE</span><span class="chip k-req">LL</span><span class="ch">8</span></td>
+<td class="sel"><span class="chip k-algo">TREE</span><span class="chip k-proto">LL</span><span class="ch">8</span></td>
+<td class="num bw c">1.25</td>
+<td class="num delta pos">+45.3%</td>
+<td class="num sp">3.5 / 12.0</td>
+</tr><tr>
+<th scope="row" class="num sz">32K</th>
+<td class="sel"><span class="chip k-algo">TREE</span><span class="chip k-proto">LL</span><span class="ch">2</span></td>
+<td class="num bw d">1.71</td>
+<td class="rq"><span class="chip k-req">TREE</span><span class="chip k-req">LL</span><span class="ch">16</span></td>
+<td class="sel"><span class="chip k-algo">TREE</span><span class="chip k-proto">LL</span><span class="ch">16</span></td>
+<td class="num bw c">2.67</td>
+<td class="num delta pos">+56.1%</td>
+<td class="num sp">1.8 / 9.0</td>
+</tr><tr>
+<th scope="row" class="num sz">64K</th>
+<td class="sel"><span class="chip k-algo">TREE</span><span class="chip k-proto">LL</span><span class="ch">4</span></td>
+<td class="num bw d">3.27</td>
+<td class="rq"><span class="chip k-req">TREE</span><span class="chip k-req">LL</span><span class="ch">32</span></td>
+<td class="sel"><span class="chip k-algo">TREE</span><span class="chip k-proto">LL</span><span class="ch">32</span></td>
+<td class="num bw c">5.24</td>
+<td class="num delta pos">+60.2%</td>
+<td class="num sp">0.9 / 1.7</td>
+</tr><tr>
+<th scope="row" class="num sz">128K</th>
+<td class="sel"><span class="chip k-algo">TREE</span><span class="chip k-proto">LL</span><span class="ch">8</span></td>
+<td class="num bw d">6.31</td>
+<td class="rq"><span class="chip k-req">RING</span><span class="chip k-req">LL</span><span class="ch">8</span></td>
+<td class="sel"><span class="chip k-algo">RING</span><span class="chip k-proto">LL</span><span class="ch">8</span></td>
+<td class="num bw c">8.35</td>
+<td class="num delta pos">+32.3%</td>
+<td class="num sp">3.3 / 6.9</td>
+</tr><tr>
+<th scope="row" class="num sz">256K</th>
+<td class="sel"><span class="chip k-algo">TREE</span><span class="chip k-proto">LL</span><span class="ch">16</span></td>
+<td class="num bw d">12.55</td>
+<td class="rq"><span class="chip k-req">RING</span><span class="chip k-req">LL</span><span class="ch">16</span></td>
+<td class="sel"><span class="chip k-algo">RING</span><span class="chip k-proto">LL</span><span class="ch">16</span></td>
+<td class="num bw c">17.51</td>
+<td class="num delta pos">+39.5%</td>
+<td class="num sp">5.5 / 1.1</td>
+</tr><tr>
+<th scope="row" class="num sz">512K</th>
+<td class="sel"><span class="chip k-algo">RING</span><span class="chip k-proto">SIMPLE</span><span class="ch">16</span></td>
+<td class="num bw d">21.20</td>
+<td class="rq"><span class="chip k-req">RING</span><span class="chip k-req">LL</span><span class="ch">32</span></td>
+<td class="sel"><span class="chip k-algo">RING</span><span class="chip k-proto">LL</span><span class="ch">32</span></td>
+<td class="num bw c">34.56</td>
+<td class="num delta pos">+63.0%</td>
+<td class="num sp">1.0 / 1.6</td>
+</tr><tr>
+<th scope="row" class="num sz">1M</th>
+<td class="sel"><span class="chip k-algo">RING</span><span class="chip k-proto">SIMPLE</span><span class="ch">32</span></td>
+<td class="num bw d">41.68</td>
+<td class="rq"><span class="chip k-req">RING</span><span class="chip k-req">LL</span><span class="ch">32</span></td>
+<td class="sel"><span class="chip k-algo">RING</span><span class="chip k-proto">LL</span><span class="ch">32</span></td>
+<td class="num bw c">47.85</td>
+<td class="num delta pos">+14.8%</td>
+<td class="num sp">1.0 / 3.7</td>
+</tr><tr>
+<th scope="row" class="num sz">2M</th>
+<td class="sel"><span class="chip k-algo">RING</span><span class="chip k-proto">SIMPLE</span><span class="ch">56</span></td>
+<td class="num bw d">79.41</td>
+<td class="rq"><span class="chip k-req">RING</span><span class="chip k-req">SIMPLE</span><span class="ch">32</span></td>
+<td class="sel"><span class="chip k-algo">RING</span><span class="chip k-proto">SIMPLE</span><span class="ch">32</span></td>
+<td class="num bw c">78.44</td>
+<td class="num delta neg">-1.2%</td>
+<td class="num sp">1.0 / 1.1</td>
+</tr><tr>
+<th scope="row" class="num sz">4M</th>
+<td class="sel"><span class="chip k-algo">RING</span><span class="chip k-proto">SIMPLE</span><span class="ch">56</span></td>
+<td class="num bw d">128.22</td>
+<td class="rq"><span class="chip k-req">RING</span><span class="chip k-req">SIMPLE</span><span class="ch">32</span></td>
+<td class="sel"><span class="chip k-algo">RING</span><span class="chip k-proto">SIMPLE</span><span class="ch">32</span></td>
+<td class="num bw c">124.76</td>
+<td class="num delta neg">-2.7%</td>
+<td class="num sp">0.6 / 0.8</td>
+</tr><tr>
+<th scope="row" class="num sz">8M</th>
+<td class="sel"><span class="chip k-algo">RING</span><span class="chip k-proto">SIMPLE</span><span class="ch">56</span></td>
+<td class="num bw d">197.68</td>
+<td class="rq"><span class="chip k-req">RING</span><span class="chip k-req">SIMPLE</span><span class="ch">48</span></td>
+<td class="sel"><span class="chip k-algo">RING</span><span class="chip k-proto">SIMPLE</span><span class="ch">48</span></td>
+<td class="num bw c">195.37</td>
+<td class="num delta neg">-1.2%</td>
+<td class="num sp">0.3 / 0.6</td>
+</tr><tr>
+<th scope="row" class="num sz">16M</th>
+<td class="sel"><span class="chip k-algo">RING</span><span class="chip k-proto">SIMPLE</span><span class="ch">56</span></td>
+<td class="num bw d">268.83</td>
+<td class="rq"><span class="chip k-req">RING</span><span class="chip k-req">SIMPLE</span><span class="ch">56</span></td>
+<td class="sel"><span class="chip k-algo">RING</span><span class="chip k-proto">SIMPLE</span><span class="ch">56</span></td>
+<td class="num bw c">267.65</td>
+<td class="num delta neg">-0.4%</td>
+<td class="num sp">0.3 / 0.4</td>
+</tr><tr>
+<th scope="row" class="num sz">32M</th>
+<td class="sel"><span class="chip k-algo">RING</span><span class="chip k-proto">SIMPLE</span><span class="ch">56</span></td>
+<td class="num bw d">317.79</td>
+<td class="rq"><span class="chip k-req">RING</span><span class="chip k-req">SIMPLE</span><span class="ch">56</span></td>
+<td class="sel"><span class="chip k-algo">RING</span><span class="chip k-proto">SIMPLE</span><span class="ch">56</span></td>
+<td class="num bw c">317.07</td>
+<td class="num delta neg">-0.2%</td>
+<td class="num sp">0.4 / 0.5</td>
+</tr><tr>
+<th scope="row" class="num sz">64M</th>
+<td class="sel"><span class="chip k-algo">RING*</span><span class="chip k-proto">SIMPLE</span><span class="ch">56</span></td>
+<td class="num bw d">355.63</td>
+<td class="rq"><span class="chip k-req">RING</span><span class="chip k-req">SIMPLE</span><span class="ch">48</span></td>
+<td class="sel mm"><span class="chip k-algo">RING*</span><span class="chip k-proto">SIMPLE</span><span class="ch">12</span><span class="warnmark" title="selected channel count differs from the requested one">&#9650;</span></td>
+<td class="num bw c">130.12</td>
+<td class="num delta neg">-63.4%</td>
+<td class="num sp">0.6 / 0.4</td>
+</tr><tr>
+<th scope="row" class="num sz">128M</th>
+<td class="sel"><span class="chip k-algo">RING*</span><span class="chip k-proto">SIMPLE</span><span class="ch">56</span></td>
+<td class="num bw d">379.85</td>
+<td class="rq"><span class="chip k-req">RING</span><span class="chip k-req">SIMPLE</span><span class="ch">48</span></td>
+<td class="sel mm"><span class="chip k-algo">RING*</span><span class="chip k-proto">SIMPLE</span><span class="ch">12</span><span class="warnmark" title="selected channel count differs from the requested one">&#9650;</span></td>
+<td class="num bw c">134.85</td>
+<td class="num delta neg">-64.5%</td>
+<td class="num sp">0.3 / 0.3</td>
+</tr><tr>
+<th scope="row" class="num sz">256M</th>
+<td class="sel"><span class="chip k-algo">RING*</span><span class="chip k-proto">SIMPLE</span><span class="ch">56</span></td>
+<td class="num bw d">389.74</td>
+<td class="rq"><span class="chip k-req">RING</span><span class="chip k-req">SIMPLE</span><span class="ch">48</span></td>
+<td class="sel mm"><span class="chip k-algo">RING*</span><span class="chip k-proto">SIMPLE</span><span class="ch">12</span><span class="warnmark" title="selected channel count differs from the requested one">&#9650;</span></td>
+<td class="num bw c">134.99</td>
+<td class="num delta neg">-65.4%</td>
+<td class="num sp">0.4 / 0.4</td>
+</tr><tr>
+<th scope="row" class="num sz">512M</th>
+<td class="sel"><span class="chip k-algo">RING*</span><span class="chip k-proto">SIMPLE</span><span class="ch">56</span></td>
+<td class="num bw d">396.12</td>
+<td class="rq"><span class="chip k-req">RING</span><span class="chip k-req">SIMPLE</span><span class="ch">48</span></td>
+<td class="sel mm"><span class="chip k-algo">RING*</span><span class="chip k-proto">SIMPLE</span><span class="ch">12</span><span class="warnmark" title="selected channel count differs from the requested one">&#9650;</span></td>
+<td class="num bw c">135.96</td>
+<td class="num delta neg">-65.7%</td>
+<td class="num sp">0.2 / 0.2</td>
+</tr></tbody>
+    </table></div>
+    <p class="cap">Median busbw in GB/s. The config&rsquo;s requested algorithm and protocol were
+    honoured at all 18 sizes and its channel request at 14 of
+    18 &mdash; the 4 highlighted rows are the collapse
+    range. Note the selection column is the planned count from the <code>-A 1</code> reporter, which is
+    known on this build to report a planned ceiling rather than the executed channel span; treat these
+    as planned counts.</p>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="sec-head">
+    <h2>Per-rule verdict</h2>
+    <span class="src">validate_report.txt &middot; keep if P(sup) &ge; 0.95 and gain &gt; 2.0% and no size in range regresses more than 2.0%</span>
+  </div>
+  <div class="panel">
+    <div class="scroller"><table class="tbl">
+      <caption>8 kept &rarr; candidate.validated.csv &middot; 4 dropped</caption>
+      <thead><tr>
+        <th scope="col" style="text-align:right">size range</th>
+        <th scope="col">requested algo/proto/ch</th>
+        <th scope="col" style="text-align:right">sizes</th>
+        <th scope="col" style="text-align:right">best</th>
+        <th scope="col" style="text-align:right">worst</th>
+        <th scope="col" style="text-align:right">P(sup)</th>
+        <th scope="col">verdict</th>
+      </tr></thead>
+      <tbody><tr class="v-keep">
+<th scope="row" class="num sz">4K</th>
+<td class="rq"><span class="chip k-req">TREE</span><span class="chip k-req">LL</span><span class="ch">2</span></td>
+<td class="num">1</td>
+<td class="num delta pos">+12.5%</td>
+<td class="num delta zero">+0.0%</td>
+<td class="num psup">1.00</td>
+<td class="verdict"><span class="pill p-keep">
+&#10003; KEEP</span>
+<span class="reason">verified</span></td>
+</tr><tr class="v-keep">
+<th scope="row" class="num sz">8K</th>
+<td class="rq"><span class="chip k-req">TREE</span><span class="chip k-req">LL</span><span class="ch">4</span></td>
+<td class="num">1</td>
+<td class="num delta pos">+29.1%</td>
+<td class="num delta zero">+0.0%</td>
+<td class="num psup">1.00</td>
+<td class="verdict"><span class="pill p-keep">
+&#10003; KEEP</span>
+<span class="reason">verified</span></td>
+</tr><tr class="v-keep">
+<th scope="row" class="num sz">16K</th>
+<td class="rq"><span class="chip k-req">TREE</span><span class="chip k-req">LL</span><span class="ch">8</span></td>
+<td class="num">1</td>
+<td class="num delta pos">+45.3%</td>
+<td class="num delta zero">+0.0%</td>
+<td class="num psup">1.00</td>
+<td class="verdict"><span class="pill p-keep">
+&#10003; KEEP</span>
+<span class="reason">verified</span></td>
+</tr><tr class="v-keep">
+<th scope="row" class="num sz">32K</th>
+<td class="rq"><span class="chip k-req">TREE</span><span class="chip k-req">LL</span><span class="ch">16</span></td>
+<td class="num">1</td>
+<td class="num delta pos">+56.1%</td>
+<td class="num delta zero">+0.0%</td>
+<td class="num psup">1.00</td>
+<td class="verdict"><span class="pill p-keep">
+&#10003; KEEP</span>
+<span class="reason">verified</span></td>
+</tr><tr class="v-keep">
+<th scope="row" class="num sz">64K</th>
+<td class="rq"><span class="chip k-req">TREE</span><span class="chip k-req">LL</span><span class="ch">32</span></td>
+<td class="num">1</td>
+<td class="num delta pos">+60.2%</td>
+<td class="num delta zero">+0.0%</td>
+<td class="num psup">1.00</td>
+<td class="verdict"><span class="pill p-keep">
+&#10003; KEEP</span>
+<span class="reason">verified</span></td>
+</tr><tr class="v-keep">
+<th scope="row" class="num sz">128K</th>
+<td class="rq"><span class="chip k-req">RING</span><span class="chip k-req">LL</span><span class="ch">8</span></td>
+<td class="num">1</td>
+<td class="num delta pos">+32.3%</td>
+<td class="num delta zero">+0.0%</td>
+<td class="num psup">1.00</td>
+<td class="verdict"><span class="pill p-keep">
+&#10003; KEEP</span>
+<span class="reason">verified</span></td>
+</tr><tr class="v-keep">
+<th scope="row" class="num sz">256K</th>
+<td class="rq"><span class="chip k-req">RING</span><span class="chip k-req">LL</span><span class="ch">16</span></td>
+<td class="num">1</td>
+<td class="num delta pos">+39.5%</td>
+<td class="num delta zero">+0.0%</td>
+<td class="num psup">1.00</td>
+<td class="verdict"><span class="pill p-keep">
+&#10003; KEEP</span>
+<span class="reason">verified</span></td>
+</tr><tr class="v-keep">
+<th scope="row" class="num sz">512K&ndash;1M</th>
+<td class="rq"><span class="chip k-req">RING</span><span class="chip k-req">LL</span><span class="ch">32</span></td>
+<td class="num">2</td>
+<td class="num delta pos">+63.0%</td>
+<td class="num delta zero">+0.0%</td>
+<td class="num psup">1.00</td>
+<td class="verdict"><span class="pill p-keep">
+&#10003; KEEP</span>
+<span class="reason">verified</span></td>
+</tr><tr class="v-drop">
+<th scope="row" class="num sz">2M&ndash;4M</th>
+<td class="rq"><span class="chip k-req">RING</span><span class="chip k-req">SIMPLE</span><span class="ch">32</span></td>
+<td class="num">2</td>
+<td class="num delta neg">-1.2%</td>
+<td class="num delta neg">-2.7%</td>
+<td class="num psup">0.00</td>
+<td class="verdict"><span class="pill p-mine">
+&#9650; DROP</span>
+<span class="reason">contains a regression of -2.7% (landmine</span></td>
+</tr><tr class="v-drop">
+<th scope="row" class="num sz">8M</th>
+<td class="rq"><span class="chip k-req">RING</span><span class="chip k-req">SIMPLE</span><span class="ch">48</span></td>
+<td class="num">1</td>
+<td class="num delta neg">-1.2%</td>
+<td class="num delta neg">-1.2%</td>
+<td class="num psup">0.00</td>
+<td class="verdict"><span class="pill p-drop">
+&#215; DROP</span>
+<span class="reason">best gain only -1.2%</span></td>
+</tr><tr class="v-drop">
+<th scope="row" class="num sz">16M&ndash;32M</th>
+<td class="rq"><span class="chip k-req">RING</span><span class="chip k-req">SIMPLE</span><span class="ch">56</span></td>
+<td class="num">2</td>
+<td class="num delta neg">-0.2%</td>
+<td class="num delta neg">-0.4%</td>
+<td class="num psup">0.16</td>
+<td class="verdict"><span class="pill p-drop">
+&#215; DROP</span>
+<span class="reason">best gain only -0.2%</span></td>
+</tr><tr class="v-drop">
+<th scope="row" class="num sz">64M&ndash;512M</th>
+<td class="rq"><span class="chip k-req">RING</span><span class="chip k-req">SIMPLE</span><span class="ch">48</span></td>
+<td class="num">4</td>
+<td class="num delta neg">-63.4%</td>
+<td class="num delta neg">-65.7%</td>
+<td class="num psup">0.00</td>
+<td class="verdict"><span class="pill p-mine">
+&#9650; DROP</span>
+<span class="reason">contains a regression of -65.7% (landmine</span></td>
+</tr></tbody>
+    </table></div>
+    <p class="cap"><b>worst</b> is the worst regression inside the rule&rsquo;s size range, reported as
+    +0.0% when there is none &mdash; a rule with a good <b>best</b> and a bad <b>worst</b> is a
+    landmine, which is why the 64M&ndash;512M rule is
+    dropped rather than narrowed. <b>P(sup)</b> is the fraction of the
+    49 config&times;default repeat pairings in which the config wins.</p>
+  </div>
+</section>
+
+<div class="method">
+  <div class="mblock">
+    <span class="eyebrow">Measurement</span>
+    <ul>
+      <li>1 node, <code>amd-mi355x-7</code>, 8 ranks &times; 1 GPU. All results from this one node; nothing multi-node here.</li>
+      <li>RCCL <code>2.28.3-develop:2e42aa8</code>, rccl-tests <code>2.17.9-develop:2e42aa8</code>.</li>
+      <li>7 repeats per arm, interleaved default/config so drift cannot favour either arm.</li>
+      <li>In-place busbw, median of 7. 0 incorrect elements across all 252 data rows.</li>
+    </ul>
+  </div>
+  <div class="mblock">
+    <span class="eyebrow">Verification</span>
+    <ul>
+      <li>Deployed through the RCCL v4 tuner plugin. Plugin firing checked per run: <code>TUNER/Plugin: Using DN-TUNER (v4)</code> in 56/56 config per-rank logs, and no DN-TUNER line in any of the 56 default logs.</li>
+      <li>Selection verified per size from the run&rsquo;s own algo/proto/channel columns; identical across all 7 repeats at every size in both arms.</li>
+      <li>Keep threshold: P(sup) &ge; 0.95 and gain &gt; 2.0%.</li>
+      <li>Both arms ran under identical <code>NCCL_DEBUG=INFO</code>&rarr;file logging, which is measured to be free (mean &minus;0.06%), so the comparison is not biased by it.</li>
+    </ul>
+  </div>
+  <p class="caveat"><b>Two things this page does not claim.</b>
+  First, these busbw numbers are not comparable to the sweep-measured ones: the sweep and this A/B
+  reach the GPUs by different launch paths (<code>mpirun</code> vs <code>srun</code>), which shifts
+  absolute bandwidth. Every comparison here is between the two arms of this A/B only, which were
+  launched identically &mdash; the A/B is self-contained.
+  Second, at the smallest sizes busbw is printed to two decimals, so one least-significant digit is
+  worth about 3.1% at 4K. The gains there
+  (+12.5% at 4K) are several digits wide and survive that limit, but the
+  precision floor is real and the small-size percentages should not be read past one decimal.</p>
+</div>
+
+<p class="foot">Run 2026-08-04-2-ab1node &middot; every figure on this page parsed from
+2026-08-04-2-ab1node/&#123;logs/,candidate.conf,validate_report.txt&#125;</p>
+
+</div></div>
+<script>
+(function(){
+  var D=[{"s":"4K","d":0.32,"c":0.36,"dl":"TREE/LL/1","cl":"TREE/LL/2","g":12.5,"dr":"0.32\u20130.33","cr":"0.34\u20130.37"},{"s":"8K","d":0.55,"c":0.71,"dl":"TREE/LL/1","cl":"TREE/LL/4","g":29.1,"dr":"0.53\u20130.56","cr":"0.70\u20130.72"},{"s":"16K","d":0.86,"c":1.25,"dl":"TREE/LL/1","cl":"TREE/LL/8","g":45.3,"dr":"0.84\u20130.87","cr":"1.19\u20131.34"},{"s":"32K","d":1.71,"c":2.67,"dl":"TREE/LL/2","cl":"TREE/LL/16","g":56.1,"dr":"1.69\u20131.72","cr":"2.48\u20132.72"},{"s":"64K","d":3.27,"c":5.24,"dl":"TREE/LL/4","cl":"TREE/LL/32","g":60.2,"dr":"3.25\u20133.28","cr":"5.20\u20135.29"},{"s":"128K","d":6.31,"c":8.35,"dl":"TREE/LL/8","cl":"RING/LL/8","g":32.3,"dr":"6.20\u20136.41","cr":"8.15\u20138.73"},{"s":"256K","d":12.55,"c":17.51,"dl":"TREE/LL/16","cl":"RING/LL/16","g":39.5,"dr":"11.95\u201312.64","cr":"17.43\u201317.63"},{"s":"512K","d":21.2,"c":34.56,"dl":"RING/SIMPLE/16","cl":"RING/LL/32","g":63.0,"dr":"21.09\u201321.31","cr":"34.16\u201334.71"},{"s":"1M","d":41.68,"c":47.85,"dl":"RING/SIMPLE/32","cl":"RING/LL/32","g":14.8,"dr":"41.52\u201341.93","cr":"46.55\u201348.30"},{"s":"2M","d":79.41,"c":78.44,"dl":"RING/SIMPLE/56","cl":"RING/SIMPLE/32","g":-1.2,"dr":"79.12\u201379.88","cr":"77.90\u201378.76"},{"s":"4M","d":128.22,"c":124.76,"dl":"RING/SIMPLE/56","cl":"RING/SIMPLE/32","g":-2.7,"dr":"127.78\u2013128.59","cr":"124.24\u2013125.23"},{"s":"8M","d":197.68,"c":195.37,"dl":"RING/SIMPLE/56","cl":"RING/SIMPLE/48","g":-1.2,"dr":"197.50\u2013198.09","cr":"195.03\u2013196.26"},{"s":"16M","d":268.83,"c":267.65,"dl":"RING/SIMPLE/56","cl":"RING/SIMPLE/56","g":-0.4,"dr":"268.43\u2013269.16","cr":"267.23\u2013268.30"},{"s":"32M","d":317.79,"c":317.07,"dl":"RING/SIMPLE/56","cl":"RING/SIMPLE/56","g":-0.2,"dr":"316.99\u2013318.26","cr":"316.39\u2013317.86"},{"s":"64M","d":355.63,"c":130.12,"dl":"RING*/SIMPLE/56","cl":"RING*/SIMPLE/12","g":-63.4,"dr":"355.03\u2013357.08","cr":"129.73\u2013130.26"},{"s":"128M","d":379.85,"c":134.85,"dl":"RING*/SIMPLE/56","cl":"RING*/SIMPLE/12","g":-64.5,"dr":"378.96\u2013380.16","cr":"134.63\u2013135.01"},{"s":"256M","d":389.74,"c":134.99,"dl":"RING*/SIMPLE/56","cl":"RING*/SIMPLE/12","g":-65.4,"dr":"388.99\u2013390.36","cr":"134.89\u2013135.39"},{"s":"512M","d":396.12,"c":135.96,"dl":"RING*/SIMPLE/56","cl":"RING*/SIMPLE/12","g":-65.7,"dr":"395.64\u2013396.27","cr":"135.83\u2013136.11"}];
+  var plot=document.getElementById('plotMain'); if(!plot) return;
+  var tip=document.getElementById('tip'), xh=document.getElementById('xh');
+  var svg=plot.querySelector("svg");
+  var hits=plot.querySelectorAll('.hit');
+  function show(i,f){
+    var d=D[i];
+    tip.innerHTML='<span class="ts">'+d.s+'</span>'+
+      '<span class="tr tD">default<b>'+d.d.toFixed(2)+' GB/s</b></span>'+
+      '<span class="tr tsel"><span></span><span>'+d.dl+'</span></span>'+
+      '<span class="tr tC">config<b>'+d.c.toFixed(2)+' GB/s</b></span>'+
+      '<span class="tr tsel"><span></span><span>'+d.cl+'</span></span>'+
+      '<span class="tr tg">change<b class="'+(d.g>=0?'pos':'neg')+'">'+(d.g>=0?'+':'')+d.g.toFixed(1)+'%</b></span>';
+    var c=Math.min(0.88,Math.max(0.12,f));
+    tip.style.left=(c*100)+'%';
+    tip.classList.add('on');
+    xh.setAttribute('x1',f*1000); xh.setAttribute('x2',f*1000);
+    xh.setAttribute('y1',24); xh.setAttribute('y2',354);
+    xh.style.opacity='1';
+  }
+  function hide(){ tip.classList.remove('on'); xh.style.opacity='0'; }
+  hits.forEach(function(h){
+    var i=+h.dataset.i, f=+h.dataset.f;
+    h.addEventListener('mouseenter',function(){show(i,f);});
+    h.addEventListener('mousemove',function(){show(i,f);});
+  });
+  plot.addEventListener('mouseleave',hide);
+})();
+</script>
