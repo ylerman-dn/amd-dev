@@ -11,6 +11,7 @@ optimize_metrics() for why time_ip_us is unsafe under -C/--report_cputime.
 """
 
 import argparse
+import sys
 import pandas as pd
 from pathlib import Path
 
@@ -35,6 +36,25 @@ def optimize_metrics(input_file: str, output_file: str = None, tolerance_pct: fl
     """
     # Read the input CSV
     df = pd.read_csv(input_file)
+
+    # GPU-107: refuse to select silently on un-medianed data.
+    # If the caller hands us raw sweep output, each configuration appears once per repeat. The
+    # selection below takes a max over the group, so it would pick the single luckiest sample out of
+    # ~90-160 per size, and then derive the tolerance window from that inflated best. Both errors
+    # push in the same direction and neither is visible in the output.
+    # merge_metrics.py --median is the fix; this only warns, because an operator may legitimately be
+    # inspecting raw data.
+    _dup_cols = [c for c in ('size_bytes', 'algo', 'proto', 'nchannels',
+                             'requested_algo', 'requested_proto') if c in df.columns]
+    if _dup_cols:
+        _dups = int(df.duplicated(subset=_dup_cols).sum())
+        if _dups:
+            print(f"WARNING: {_dups} of {len(df)} rows repeat a (size, algo, proto, channels) key, "
+                  f"so this looks like raw per-repeat output rather than medians.\n"
+                  f"         Selection takes a max within each size, so it will pick the luckiest "
+                  f"single repeat and widen the tolerance window from it.\n"
+                  f"         Run: merge_metrics.py --base-path <dir> -o <file> --median",
+                  file=sys.stderr)
 
     # Define the grouping columns
     group_cols = ['collective', 'num_nodes', 'num_gpus', 'size_bytes']

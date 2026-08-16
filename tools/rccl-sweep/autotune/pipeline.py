@@ -589,11 +589,16 @@ class AutoTunePipeline:
             self._log(f"  [DRY RUN] Would merge metrics to {merged_path}")
             return merged_path
         
+        # GPU-107: --median collapses the repeats before optimize_metrics.py sees them. Without it
+        # that step maxes over every repeat of every configuration -- the single luckiest sample per
+        # size -- and derives its tolerance window from that inflated best. This path fed it raw
+        # rows until 2026-08-16.
         cmd = [
             sys.executable,
             self.config.merge_script,
             '--base-path', str(self.config.output_dir),
             '-o', str(merged_path),
+            '--median',
         ]
         
         self._log(f"  Merging to: {merged_path}")
