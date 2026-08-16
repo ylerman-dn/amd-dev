@@ -526,16 +526,47 @@ def run_sweep(args, config: Dict[str, Any]):
                             
                             # Insert per-message-size metrics (granular data)
                             if parsed['success'] and parsed.get('metrics'):
-                                # GPU-107: our rccl-tests build emits no -M algo/proto/channel columns,
-                                # so the parser can't detect them. Stamp each per-size row with the
-                                # run's known forced values so optimize/generate steps have them.
+                                # GPU-107: record what RCCL ACTUALLY selected, never what we asked
+                                # for. RCCL substitutes silently (e.g. LL128 -> SIMPLE, TREE ->
+                                # RING at 1 node) and returns success, so requested != selected is
+                                # normal and must be visible. The previous version of this block
+                                # stamped the requested values in, which is how a config full of
+                                # unfireable ll128 rules got generated.
+                                #
+                                # `-A 1` supplies measured algo/proto (trustworthy). Its channel
+                                # column is a planned ceiling, not what ran -- real counts need
+                                # NCCL_DEBUG=INFO `channel{Lo..Hi}` -- so channels stay marked
+                                # unverified here.
+                                _subst = 0
                                 for _m in parsed['metrics']:
-                                    if not _m.get('nchannels'):
-                                        _m['nchannels'] = actual_nchannels
-                                    if not _m.get('algo'):
-                                        _m['algo'] = algo
-                                    if not _m.get('proto'):
-                                        _m['proto'] = proto
+                                    _m['requested_algo'] = algo
+                                    _m['requested_proto'] = proto
+                                    _m['requested_nchannels'] = num_channels
+
+                                    # normalise the RCCL addon marker: RING* is WarpSpeed-on-ring.
+                                    # Keep the raw value too so the addon is not lost.
+                                    _meas_algo = _m.get('algo')
+                                    _m['measured_algo_raw'] = _meas_algo
+                                    if _meas_algo:
+                                        _m['algo'] = _meas_algo.rstrip('*')
+
+                                    # a row only counts as honoured if BOTH requested fields came
+                                    # back unchanged (a None request means "default", always honoured)
+                                    _algo_ok = (algo is None) or (
+                                        _m.get('algo', '').upper() == str(algo).upper())
+                                    _proto_ok = (proto is None) or (
+                                        str(_m.get('proto', '')).upper() == str(proto).upper())
+                                    _m['substituted'] = 0 if (_algo_ok and _proto_ok) else 1
+                                    _subst += _m['substituted']
+
+                                    # -A 1's channel column is a ceiling; do not present it as truth
+                                    _m['nchannels_source'] = 'A_flag_ceiling'
+
+                                if _subst:
+                                    print(f"  {Fore.YELLOW}substituted: {_subst}/{len(parsed['metrics'])} "
+                                          f"sizes did NOT honour {algo}/{proto} "
+                                          f"(measured {parsed.get('detected_algo')}/"
+                                          f"{parsed.get('detected_proto')}){Style.RESET_ALL}")
                                 db.insert_metrics(run_id, parsed['metrics'])
         
         # Complete session

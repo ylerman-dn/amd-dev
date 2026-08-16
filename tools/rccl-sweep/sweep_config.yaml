@@ -16,12 +16,38 @@ test_defaults:
   max_bytes: "16G"          # -e parameter
   step_factor: 2            # -f parameter
   gpus_per_rank: 1          # -g parameter
-  iterations: 5             # -n parameter
+  # GPU-107: -n 20 -w 5 matches every trusted measurement in results-tuning/.
+  # Measured on busbw_ip across 540 (size, algo, proto, channels) points, 3 repeats
+  # each, 1 node -- comparing the -n 5 sweep against the -n 20 sweep:
+  #            median spread   p90     points over 5%
+  #   -n 5       0.95%        6.06%    65 of 540 (12%)
+  #   -n 20      0.64%        2.59%    18 of 540 ( 3%)
+  # The median is already fine at -n 5; what -n 20 buys is the TAIL. Points whose
+  # own spread exceeds optimize_metrics.py's 5% tolerance can win that comparison
+  # by luck, and -n 20 cuts them from 12% to 3%.
+  # Cost is ~25% wall time, not 4x: per-run fixed cost (process start, RCCL init,
+  # 18 size setups) dominates the iteration loop. See results-tuning/TIMINGS.md.
+  # Evidence: results-tuning/2026-08-04-1-sweep1node/{merged.csv,superseded-n5/merged.csv}
+  iterations: 20            # -n parameter
   warmup_iters: 5           # -w parameter
   check_iters: 1            # -c parameter
-  report_cputime: 1         # -R parameter (report CPU time)
-  show_algo_proto_channels: 1 # -M parameter (show algorithm, protocol, and channels)
+  # GPU-107: MUST stay 0. -C/--report_cputime replaces the time column with CPU
+  # launch time (~constant regardless of collective duration), which makes
+  # time-based ranking meaningless. busbw is unaffected, but leave this off so the
+  # time column stays wall-clock and usable.
+  report_cputime: 0         # -C parameter (report CPU time) - keep 0
+  # GPU-107: emitted as -A (--output_algo_proto_channels) on this build, NOT -M.
+  # Here -M is --memory_report. Upstream rccl-tests uses -M; ours moved it.
+  show_algo_proto_channels: 1 # -A parameter (show algorithm, protocol, and channels)
   timeout: 600              # seconds per test
+
+# GPU-107: keep every run's NCCL_DEBUG=INFO log next to its results, as dbg_%p.log in the run folder.
+# Without it no sweep row meets this project's verification bar -- "a run only counts if the log
+# confirms which algo/proto/nchannels were actually SELECTED" -- because -A 1 alone is untrustworthy
+# for channels (it reports a planned ceiling, not what ran).
+# Free within measurement resolution: mean -0.06% across 18 sizes, 5-repeat ranges overlapping 18/18
+# (results-tuning/2026-08-03-5-lognoise/). Costs disk: roughly 1 MB per rank per run.
+keep_info_logs: true
 
 # Node Configuration
 nodes:
@@ -74,6 +100,14 @@ env_vars:
   IONIC_RCQ_SIGN_BIT: 15
   IONIC_LOCKFREE: "all"
   
+  # Open MPI transport selection. GPU-107: these lived only in
+  # results-tuning/2026-08-03-9-multinode/run_mn.sh, so the A/B did not get them unless whoever ran
+  # it remembered to type them. Without them mpirun falls back to the management network and 2+ node
+  # runs hang on connect() to 172.30.160.x:1024.
+  OMPI_MCA_btl: "self,vader,tcp"
+  OMPI_MCA_pml: "ob1"
+  OMPI_MCA_btl_tcp_if_include: "enp81s0f1np1"
+
   # Other NCCL settings
   HSA_NO_SCRATCH_RECLAIM: 1
   NCCL_IGNORE_CPU_AFFINITY: 1
@@ -81,6 +115,10 @@ env_vars:
   NCCL_PXN_DISABLE: 0
   
   # Debug/dump settings
+  # GPU-107: overridden to INFO per-run by sweep_executor.py, which also sets NCCL_DEBUG_FILE so the
+  # log lands in that run's own folder. Kept as VERSION here so any code path that does NOT set a
+  # debug file cannot accidentally put INFO on stdout, where it costs up to 4% and interleaves with
+  # the data rows. See keep_info_logs below.
   NCCL_DEBUG: "VERSION"
   NCCL_TOPO_DUMP_FILE: "/tmp/system_run2.txt"
   NCCL_GRAPH_DUMP_FILE: "/tmp/dump_graph.txt"

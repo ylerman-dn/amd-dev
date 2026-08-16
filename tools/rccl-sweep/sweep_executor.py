@@ -91,7 +91,8 @@ class SweepExecutor:
                             num_channels: Optional[int] = None,
                             test_params: Optional[Dict] = None,
                             algo: Optional[str] = None,
-                            proto: Optional[str] = None) -> Tuple[List[str], Dict[str, str]]:
+                            proto: Optional[str] = None,
+                            debug_file: Optional[str] = None) -> Tuple[List[str], Dict[str, str]]:
         """Build the mpirun command with all environment variables.
         
         Args:
@@ -137,6 +138,27 @@ class SweepExecutor:
                 "Set MY_PATH environment variable or provide absolute path in sweep_config.yaml"
             )
         
+        # GPU-107: keep the INFO log for every swept run.
+        # CLAUDE.md's standard measured run is NCCL_DEBUG=INFO -> NCCL_DEBUG_FILE=<path>_%p.log, and
+        # the A/B harness already does it -- but the sweep did not, so no sweep row could be verified
+        # in the sense the project requires ("a run only counts if the log confirms which
+        # algo/proto/nchannels were actually SELECTED"). It relied on -A 1 alone, which is explicitly
+        # untrustworthy for channel counts: that column reports a planned ceiling, not what ran.
+        #
+        # Concretely, this is why 2-node 32K could not be explained: the unforced default measured
+        # 1.510/1.490/1.510 and a run forced to the same TREE/LL/16 measured 1.500/1.370/1.370, and
+        # whether they really ran the same channel span is unrecoverable without these logs.
+        #
+        # The cost is measured, not assumed: INFO to a FILE is free within resolution -- mean -0.06%
+        # across 18 sizes with 5-repeat ranges overlapping 18/18
+        # (results-tuning/2026-08-03-5-lognoise/). INFO to stdout is NOT free (up to -4% at small
+        # sizes) and would also interleave with the data rows, so it is never used.
+        # The %p keeps 8 ranks from sharing one descriptor.
+        if debug_file and self.config.get('keep_info_logs', True):
+            env_vars['NCCL_DEBUG'] = 'INFO'
+            env_vars.setdefault('NCCL_DEBUG_SUBSYS', 'INIT,TUNING,GRAPH,ENV')
+            env_vars['NCCL_DEBUG_FILE'] = debug_file
+
         # Set library paths using the single path
         env_vars['LD_LIBRARY_PATH'] = f"/usr/local/lib:{rccl_path}/:/opt/rocm/bin"
         # GPU-107: our bin/ has no librccl-net.so (built-in net_ib works on this fabric); preload only librccl.so
@@ -183,11 +205,22 @@ class SweepExecutor:
         cmd.extend(['-n', str(test_defaults.get('iterations', 20))])
         cmd.extend(['-w', str(test_defaults.get('warmup_iters', 5))])
         cmd.extend(['-c', str(test_defaults.get('check_iters', 1))])
-        cmd.extend(['-M', str(test_defaults.get('show_algo_proto_channels', 1))])
-        
+        # GPU-107: the selection-reporting flag on this build is -A
+        # (--output_algo_proto_channels). It is NOT -M: here -M is --memory_report.
+        # Upstream rccl-tests uses -M; ours moved it. Verified via --help and by
+        # observing 13-field rows with -M vs 16-field rows with -A.
+        cmd.extend(['-A', str(test_defaults.get('show_algo_proto_channels', 1))])
+
+        # GPU-107: -R on this build is --local_register (buffer registration), NOT
+        # --report_cputime (that is -C). Passing -R silently changed performance.
         if test_defaults.get('report_cputime'):
-            cmd.extend(['-R', str(test_defaults.get('report_cputime', 1))])
-        
+            cmd.extend(['-C', str(test_defaults.get('report_cputime', 1))])
+
+        # Results on a separate stream: NCCL_DEBUG=INFO interleaves with stdout and
+        # destroys whole-line parsing of the data rows.
+        if test_defaults.get('csv_report'):
+            cmd.extend(['-Z', 'csv', '-X', str(test_defaults.get('csv_report'))])
+
         return cmd, env_vars
     
     def execute_test(self,
@@ -217,21 +250,9 @@ class SweepExecutor:
             Dictionary with execution results
         """
         start_time = time.time()
-        
-        # Build command
-        cmd, env_vars = self.build_mpirun_command(
-            collective=collective,
-            host_string=host_string,
-            num_gpus=num_gpus,
-            num_channels=num_channels,
-            test_params=test_params,
-            algo=algo,
-            proto=proto
-        )
-        
-        cmd_str = ' '.join(shlex.quote(c) if ' ' in c else c for c in cmd)
-        
-        # Create output directory for this run (include channels/algo/proto in name if set)
+
+        # GPU-107: the run directory is now decided BEFORE the command is built, because the INFO
+        # log path has to be baked into the environment that mpirun exports.
         run_name = f"{collective}_{num_nodes}node"
         if num_channels:
             run_name += f"_{num_channels}ch"
@@ -240,7 +261,21 @@ class SweepExecutor:
         if proto:
             run_name += f"_{proto}"
         run_dir = self.output_dir / run_name
-        run_dir.mkdir(exist_ok=True)
+        run_dir.mkdir(parents=True, exist_ok=True)
+
+        # Build command
+        cmd, env_vars = self.build_mpirun_command(
+            collective=collective,
+            host_string=host_string,
+            num_gpus=num_gpus,
+            num_channels=num_channels,
+            test_params=test_params,
+            algo=algo,
+            proto=proto,
+            debug_file=str(run_dir / "dbg_%p.log"),
+        )
+        
+        cmd_str = ' '.join(shlex.quote(c) if ' ' in c else c for c in cmd)
         
         # Save command
         cmd_file = run_dir / "command.txt"
