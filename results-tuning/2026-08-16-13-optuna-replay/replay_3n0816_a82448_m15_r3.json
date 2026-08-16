@@ -1,0 +1,214 @@
+{
+  "runs": 102,
+  "full_runs": 162,
+  "saving_pct": 37.0,
+  "configs": 34,
+  "full_configs": 54,
+  "alive_combos": [
+    [
+      "RING",
+      "LL128"
+    ],
+    [
+      "RING",
+      "SIMPLE"
+    ],
+    [
+      "TREE",
+      "LL"
+    ],
+    [
+      "TREE",
+      "LL128"
+    ],
+    [
+      "TREE",
+      "SIMPLE"
+    ]
+  ],
+  "exact": 18,
+  "n_sizes": 18,
+  "worst_gap_pct": 0.0,
+  "rows": [
+    {
+      "size": 4096,
+      "grid_cfg": "TREE/LL/2",
+      "grid_busbw": 0.11,
+      "adaptive_cfg": "TREE/LL/2",
+      "adaptive_busbw_fullmed": 0.11,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 8192,
+      "grid_cfg": "TREE/LL/4",
+      "grid_busbw": 0.22,
+      "adaptive_cfg": "TREE/LL/4",
+      "adaptive_busbw_fullmed": 0.22,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 16384,
+      "grid_cfg": "TREE/LL/8",
+      "grid_busbw": 0.43,
+      "adaptive_cfg": "TREE/LL/8",
+      "adaptive_busbw_fullmed": 0.43,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 32768,
+      "grid_cfg": "TREE/LL/16",
+      "grid_busbw": 0.83,
+      "adaptive_cfg": "TREE/LL/16",
+      "adaptive_busbw_fullmed": 0.83,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 65536,
+      "grid_cfg": "TREE/LL/32",
+      "grid_busbw": 1.58,
+      "adaptive_cfg": "TREE/LL/32",
+      "adaptive_busbw_fullmed": 1.58,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 131072,
+      "grid_cfg": "TREE/LL128/16",
+      "grid_busbw": 2.89,
+      "adaptive_cfg": "TREE/LL128/16",
+      "adaptive_busbw_fullmed": 2.89,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 262144,
+      "grid_cfg": "TREE/LL128/48",
+      "grid_busbw": 5.5,
+      "adaptive_cfg": "TREE/LL128/48",
+      "adaptive_busbw_fullmed": 5.5,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 524288,
+      "grid_cfg": "TREE/LL128/32",
+      "grid_busbw": 10.27,
+      "adaptive_cfg": "TREE/LL128/32",
+      "adaptive_busbw_fullmed": 10.27,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 1048576,
+      "grid_cfg": "TREE/LL128/48",
+      "grid_busbw": 18.84,
+      "adaptive_cfg": "TREE/LL128/48",
+      "adaptive_busbw_fullmed": 18.84,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 2097152,
+      "grid_cfg": "TREE/LL128/48",
+      "grid_busbw": 35.18,
+      "adaptive_cfg": "TREE/LL128/48",
+      "adaptive_busbw_fullmed": 35.18,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 4194304,
+      "grid_cfg": "TREE/LL128/48",
+      "grid_busbw": 61.93,
+      "adaptive_cfg": "TREE/LL128/48",
+      "adaptive_busbw_fullmed": 61.93,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 8388608,
+      "grid_cfg": "TREE/LL128/48",
+      "grid_busbw": 102.19,
+      "adaptive_cfg": "TREE/LL128/48",
+      "adaptive_busbw_fullmed": 102.19,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 16777216,
+      "grid_cfg": "TREE/LL128/48",
+      "grid_busbw": 149.45,
+      "adaptive_cfg": "TREE/LL128/48",
+      "adaptive_busbw_fullmed": 149.45,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 33554432,
+      "grid_cfg": "RING/LL128/32",
+      "grid_busbw": 203.81,
+      "adaptive_cfg": "RING/LL128/32",
+      "adaptive_busbw_fullmed": 203.81,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 67108864,
+      "grid_cfg": "RING/LL128/40",
+      "grid_busbw": 267.98,
+      "adaptive_cfg": "RING/LL128/40",
+      "adaptive_busbw_fullmed": 267.98,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 134217728,
+      "grid_cfg": "RING/LL128/40",
+      "grid_busbw": 271.37,
+      "adaptive_cfg": "RING/LL128/40",
+      "adaptive_busbw_fullmed": 271.37,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 268435456,
+      "grid_cfg": "RING/SIMPLE/48",
+      "grid_busbw": 344.52,
+      "adaptive_cfg": "RING/SIMPLE/48",
+      "adaptive_busbw_fullmed": 344.52,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 536870912,
+      "grid_cfg": "RING/SIMPLE/48",
+      "grid_busbw": 374.16,
+      "adaptive_cfg": "RING/SIMPLE/48",
+      "adaptive_busbw_fullmed": 374.16,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    }
+  ]
+}
