@@ -39,6 +39,14 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--tx3)
   eight predictions landed within ~1.5% of what was later measured.</div>
   <span class="b">prediction</span></a>
 
+<h2>Measurement quality</h2>
+<a class="c" href="variance.html">
+  <div class="t">Sweep variance — the same config, measured three times</div>
+  <div class="d">Every config-size point from the 2026-08-04 sweeps with all three runs and the
+  spread between them. Median 0.65%, p90 4.5%, a long tail of stalled runs. This is the noise the
+  tuner has to see through, and it sets both the tolerance and the repeat count.</div>
+  <span class="b">data</span></a>
+
 <h2>Earlier — 2026-08-04, 5% selection tolerance</h2>
 <a class="c" href="1-node.html"><div class="t">1 node</div><div class="d">8 of 12 rules, +12.5% to +63.0%</div></a>
 <a class="c" href="2-node.html"><div class="t">2 nodes</div><div class="d">1 of 13 rules, +11.1% at 32M</div></a>

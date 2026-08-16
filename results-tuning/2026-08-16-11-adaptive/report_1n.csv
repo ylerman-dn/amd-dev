@@ -1,0 +1,11 @@
+collective,min_bytes,max_bytes,min_human,max_human,algorithm,protocol,channels,num_nodes,num_ranks
+allreduce,4096,4096,4KB,4KB,tree,ll,2,1,8
+allreduce,8192,8192,8KB,8KB,tree,ll,8,1,8
+allreduce,16384,16384,16KB,16KB,tree,ll,16,1,8
+allreduce,32768,65536,32KB,64KB,tree,ll,40,1,8
+allreduce,131072,131072,128KB,128KB,tree,ll,32,1,8
+allreduce,262144,262144,256KB,256KB,ring,ll,32,1,8
+allreduce,524288,524288,512KB,512KB,ring,ll,56,1,8
+allreduce,1048576,1048576,1MB,1MB,ring,ll,40,1,8
+allreduce,2097152,2097152,2MB,2MB,ring,simple,48,1,8
+allreduce,4194304,536870912,4MB,512MB,ring,simple,56,1,8
