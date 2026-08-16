@@ -6,6 +6,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stddef.h>
+
+#ifdef DN_TUNER_V5
+#include "tuner_v5.h"
+#endif
 
 #define __hidden __attribute__ ((visibility("hidden")))
 #define MAX_LINE_LENGTH 256
@@ -465,9 +470,169 @@ __hidden ncclResult_t pluginDestroy(void* context) {
 
 #define PLUGIN_NAME "DN-TUNER"
 
+#ifdef DN_TUNER_V5
+/* ---------------------------------------------------------------------------
+ * v5 entry points. Same rule-file behaviour as v4 (getCollInfo is shared and
+ * byte-identical); additionally v5 receives RCCL's internal cost-model
+ * constants at init and may rewrite them. By default they are logged and left
+ * UNTOUCHED — overrides are applied only when NCCL_TUNER_CONSTANTS_FILE is
+ * set, so the parity build and the experiment build are the same binary.
+ * ------------------------------------------------------------------------- */
+
+typedef struct {
+  const char* name;
+  size_t offset;   // into ncclTunerConstants_v5_t
+  int nd;          // 2 or 3 dimensions
+  int d0, d1, d2;  // d2 unused when nd==2; innermost dimension is always 3
+} ConstantsField;
+
+static const ConstantsField kConstantsFields[] = {
+  {"baseLatencies",        offsetof(ncclTunerConstants_v5_t, baseLatencies),        2, NCCL_NUM_ALGORITHMS_V5, NCCL_NUM_PROTOCOLS_V5, 0},
+  {"hwLatencies",          offsetof(ncclTunerConstants_v5_t, hwLatencies),          3, NCCL_NUM_HW_LINKS_V5, NCCL_NUM_ALGORITHMS_V5, NCCL_NUM_PROTOCOLS_V5},
+  {"llMaxBws",             offsetof(ncclTunerConstants_v5_t, llMaxBws),             2, NCCL_NUM_COMPCAPS_V5, NCCL_NUM_TUNING_SCALES_V5, 0},
+  {"perChMaxRingLL128Bws", offsetof(ncclTunerConstants_v5_t, perChMaxRingLL128Bws), 2, NCCL_NUM_COMPCAPS_V5, NCCL_NUM_TUNING_SCALES_V5, 0},
+  {"perChMaxTreeLL128Bws", offsetof(ncclTunerConstants_v5_t, perChMaxTreeLL128Bws), 2, NCCL_NUM_COMPCAPS_V5, NCCL_NUM_TUNING_SCALES_V5, 0},
+  {"perChMaxTreeBws",      offsetof(ncclTunerConstants_v5_t, perChMaxTreeBws),      2, NCCL_NUM_COMPCAPS_V5, NCCL_NUM_TUNING_SCALES_V5, 0},
+  {"perChMaxNVLSTreeBws",  offsetof(ncclTunerConstants_v5_t, perChMaxNVLSTreeBws),  2, NCCL_NUM_COMPCAPS_V5, NCCL_NUM_TUNING_SCALES_V5, 0},
+};
+#define NUM_CONSTANTS_FIELDS ((int)(sizeof(kConstantsFields)/sizeof(kConstantsFields[0])))
+
+// Dump every constant RCCL handed us. This is the record of RCCL's default
+// cost model on this system, and doubles as a layout check: a struct-size
+// mismatch with the runtime would show up here as garbage values.
+static void logConstants(TunerContext* ctx, const ncclTunerConstants_v5_t* c) {
+  if (!ctx->logFunction) return;
+  for (int f = 0; f < NUM_CONSTANTS_FIELDS; f++) {
+    const ConstantsField* fld = &kConstantsFields[f];
+    const double* base = (const double*)((const char*)c + fld->offset);
+    if (fld->nd == 2) {
+      for (int i = 0; i < fld->d0; i++)
+        ctx->logFunction(NCCL_LOG_INFO, NCCL_TUNING, __FILE__, __LINE__,
+                         "DN-TUNER/Plugin: constants %s[%d] = %.6g %.6g %.6g",
+                         fld->name, i, base[i*fld->d1], base[i*fld->d1+1], base[i*fld->d1+2]);
+    } else {
+      for (int i = 0; i < fld->d0; i++)
+        for (int j = 0; j < fld->d1; j++)
+          ctx->logFunction(NCCL_LOG_INFO, NCCL_TUNING, __FILE__, __LINE__,
+                           "DN-TUNER/Plugin: constants %s[%d][%d] = %.6g %.6g %.6g",
+                           fld->name, i, j, base[(i*fld->d1+j)*fld->d2],
+                           base[(i*fld->d1+j)*fld->d2+1], base[(i*fld->d1+j)*fld->d2+2]);
+    }
+  }
+}
+
+// Apply overrides from NCCL_TUNER_CONSTANTS_FILE. One per line:
+//   llMaxBws[1][2]=25.0
+//   hwLatencies[2][0][1]=3.5
+// '#' comments and blank lines are skipped. Any unparseable line, unknown
+// field, wrong index count or out-of-range index FAILS init loudly rather
+// than silently measuring the wrong thing (RCCL then runs with no tuner,
+// which the validator's --plugin-must-fire converts into a failed run).
+static ncclResult_t applyConstantsOverrides(TunerContext* ctx, ncclTunerConstants_v5_t* c, const char* path) {
+  FILE* file = fopen(path, "r");
+  if (!file) {
+    if (ctx->logFunction)
+      ctx->logFunction(NCCL_LOG_WARN, NCCL_TUNING, __FILE__, __LINE__,
+                       "DN-TUNER/Plugin: NCCL_TUNER_CONSTANTS_FILE=%s set but unreadable — failing init", path);
+    return ncclInternalError;
+  }
+  char line[MAX_LINE_LENGTH];
+  int applied = 0;
+  while (fgets(line, sizeof(line), file)) {
+    char* s = line;
+    while (*s == ' ' || *s == '\t') s++;
+    if (*s == '#' || *s == '\n' || *s == '\0') continue;
+    s[strcspn(s, "\n")] = 0;
+
+    char name[64];
+    int i = -1, j = -1, k = -1, nidx;
+    double val;
+    if (sscanf(s, "%63[A-Za-z0-9_][%d][%d][%d]=%lf", name, &i, &j, &k, &val) == 5) nidx = 3;
+    else if (sscanf(s, "%63[A-Za-z0-9_][%d][%d]=%lf", name, &i, &j, &val) == 4) nidx = 2;
+    else {
+      if (ctx->logFunction)
+        ctx->logFunction(NCCL_LOG_WARN, NCCL_TUNING, __FILE__, __LINE__,
+                         "DN-TUNER/Plugin: cannot parse constants override '%s' — failing init", s);
+      fclose(file);
+      return ncclInternalError;
+    }
+
+    const ConstantsField* fld = NULL;
+    for (int f = 0; f < NUM_CONSTANTS_FIELDS; f++)
+      if (strcmp(kConstantsFields[f].name, name) == 0) { fld = &kConstantsFields[f]; break; }
+    if (!fld || fld->nd != nidx ||
+        i < 0 || i >= fld->d0 || j < 0 || j >= fld->d1 ||
+        (nidx == 3 && (k < 0 || k >= fld->d2))) {
+      if (ctx->logFunction)
+        ctx->logFunction(NCCL_LOG_WARN, NCCL_TUNING, __FILE__, __LINE__,
+                         "DN-TUNER/Plugin: bad constants override '%s' (unknown field, wrong dim count or index out of range) — failing init", s);
+      fclose(file);
+      return ncclInternalError;
+    }
+
+    double* base = (double*)((char*)c + fld->offset);
+    size_t idx = (fld->nd == 3) ? ((size_t)i*fld->d1 + j)*fld->d2 + k : (size_t)i*fld->d1 + j;
+    double old = base[idx];
+    base[idx] = val;
+    applied++;
+    if (ctx->logFunction)
+      ctx->logFunction(NCCL_LOG_INFO, NCCL_TUNING, __FILE__, __LINE__,
+                       "DN-TUNER/Plugin: constants override %s = %.6g (was %.6g)", s, val, old);
+  }
+  fclose(file);
+  if (ctx->logFunction)
+    ctx->logFunction(NCCL_LOG_INFO, NCCL_TUNING, __FILE__, __LINE__,
+                     "DN-TUNER/Plugin: applied %d constants override(s) from %s", applied, path);
+  return ncclSuccess;
+}
+
+__hidden ncclResult_t pluginInit_v5(void** context, uint64_t commId, size_t nRanks, size_t nNodes,
+                                    ncclDebugLogger_t logFunction, ncclNvlDomainInfo_v5_t* nvlDomainInfo,
+                                    ncclTunerConstants_v5_t* constants) {
+  ncclResult_t res = pluginInit(nRanks, nNodes, logFunction, context);
+  if (res != ncclSuccess) return res;
+  TunerContext* ctx = (TunerContext*)*context;
+
+  if (ctx->logFunction)
+    ctx->logFunction(NCCL_LOG_INFO, NCCL_TUNING, __FILE__, __LINE__,
+                     "DN-TUNER/Plugin: v5 init commId=0x%lx nvlDomains=%d minRanksPerDomain=%d maxRanksPerDomain=%d",
+                     (unsigned long)commId,
+                     nvlDomainInfo ? nvlDomainInfo->nNvlDomains : -1,
+                     nvlDomainInfo ? nvlDomainInfo->minRanksPerNvlDomain : -1,
+                     nvlDomainInfo ? nvlDomainInfo->maxRanksPerNvlDomain : -1);
+
+  if (constants) {
+    logConstants(ctx, constants);
+    const char* cfile = getenv("NCCL_TUNER_CONSTANTS_FILE");
+    if (cfile && cfile[0]) {
+      res = applyConstantsOverrides(ctx, constants, cfile);
+      if (res != ncclSuccess) {
+        pluginDestroy(*context);
+        *context = NULL;
+        return res;
+      }
+    }
+  } else if (ctx->logFunction) {
+    ctx->logFunction(NCCL_LOG_WARN, NCCL_TUNING, __FILE__, __LINE__,
+                     "DN-TUNER/Plugin: v5 init received NULL constants pointer");
+  }
+  return ncclSuccess;
+}
+
+const ncclTuner_v5_t ncclTunerPlugin_v5 = {
+  .name = PLUGIN_NAME,
+  .init = pluginInit_v5,
+  .getCollInfo = pluginGetCollInfo,
+  .finalize = pluginDestroy
+};
+
+#else /* !DN_TUNER_V5 — the unchanged v4 plugin */
+
 const ncclTuner_v4_t ncclTunerPlugin_v4 = {
   .name = PLUGIN_NAME,
   .init = pluginInit,
   .getCollInfo = pluginGetCollInfo,
   .destroy = pluginDestroy
 };
+
+#endif

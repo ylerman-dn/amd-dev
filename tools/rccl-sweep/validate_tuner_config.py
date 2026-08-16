@@ -274,8 +274,12 @@ def psup(a, b):
     return (wins + 0.5 * ties) / (len(a) * len(b))
 
 
-def run_once(args, nodes, conf_path, log_path):
-    """Run the benchmark once. Returns (busbw_by_size, seconds, hung?)."""
+def run_once(args, nodes, conf_path, log_path, plugin=None):
+    """Run the benchmark once. Returns (busbw_by_size, seconds, hung?).
+
+    `plugin` overrides args.plugin for this run — used by --baseline-plugin so the
+    two arms can load DIFFERENT plugin .so files with the same config (e.g. the
+    v4 plugin vs the v5 port, GPU-107 parity test 2026-08-16)."""
     env = dict(os.environ)
     env["LD_LIBRARY_PATH"] = f"{os.path.dirname(args.binary)}:{env.get('LD_LIBRARY_PATH','')}"
     # GPU-107: INFO to a FILE is free -- measured mean -0.06% across 18 sizes with
@@ -300,7 +304,7 @@ def run_once(args, nodes, conf_path, log_path):
             k, v = kv.split("=", 1)
             env[k] = v
     if conf_path:
-        env["NCCL_TUNER_PLUGIN"] = args.plugin
+        env["NCCL_TUNER_PLUGIN"] = plugin or args.plugin
         env["NCCL_TUNER_CONFIG_FILE"] = conf_path
 
     cmd = args.launcher.split() + [
@@ -380,6 +384,15 @@ def main():
     ap.add_argument("--binary", required=True, help="collective benchmark, e.g. .../all_reduce_perf")
     ap.add_argument("--plugin", default=os.environ.get("NCCL_TUNER_PLUGIN", ""),
                     help="path to the tuner plugin .so")
+    # GPU-107 (2026-08-16): plugin-vs-plugin A/B. When set, the 'default' arm is not
+    # RCCL's plain default but this plugin (+ --baseline-config, usually the same file
+    # as --config). Used to prove the v5 port behaves identically to the v4 plugin
+    # before any constants experiment — a port bug and a constants effect are
+    # indistinguishable without this.
+    ap.add_argument("--baseline-plugin", default="",
+                    help="load this plugin .so in the baseline arm (default: no plugin at all)")
+    ap.add_argument("--baseline-config", default="",
+                    help="tuner conf for the baseline arm (required with --baseline-plugin)")
     ap.add_argument("--launcher", default="srun", help="launcher prefix (default: srun)")
     # GPU-107 additions
     ap.add_argument("--jobid", default="", help="run inside this existing Slurm allocation")
@@ -447,6 +460,15 @@ def main():
         sys.exit(self_test())
 
     args = ap.parse_args()
+
+    if args.baseline_plugin and not args.baseline_config:
+        print("--baseline-plugin requires --baseline-config (a baseline arm with a plugin but no "
+              "config would never load the plugin, silently reverting to a plain-default arm)",
+              file=sys.stderr)
+        return 1
+    if args.baseline_config:
+        print(f"baseline arm: config={args.baseline_config} "
+              f"plugin={args.baseline_plugin or args.plugin} (NOT plain RCCL default)")
 
     # Resolve the base environment once, before anything runs, and record it with the run.
     default_cfg = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sweep_config.yaml")
@@ -536,9 +558,11 @@ def main():
             print(f"  {nodes}n warm-up {w}/{args.warmup_runs} done (discarded)", flush=True)
 
         for rep in range(1, args.repeats + 1):
-            for variant, conf in (("default", None), ("config", args.config)):
+            for variant, conf, plg in (("default", args.baseline_config or None, args.baseline_plugin or None),
+                                       ("config", args.config, None)):
                 tag = f"{nodes}n_{variant}_r{rep}"
-                data, secs, hung = run_once(args, nodes, conf, os.path.join(args.logdir, tag + ".log"))
+                data, secs, hung = run_once(args, nodes, conf, os.path.join(args.logdir, tag + ".log"),
+                                            plugin=plg)
                 total[(nodes, variant)] += 1
                 if hung:
                     hangs[(nodes, variant)] += 1
