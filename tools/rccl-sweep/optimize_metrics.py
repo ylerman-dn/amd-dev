@@ -27,9 +27,33 @@ def optimize_metrics(input_file: str, output_file: str = None, tolerance_pct: fl
         input_file: Path to the input metrics.csv file
         output_file: Path to the output file. If None, uses 'metrics_optimize.csv' 
                      in the same directory as input_file
-        tolerance_pct: Percentage tolerance below the best busbw_ip (default: 5%).
-            NOTE: this must be LARGER than the measurement's run-to-run spread or
-            the tie-break will select on noise. Check spread before trusting it.
+        tolerance_pct: Percentage below the best busbw_ip that still counts as tied.
+            Among the tied set, the fewest-channels configuration wins -- so this
+            number is literally "how much bandwidth we will trade for fewer
+            channels". Default lowered 5.0 -> 0.5 on 2026-08-16.
+
+            Measured over the three 2026-08-04 sweeps (3 nodes shown; 1 and 2
+            nodes behave the same):
+
+              tol    picks the best   avg given away   avg channels
+              0.0%       18 of 18          0.00%           34.1
+              0.5%       15 of 18          0.05%           33.7
+              1.0%       12 of 18          0.16%           31.9
+              5.0%        8 of 18          1.61%           24.8
+
+            5% gave away 1.61% mean (4.4% worst, at 512K) to save ~9 channels.
+            The channel saving is real -- fewer channels frees compute units --
+            but nothing here measures it, so it was a published cost for an
+            invisible benefit.
+
+            0.0% is optimal on bandwidth but picks whichever median came out
+            highest among near-ties, so the config drifts between sweeps. 0.5%
+            costs 0.05% and makes the choice deterministic instead.
+
+            The old advice on this line -- "must be LARGER than the run-to-run
+            spread" -- had it backwards. A window wider than the spread does not
+            protect against noise; it declares genuinely different configurations
+            tied and hands the decision to the tie-break.
     
     Returns:
         DataFrame with optimized metrics
@@ -160,8 +184,9 @@ def main():
     parser.add_argument(
         '-t', '--tolerance',
         type=float,
-        default=5.0,
-        help='Percentage tolerance below best busbw_ip (default: 5%%)'
+        default=0.5,
+        help='Percentage below the best busbw_ip that still counts as tied; among those, the '
+             'fewest-channels configuration wins (default: 0.5%%)'
     )
     
     args = parser.parse_args()
