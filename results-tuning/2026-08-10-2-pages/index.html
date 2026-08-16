@@ -1,13 +1,40 @@
-<!doctype html><meta charset=utf-8><title>GPU-107 — RCCL tuned vs default</title>
-<style>body{font:16px/1.6 system-ui,sans-serif;max-width:46rem;margin:4rem auto;padding:0 1.5rem;
-color:#1a1f24;background:#fbfcfd}@media(prefers-color-scheme:dark){body{color:#e6edf3;background:#151a1f}}
-a{display:block;padding:1rem 1.25rem;margin:.6rem 0;border:1px solid #8883;border-radius:8px;
-text-decoration:none;color:inherit}a:hover{border-color:#4a9eff}b{font-size:1.05rem}
-code{font:14px ui-monospace,monospace;opacity:.75}</style>
-<h1>GPU-107 — tuned RCCL config vs default</h1>
-<p>all_reduce on MI355X, RCCL 2.28.3-develop:2e42aa8. 7 interleaved repeats per arm,
-kept only at P(sup) &ge; 0.95 and &gt;2% median gain.</p>
-<a href="1-node.html"><b>1 node &mdash; 8 of 12 rules verified</b><br><code>+12.5% to +63.0% across 4K&ndash;1M</code></a>
-<a href="2-node.html"><b>2 nodes &mdash; 1 of 13 rules verified</b><br><code>+11.1% at 32M; defaults already tight</code></a>
-<a href="3-node.html"><b>3 nodes &mdash; 2 of 13 rules verified</b><br><code>+8.7% at 32M, +10.2% at 64M&ndash;128M; default dips at 128M</code></a>
-<p><code>results-tuning/2026-08-04-7-validated/validated_all_scales.conf</code> &mdash; the 11 shipped rules.</p>
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>GPU-107 results</title>
+<style>
+:root{color-scheme:light;--bg:#f6f6f4;--card:#fcfcfb;--tx:#0b0b0b;--tx2:#52514e;--tx3:#77766f;--ru:#e0dfda;--ac:#2a78d6;--ok:#0ca30c;--no:#d03b3b}
+@media(prefers-color-scheme:dark){:root:where(:not([data-theme=light])){--bg:#121211;--card:#1a1a19;--tx:#fff;--tx2:#c3c2b7;--tx3:#8e8d84;--ru:#33332f;--ac:#3987e5;color-scheme:dark}}
+:root[data-theme=dark]{--bg:#121211;--card:#1a1a19;--tx:#fff;--tx2:#c3c2b7;--tx3:#8e8d84;--ru:#33332f;--ac:#3987e5;color-scheme:dark}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);
+font:15px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.w{max-width:760px;margin:0 auto;padding:48px 24px 80px}
+h1{font-size:27px;margin:0 0 6px;letter-spacing:-.02em;font-weight:650}
+p{color:var(--tx2);margin:6px 0}
+a.c{display:block;background:var(--card);border:1px solid var(--ru);border-radius:10px;
+padding:18px 20px;margin:14px 0;text-decoration:none;color:inherit}
+a.c:hover{border-color:var(--ac)}
+.t{font-weight:640;font-size:16px}.d{color:var(--tx2);font-size:13.5px;margin-top:3px}
+.b{display:inline-block;font-size:11.5px;padding:2px 9px;border-radius:99px;border:1px solid var(--ru);color:var(--tx3);margin-top:9px}
+.b.ok{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 35%,transparent)}
+.b.no{color:var(--no);border-color:color-mix(in srgb,var(--no) 35%,transparent)}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--tx3);margin:32px 0 4px;font-weight:600}
+</style></head><body><div class="w">
+<h1>GPU-107 — RCCL tuning results</h1>
+<p>A/B of a generated tuner config against RCCL's default on MI355X.</p>
+
+<h2>Current — 2026-08-16, 1% selection tolerance</h2>
+<a class="c" href="1-node-2026-08-16.html">
+  <div class="t">1 node — 7 of 11 rules verified</div>
+  <div class="d">+9% to +66% from 4K to 1M, all at P(sup) 1.00. Includes the WarpSpeed channel-unit
+  fix and the GPU warm-up finding.</div>
+  <span class="b ok">valid</span></a>
+<a class="c" href="#" onclick="return false" style="opacity:.55;cursor:default">
+  <div class="t">2 and 3 nodes — not measured</div>
+  <div class="d">A co-tenant job was saturating the shared fabric; repeats of the same configuration
+  ranged 1.5–25 GB/s. Needs a quiet cluster.</div>
+  <span class="b no">void</span></a>
+
+<h2>Earlier — 2026-08-04, 5% selection tolerance</h2>
+<a class="c" href="1-node.html"><div class="t">1 node</div><div class="d">8 of 12 rules, +12.5% to +63.0%</div></a>
+<a class="c" href="2-node.html"><div class="t">2 nodes</div><div class="d">1 of 13 rules, +11.1% at 32M</div></a>
+<a class="c" href="3-node.html"><div class="t">3 nodes</div><div class="d">2 of 13 rules, +8.7% and +10.2%</div></a>
+</div></body></html>
