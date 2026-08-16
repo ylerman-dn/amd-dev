@@ -27,12 +27,17 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--tx3)
   <div class="d">+9% to +65% from 4K to 1M, all at P(sup) 1.00. WarpSpeed channel-unit bug found and fixed;
   ≥2M now matches the default exactly.</div>
   <span class="b ok">valid</span></a>
+<a class="c" href="multi-node.html">
+  <div class="t">2 and 3 nodes — 3 rules verified at each scale</div>
+  <div class="d">3 nodes: +12.7% @256K, +12.4% @64–128M, +16.7% @256M. 2 nodes: +7.1% @256K,
+  +10.8% @32M, +2.7% @128–256M. All at P(sup) 1.00, 0 hangs. The wins are algorithm and protocol
+  switches, not channel tuning.</div>
+  <span class="b ok">measured</span></a>
 <a class="c" href="multi-node-estimate.html">
-  <div class="t">2 and 3 nodes — estimate from existing sweep data</div>
-  <div class="d">No A/B possible: a co-tenant saturated the fabric (599% spread on identical runs).
-  Instead, RCCL's own default reference from the sweep vs the 1% config's choices — predicts 6 wins
-  at 3 nodes incl. +15.6% @256M, 2 at 2 nodes.</div>
-  <span class="b">prediction, not measured</span></a>
+  <div class="t">2 and 3 nodes — the prediction, published before the run</div>
+  <div class="d">Derived from the sweep's own default reference while the A/B was blocked. Five of
+  eight predictions landed within ~1.5% of what was later measured.</div>
+  <span class="b">prediction</span></a>
 
 <h2>Earlier — 2026-08-04, 5% selection tolerance</h2>
 <a class="c" href="1-node.html"><div class="t">1 node</div><div class="d">8 of 12 rules, +12.5% to +63.0%</div></a>
