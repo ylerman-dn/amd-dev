@@ -106,11 +106,12 @@ footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--rule);
 </header>
 
 <p class="lede">The tuned config beats RCCL's default at every message size from 4 KB to 1 MB, by
-9% to 66%. Above 2 MB the default is already optimal and the config correctly declines to change it.</p>
+9% to 65%. From 2 MB up the default is already optimal and the config leaves it alone — including
+≥64 MB, once a channel-unit bug in our own config was corrected.</p>
 
 <div class="tiles">
-  <div class="tile"><div class="k">Rules verified</div><div class="v">7 <span style="font-size:17px;color:var(--text-muted);font-weight:500">of 11</span></div><div class="n">every one at P(sup) 1.00</div></div>
-  <div class="tile"><div class="k">Best gain</div><div class="v" style="color:var(--good)">+65.7%</div><div class="n">at 512 KB</div></div>
+  <div class="tile"><div class="k">Rules verified</div><div class="v">7 <span style="font-size:17px;color:var(--text-muted);font-weight:500">of 12</span></div><div class="n">every one at P(sup) 1.00</div></div>
+  <div class="tile"><div class="k">Best gain</div><div class="v" style="color:var(--good)">+65.3%</div><div class="n">at 512 KB</div></div>
   <div class="tile"><div class="k">Range won</div><div class="v">4K–1M</div><div class="n">8 consecutive sizes</div></div>
   <div class="tile"><div class="k">Regressions shipped</div><div class="v">0</div><div class="n">≥2M falls through to default</div></div>
 </div>
@@ -122,18 +123,39 @@ footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--rule);
 </div>
 <figure>
   <div class="scroll"><svg id="c1" viewBox="0 0 940 430" role="img"
-     aria-label="Bus bandwidth versus message size, log-log. The tuned config is above the default from 4 KB to 1 MB, the two converge from 2 MB to 32 MB, and the config falls far below from 64 MB."></svg></div>
-  <figcaption>In-place bus bandwidth, median of 7 repeats. Both axes logarithmic. The drop at ≥64 MB is a
-  channel-unit bug, not a tuning result — explained below.</figcaption>
+     aria-label="Bus bandwidth versus message size, log-log. The tuned config is above the default from 4 KB to 1 MB; from 2 MB upward the two curves coincide."></svg></div>
+  <figcaption>In-place bus bandwidth, median of 7 repeats. Both axes logarithmic. From 2 MB the curves
+  sit on top of each other — the config deliberately matches the default there.</figcaption>
 </figure>
 
 <h2>Change vs default, per size</h2>
 <figure>
   <div class="scroll"><svg id="c2" viewBox="0 0 940 330" role="img"
-     aria-label="Percent change versus default per message size. Gains of 9 to 66 percent from 4 KB to 1 MB, near zero from 2 MB to 32 MB, and losses near 60 percent from 64 MB."></svg></div>
+     aria-label="Percent change versus default per message size. Gains of 9 to 65 percent from 4 KB to 1 MB, and within one percent of zero from 2 MB to 512 MB."></svg></div>
   <figcaption>Median % change. Blue is faster than default, red is slower. Bars are labelled directly;
   the table below carries every value.</figcaption>
 </figure>
+
+<h2>What actually ran, per size, per arm</h2>
+<p>Read back from the benchmark's own <code>-A 1</code> selection columns on every repeat, not from
+what the config requested. RCCL substitutes silently, so requested and selected are different claims.</p>
+<div class="card scroll">
+  <table id="sel">
+    <thead><tr><th>size</th><th>default selected</th><th>config selected</th><th>differs</th></tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+<p>What this makes visible: the default really does run <strong>1–16 channels</strong> below 512 KB,
+which is the whole headroom the config exploits. From 2 MB up, config and default converge on the same
+selection — which is why the curves coincide there.</p>
+<p>This table is also how the ≥64 MB bug was caught. In the first run the config selected
+<strong><code>RING*/SIMPLE/14</code></strong> against the default's <code>56</code>: the ÷4, visible in the
+selection columns rather than guessed at from the bandwidth drop. After the fix both arms read
+<code>RING*/SIMPLE/56</code>, as shown above.</p>
+<p class="meta" style="color:var(--text-muted);font-size:12.5px">Caveat: <code>-A 1</code> is trustworthy
+for algorithm and protocol, but its channel column reports a planned ceiling. Real per-channel spans come
+from <code>NCCL_DEBUG=INFO</code> <code>channel{Lo..Hi}</code>. Under WarpSpeed the figure shown is the
+base count, which is why 56 appears where 224 channels actually run.</p>
 
 <h2>Why the config wins at small sizes</h2>
 <p>RCCL's 1-node default uses very few channels below 256 KB — 1, 1, 1, 2, 4, 8, 16 for 4 KB through
@@ -141,43 +163,39 @@ footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--rule);
 channel count <em>up</em> was the untested direction; every earlier experiment in this project forced
 it down, which always hurt.</p>
 
-<h2 id="warpspeed">The ≥64 MB drop is a unit bug, and it is now fixed</h2>
-<p>At ≥64 MB RCCL enables <strong>WarpSpeed</strong> (<code>RING*</code> in the logs), which multiplies
-the channel count by 4. The sweep measured channels through an environment variable, which sets the
-<em>base</em> count. The plugin's <code>channels</code> field is the <em>post-multiplier total</em>.
-Same integer, four times the meaning.</p>
+<h2 id="warpspeed">The ≥64 MB channel-unit bug — found, fixed, re-measured</h2>
+<p>At ≥64 MB RCCL enables <strong>WarpSpeed</strong> by itself (<code>RING*</code> in the logs), which
+multiplies the channel count by 4. Nobody asks for it — both arms get it.</p>
+<p>It changes what a channel number <em>means</em>. The sweep set channels through an environment
+variable, which sets the <em>base</em> count. The plugin's <code>channels</code> field is the
+<em>post-multiplier total</em>. Same integer, four times the meaning — so a config that copies the swept
+number straight into a plugin rule under-provisions by 4×.</p>
 
 <div class="card">
   <table>
-    <thead><tr><th>How 48 was set</th><th>base</th><th>actual</th><th>result</th></tr></thead>
+    <thead><tr><th>how the number was set</th><th>base</th><th>actual</th><th>result at ≥64 MB</th></tr></thead>
     <tbody>
-      <tr><td class="k">env var, during the sweep</td><td>48</td><td>—</td><td>what we measured</td></tr>
+      <tr><td class="k">env var, during the sweep</td><td>56</td><td>—</td><td>what we measured</td></tr>
       <tr><td class="k">plugin rule <code>channels=56</code></td><td>14</td><td>56</td><td class="dn">−60.3%</td></tr>
       <tr><td class="k">RCCL default, untouched</td><td>56</td><td>224</td><td>baseline</td></tr>
-      <tr><td class="k">plugin rule <code>channels=224</code></td><td>56</td><td>224</td><td class="up">+0.1% — parity</td></tr>
+      <tr><td class="k">plugin rule <code>channels=224</code></td><td>56</td><td>224</td><td class="up">−0.0% — parity</td></tr>
     </tbody>
   </table>
 </div>
 
-<p>The probe confirms it directly. With <code>channels=224</code> the plugin log reads
-<code>WarpSpeed enabled: warpSpeedChannelMultiplier 4, maxNchannels 448, nc 224</code>, both arms report
-<code>RING* SIMPLE 56</code>, and bandwidth matches to within 0.2% at all four sizes:</p>
+<p>The plugin log confirms the mechanism directly:
+<code>WarpSpeed enabled: warpSpeedChannelMultiplier 4, maxNchannels 448, nc 224</code>, and both arms then
+report <code>RING* SIMPLE 56</code>.</p>
 
-<div class="card">
-  <table>
-    <thead><tr><th>size</th><th>default</th><th>config (224)</th><th>Δ</th></tr></thead>
-    <tbody>
-      <tr><td class="k">64M</td><td>354.10</td><td>354.40</td><td>+0.1%</td></tr>
-      <tr><td class="k">128M</td><td>378.83</td><td>378.96</td><td>+0.0%</td></tr>
-      <tr><td class="k">256M</td><td>390.16</td><td>389.93</td><td>−0.1%</td></tr>
-      <tr><td class="k">512M</td><td>396.14</td><td>396.15</td><td>+0.0%</td></tr>
-    </tbody>
-  </table>
+<p><strong>The rule: multiply the swept channel count by 4 before writing it into a plugin rule wherever
+WarpSpeed applies.</strong> The charts above are the corrected run — the −60% hole is gone.</p>
+
+<div class="note">
+<p><strong>The fix buys safety, not speed.</strong> With the right channel count the config
+<em>matches</em> the default at ≥64 MB (−0.0%), so the rule is correctly dropped and those sizes fall
+through to RCCL. Nothing beats the default there. What the fix removes is a rule that would have cost
+60% in production.</p>
 </div>
-
-<p>So the unit question is settled: <strong>multiply the swept channel count by 4 before writing it into
-a plugin rule wherever WarpSpeed applies.</strong> Note the result is parity, not a win — we restored
-what we had broken. Nothing beats the default at ≥64 MB.</p>
 
 <h2>Every size</h2>
 <div class="card scroll">
@@ -214,6 +232,31 @@ rather than as evidence that RCCL's defaults are optimal. And a mixed rule range
 passing sub-ranges instead of being discarded whole.</p>
 </div>
 
+<h2>How this compares to the 2026-08-04 run</h2>
+<p>Nearly identical. This run used a config generated at a <strong>1% selection tolerance</strong> instead
+of 5%, and at 1 node that barely mattered:</p>
+<div class="card scroll">
+<table>
+<thead><tr><th>size</th><th>2026-08-04 (5% tol)</th><th>2026-08-16 (1% tol)</th></tr></thead>
+<tbody>
+<tr><td class="k">4K</td><td>+12.5%</td><td>+9.4%</td></tr>
+<tr><td class="k">8K</td><td>+29.1%</td><td>+27.3%</td></tr>
+<tr><td class="k">16K</td><td>+45.3%</td><td>+46.5%</td></tr>
+<tr><td class="k">32K</td><td>+56.1%</td><td>+56.4%</td></tr>
+<tr><td class="k">64K</td><td>+60.2%</td><td>+59.9%</td></tr>
+<tr><td class="k">128K</td><td>+32.3%</td><td>+40.3%</td></tr>
+<tr><td class="k">256K</td><td>+39.5%</td><td>+41.8%</td></tr>
+<tr><td class="k">512K</td><td>+63.0%</td><td>+65.3%</td></tr>
+</tbody></table>
+</div>
+<p>The tolerance change was expected to matter more than it did here: at 1 node the sweep was only giving
+away ~2.5% by picking fewest-channels within a 5% window. At <strong>2 and 3 nodes the give-away was 2.9%
+and 3.5%</strong>, and the resulting configs differed at 10 and 8 sizes respectively — but those A/Bs could
+not be measured (see limits below). <strong>So 1% remains unproven as an improvement; its case rests
+entirely on multi-node.</strong></p>
+<p>What this run does establish: the 1-node result <strong>reproduces independently</strong> 12 days later,
+on a fresh allocation, with a materially changed harness. Two agreeing runs is a stronger claim than one.</p>
+
 <h2>Scope and limits</h2>
 <ul>
   <li><strong>1 node only.</strong> The 2-node and 3-node A/Bs on the same day were void — a co-tenant job
@@ -237,12 +280,24 @@ passing sub-ranges instead of being discarded whole.</p>
 
 <script>
 const DATA = [
- {s:4096,d:0.32,c:0.35},{s:8192,d:0.55,c:0.70},{s:16384,d:0.86,c:1.22},
- {s:32768,d:1.71,c:2.69},{s:65536,d:3.25,c:5.24},{s:131072,d:6.31,c:8.71},
- {s:262144,d:12.52,c:17.85},{s:524288,d:21.11,c:34.98},{s:1048576,d:41.56,c:48.39},
- {s:2097152,d:79.35,c:79.24},{s:4194304,d:128.02,c:127.80},{s:8388608,d:197.15,c:196.07},
- {s:16777216,d:268.80,c:267.49},{s:33554432,d:317.58,c:317.08},{s:67108864,d:355.09,c:148.99},
- {s:134217728,d:378.93,c:155.46},{s:268435456,d:390.46,c:156.16},{s:536870912,d:396.28,c:157.29}
+ {s:4096,d:0.32,c:0.35},
+ {s:8192,d:0.55,c:0.7},
+ {s:16384,d:0.86,c:1.26},
+ {s:32768,d:1.72,c:2.69},
+ {s:65536,d:3.27,c:5.23},
+ {s:131072,d:6.32,c:8.87},
+ {s:262144,d:12.57,c:17.83},
+ {s:524288,d:21.19,c:35.03},
+ {s:1048576,d:41.41,c:48.3},
+ {s:2097152,d:79.14,c:79.06},
+ {s:4194304,d:127.67,c:127.49},
+ {s:8388608,d:197.48,c:195.28},
+ {s:16777216,d:268.92,c:267.73},
+ {s:33554432,d:318.21,c:317.17},
+ {s:67108864,d:355.38,c:354.51},
+ {s:134217728,d:379.11,c:379.05},
+ {s:268435456,d:390.58,c:390.09},
+ {s:536870912,d:396.49,c:396.13}
 ];
 const KEPT = new Set([4096,8192,16384,32768,65536,131072,262144,524288,1048576]);
 DATA.forEach(r=>{ r.delta = (r.c/r.d-1)*100; });
@@ -301,9 +356,9 @@ const hideTT = () => tt.style.opacity = 0;
 
   const lastD=DATA[DATA.length-1], li=DATA.length-1;
   const ld=el("text",{x:x(li)+10,y:y(lastD.d)+4,class:"al",fill:"var(--series-2)"});
-  ld.textContent="default 396"; svg.appendChild(ld);
+  ld.textContent="default"; svg.appendChild(ld);
   const lc=el("text",{x:x(li)+10,y:y(lastD.c)+4,class:"al",fill:"var(--series-1)"});
-  lc.textContent="config 157"; svg.appendChild(lc);
+  lc.textContent="config"; svg.appendChild(lc);
 
   DATA.forEach((r,i)=>{
     const hit=el("rect",{x:x(i)-pw/(DATA.length-1)/2,y:T,width:pw/(DATA.length-1),height:ph,
@@ -360,13 +415,46 @@ const hideTT = () => tt.style.opacity = 0;
   xl.textContent="message size"; svg.appendChild(xl);
 })();
 
+/* ---------- what actually ran ---------- */
+const SEL = [
+ [4096,"TREE/LL/1","TREE/LL/24"],
+ [8192,"TREE/LL/1","TREE/LL/4"],
+ [16384,"TREE/LL/1","TREE/LL/40"],
+ [32768,"TREE/LL/2","TREE/LL/40"],
+ [65536,"TREE/LL/4","TREE/LL/32"],
+ [131072,"TREE/LL/8","TREE/LL/32"],
+ [262144,"TREE/LL/16","RING/LL/32"],
+ [524288,"RING/SIMPLE/16","RING/LL/48"],
+ [1048576,"RING/SIMPLE/32","RING/LL/40"],
+ [2097152,"RING/SIMPLE/56","RING/SIMPLE/48"],
+ [4194304,"RING/SIMPLE/56","RING/SIMPLE/56"],
+ [8388608,"RING/SIMPLE/56","RING/SIMPLE/48"],
+ [16777216,"RING/SIMPLE/56","RING/SIMPLE/56"],
+ [33554432,"RING/SIMPLE/56","RING/SIMPLE/56"],
+ [67108864,"RING*/SIMPLE/56","RING*/SIMPLE/56"],
+ [134217728,"RING*/SIMPLE/56","RING*/SIMPLE/56"],
+ [268435456,"RING*/SIMPLE/56","RING*/SIMPLE/56"],
+ [536870912,"RING*/SIMPLE/56","RING*/SIMPLE/56"]
+];
+(function(){
+  const tb=document.querySelector("#sel tbody");
+  SEL.forEach(([s,d,c])=>{
+    const diff = d!==c;
+    const bad = c.endsWith("/14");
+    tb.insertAdjacentHTML("beforeend",
+      `<tr><td class="k">${fmt(s)}</td>
+       <td style="text-align:left;font-family:ui-monospace,monospace;font-size:12.5px">${d}</td>
+       <td style="text-align:left;font-family:ui-monospace,monospace;font-size:12.5px;${bad?"color:var(--critical);font-weight:600":diff?"color:var(--text-primary)":""}">${c}</td>
+       <td style="text-align:right">${bad?'<span class="pill no">÷4 bug</span>':diff?'<span class="pill">yes</span>':'<span style="color:var(--text-muted)">same</span>'}</td></tr>`);
+  });
+})();
+
 /* ---------- table ---------- */
 (function(){
   const tb=document.querySelector("#tbl tbody");
   DATA.forEach(r=>{
     const kept=KEPT.has(r.s);
-    const v = r.s>=67108864 ? '<span class="pill no">unit bug</span>'
-            : kept ? '<span class="pill ok">kept</span>'
+    const v = kept ? '<span class="pill ok">kept</span>'
             : '<span class="pill">default wins</span>';
     tb.insertAdjacentHTML("beforeend",
       `<tr><td class="k">${fmt(r.s)}</td><td>${r.d.toFixed(2)}</td><td>${r.c.toFixed(2)}</td>
