@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RCCL Multi-Node Estimate</title>
+<style>
+:root{
+  color-scheme: light;
+  --surface-0:#f6f6f4; --surface-1:#fcfcfb; --surface-2:#eeeeea;
+  --text-primary:#0b0b0b; --text-secondary:#52514e; --text-muted:#77766f;
+  --rule:#e0dfda; --grid:#e8e7e2;
+  --series-1:#2a78d6;  /* config  */
+  --series-2:#eb6834;  /* default */
+  --pos:#2a78d6; --neg:#e34948; --mid:#f0efec;
+  --good:#0ca30c; --critical:#d03b3b; --warning:#fab219;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --surface-0:#121211; --surface-1:#1a1a19; --surface-2:#232322;
+    --text-primary:#ffffff; --text-secondary:#c3c2b7; --text-muted:#8e8d84;
+    --rule:#33332f; --grid:#2b2b28;
+    --series-1:#3987e5; --series-2:#d95926;
+    --pos:#3987e5; --neg:#e66767; --mid:#383835;
+    --good:#0ca30c; --critical:#d03b3b; --warning:#fab219;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --surface-0:#121211; --surface-1:#1a1a19; --surface-2:#232322;
+  --text-primary:#ffffff; --text-secondary:#c3c2b7; --text-muted:#8e8d84;
+  --rule:#33332f; --grid:#2b2b28;
+  --series-1:#3987e5; --series-2:#d95926;
+  --pos:#3987e5; --neg:#e66767; --mid:#383835;
+  --good:#0ca30c; --critical:#d03b3b; --warning:#fab219;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--surface-0); color:var(--text-primary);
+  font:15px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1080px;margin:0 auto;padding:40px 24px 80px}
+header{border-bottom:1px solid var(--rule);padding-bottom:24px;margin-bottom:32px}
+h1{font-size:30px;line-height:1.2;margin:0 0 8px;letter-spacing:-.02em;font-weight:650}
+.sub{color:var(--text-secondary);margin:0;font-size:15px}
+.meta{color:var(--text-muted);font-size:13px;margin-top:12px}
+h2{font-size:20px;margin:44px 0 6px;letter-spacing:-.01em;font-weight:640}
+h3{font-size:15px;margin:26px 0 6px;font-weight:640}
+p{margin:8px 0;color:var(--text-secondary)}
+p.lede{color:var(--text-primary)}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em;
+  background:var(--surface-2);padding:1px 5px;border-radius:4px}
+.card{background:var(--surface-1);border:1px solid var(--rule);border-radius:10px;
+  padding:20px 22px;margin:18px 0}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin:24px 0}
+.tile{background:var(--surface-1);border:1px solid var(--rule);border-radius:10px;padding:16px 18px}
+.tile .k{font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em}
+.tile .v{font-size:30px;font-weight:640;letter-spacing:-.02em;margin-top:4px;line-height:1.1}
+.tile .n{font-size:12.5px;color:var(--text-secondary);margin-top:3px}
+.legend{display:flex;gap:20px;flex-wrap:wrap;margin:0 0 10px;font-size:13.5px;color:var(--text-secondary)}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.sw{width:12px;height:12px;border-radius:3px;flex:none}
+figure{margin:0}
+figcaption{font-size:13px;color:var(--text-muted);margin-top:10px}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+svg{display:block;max-width:100%;height:auto;font-family:inherit}
+.gl{stroke:var(--grid);stroke-width:1}
+.ax{stroke:var(--rule);stroke-width:1}
+.tk{fill:var(--text-muted);font-size:11px}
+.al{fill:var(--text-secondary);font-size:12px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:520px}
+th,td{text-align:right;padding:7px 10px;border-bottom:1px solid var(--rule)}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--text-muted);font-weight:560;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+td{color:var(--text-secondary);font-variant-numeric:tabular-nums}
+td.k{color:var(--text-primary);font-weight:560}
+.up{color:var(--good);font-weight:600}
+.dn{color:var(--critical);font-weight:600}
+.pill{display:inline-block;font-size:11.5px;padding:2px 9px;border-radius:99px;
+  border:1px solid var(--rule);color:var(--text-secondary);background:var(--surface-2)}
+.pill.ok{color:var(--good);border-color:color-mix(in srgb,var(--good) 35%,transparent)}
+.pill.no{color:var(--critical);border-color:color-mix(in srgb,var(--critical) 35%,transparent)}
+.note{border-left:3px solid var(--warning);padding:2px 0 2px 16px;margin:18px 0}
+.note strong{color:var(--text-primary)}
+ul{color:var(--text-secondary);padding-left:20px}
+li{margin:5px 0}
+.tt{position:fixed;pointer-events:none;opacity:0;transition:opacity .1s;z-index:9;
+  background:var(--surface-1);border:1px solid var(--rule);border-radius:8px;padding:9px 12px;
+  font-size:12.5px;color:var(--text-primary);box-shadow:0 6px 20px rgba(0,0,0,.14);white-space:nowrap}
+.tt .r{display:flex;justify-content:space-between;gap:16px;color:var(--text-secondary)}
+.tt .r b{color:var(--text-primary);font-variant-numeric:tabular-nums;font-weight:600}
+.tt .h{font-weight:640;margin-bottom:5px;color:var(--text-primary)}
+.gD{color:var(--series-2)!important}.gC{color:var(--series-1)!important}
+footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--rule);
+  font-size:12.5px;color:var(--text-muted)}
+</style>
+<style>
+.warnbox{border:1px solid color-mix(in srgb,var(--warning) 45%,transparent);
+  background:color-mix(in srgb,var(--warning) 8%,var(--surface-1));
+  border-radius:10px;padding:18px 22px;margin:22px 0}
+.warnbox h3{margin:0 0 6px;color:var(--text-primary)}
+.gD{color:var(--series-2)!important}.gC{color:var(--series-1)!important}
+.tabs{display:flex;gap:8px;margin:28px 0 4px}
+.tabs button{font:inherit;font-size:14px;padding:7px 18px;border-radius:8px;cursor:pointer;
+  border:1px solid var(--rule);background:var(--surface-1);color:var(--text-secondary)}
+.tabs button[aria-selected=true]{background:var(--series-1);border-color:var(--series-1);
+  color:#fff;font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Multi-node estimate — what the sweep already tells us</h1>
+  <p class="sub">2 and 3 nodes, all_reduce, 8 ranks × 1 GPU. No new runs: this is RCCL's own default
+  reference measured inside the 2026-08-04 sweep, against the settings the 1%-tolerance config picks.</p>
+  <p class="meta">Derived 2026-08-16 from <code>2026-08-04-{4,6}-sweep{2,3}node/merged.csv</code>
+  · RCCL 2.28.3-develop:2e42aa8</p>
+</header>
+
+<div class="warnbox">
+  <h3>This is a prediction, not a measured result</h3>
+  <p style="margin-bottom:0">Every number here comes from the sweep, where each point is
+  <strong>3 repeats</strong> under <code>mpirun</code> with channels forced by <strong>environment
+  variable</strong>. A shipped config is instead <strong>7 repeats</strong> under <code>srun</code>
+  with channels set through the <strong>tuner plugin</strong>. Those two paths have disagreed before —
+  by 65% at 1 node, when the plugin interpreted a channel count in different units. So treat the
+  P(sup) column here as a ranking hint, not the 0.95 gate: over 3×3 = 9 pairs, "1.00" is far weaker
+  evidence than 1.00 over 49. <strong>Nothing here is shippable until an A/B confirms it.</strong></p>
+</div>
+
+<p class="lede">The point of the exercise: at 3 nodes the config we shipped on 2026-08-04 kept
+<strong>2 rules</strong>. This says the 1%-tolerance config would land <strong>6</strong>, including a
++15.6% at 256M the old one never captured. That is the case for changing the selection tolerance — and
+it comes from data already on disk.</p>
+
+<div class="tiles">
+  <div class="tile"><div class="k">3-node candidates</div><div class="v">6 <span style="font-size:17px;color:var(--text-muted);font-weight:500">of 18</span></div><div class="n">est. gain ≥2%, P(sup) 1.00</div></div>
+  <div class="tile"><div class="k">Best 3-node</div><div class="v" style="color:var(--good)">+15.6%</div><div class="n">at 256M</div></div>
+  <div class="tile"><div class="k">2-node candidates</div><div class="v">2 <span style="font-size:17px;color:var(--text-muted);font-weight:500">of 18</span></div><div class="n">multi-node defaults are tight</div></div>
+  <div class="tile"><div class="k">Cluster time spent</div><div class="v">0</div><div class="n">re-analysis of existing data</div></div>
+</div>
+
+<div class="tabs" role="tablist">
+  <button role="tab" id="t3" aria-selected="true" onclick="pick(3)">3 nodes</button>
+  <button role="tab" id="t2" aria-selected="false" onclick="pick(2)">2 nodes</button>
+</div>
+
+<h2 id="ttl">Bandwidth, default vs the 1% config's choices — 3 nodes</h2>
+<div class="legend">
+  <span><i class="sw" style="background:var(--series-2)"></i>RCCL default</span>
+  <span><i class="sw" style="background:var(--series-1)"></i>config's choice</span>
+</div>
+<figure>
+  <div class="scroll"><svg id="c1" viewBox="0 0 940 400" role="img"
+    aria-label="Bus bandwidth versus message size, log-log, default against the config's chosen setting."></svg></div>
+  <figcaption>Median of 3 sweep repeats, in-place bus bandwidth. Both axes logarithmic.</figcaption>
+</figure>
+
+<h2>Estimated change vs default, per size</h2>
+<figure>
+  <div class="scroll"><svg id="c2" viewBox="0 0 940 300" role="img"
+    aria-label="Estimated percent change versus default per message size."></svg></div>
+  <figcaption>Bars marked with a dot clear both thresholds an A/B would apply: gain ≥2% and P(sup) 1.00.</figcaption>
+</figure>
+
+<h2>What the sweep measured, per size</h2>
+<div class="card scroll">
+  <table id="tbl">
+    <thead>
+      <tr><th></th><th colspan="2" class="gD">RCCL default</th><th colspan="2" class="gC">config's choice</th><th></th><th></th><th></th></tr>
+      <tr><th>size</th>
+        <th class="gD" style="text-align:left">selected</th><th class="gD">busbw</th>
+        <th class="gC" style="text-align:left">selected</th><th class="gC">busbw</th>
+        <th>est &Delta;</th><th>P(sup) 9 pairs</th><th>spread d/c</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<h2>How to read the two scales</h2>
+<p><strong>3 nodes has real headroom; 2 nodes mostly does not.</strong> At 2 nodes RCCL's default already
+sits at the 48-channel cap for everything ≥128K and only two sizes look beatable. At 3 nodes six do —
+and two of them (128M, 256M) are cases where the default appears to make a specific bad choice rather
+than merely leaving a little on the table.</p>
+<p>The recurring pattern in the wins is an <strong>algorithm or protocol switch</strong>, not a channel
+tweak: TREE→RING at 32M on both scales, LL→LL128 at 128K–256K at 3 nodes, LL128→SIMPLE at 256M. That
+matches the 1-node story in reverse — at 1 node the wins came from raising channel counts, because the
+default there is loose.</p>
+
+<h2>Why we could not just measure it</h2>
+<p>The A/B needs a quiet fabric. On 2026-08-16 a co-tenant job (<code>hai_test2</code>, 4 nodes) was
+saturating the shared spine, and repeats of a single unchanged configuration ranged
+<strong>1.5–25 GB/s</strong>. A preflight probe measured <strong>599% spread</strong> at 2M on 3 nodes —
+the machine could not have decided anything, so no A/B was run.</p>
+<p>That probe is now built into the harness as <code>validate_tuner_config.py --preflight</code>, which
+aborts before spending A/B time. Evidence: <code>results-tuning/2026-08-16-4-fabricprobe/</code>.</p>
+
+<h2>What an A/B would have to confirm</h2>
+<ul>
+  <li><strong>3 nodes:</strong> 64K +2.6%, 128K +5.1%, 256K +11.7%, 32M +9.4%, 128M +10.9%, 256M +15.6%</li>
+  <li><strong>2 nodes:</strong> 256K +7.9%, 32M +11.4%</li>
+  <li>Everything else is within ±1% and should come back as "default already wins".</li>
+  <li>Any size where the plugin and env-var paths diverge would show up as a large disagreement with
+      this table — which is itself worth knowing.</li>
+</ul>
+<p>Because the prediction is written down first, the eventual A/B is a test rather than a fishing trip.</p>
+
+<footer>
+  Source: <code>results-tuning/2026-08-04-4-sweep2node/merged.csv</code> and
+  <code>-6-sweep3node/merged.csv</code> (unforced default rows: 54 each = 18 sizes × 3 repeats),
+  against <code>results-tuning/2026-08-16-1-tol1pct/gen_{2,3}n_t1.conf</code>.
+  Regenerated by <code>estimate.json</code> in this folder.
+</footer>
+</div>
+<div class="tt" id="tt"></div>
+
+<script>
+const EST = {3: [
+ [4096,'TREE/LL/2',0.11,'TREE/LL/2',0.11,0.0,0.5,0.0,0.0],
+ [8192,'TREE/LL/4',0.22,'TREE/LL/4',0.22,0.0,0.5,4.8,4.8],
+ [16384,'TREE/LL/8',0.43,'TREE/LL/8',0.43,0.0,0.67,4.9,0.0],
+ [32768,'TREE/LL/16',0.83,'TREE/LL/16',0.83,0.0,0.33,0.0,72.9],
+ [65536,'TREE/LL/32',1.54,'TREE/LL/32',1.58,2.6,1.0,60.8,0.0],
+ [131072,'TREE/LL/48',2.75,'TREE/LL128/16',2.89,5.1,1.0,45.5,0.7],
+ [262144,'TREE/LL/48',4.89,'TREE/LL128/32',5.46,11.7,1.0,0.2,0.2],
+ [524288,'TREE/LL128/48',10.23,'TREE/LL128/32',10.27,0.4,0.67,1.3,0.1],
+ [1048576,'TREE/LL128/48',18.87,'TREE/LL128/48',18.84,-0.2,0.44,1.2,0.4],
+ [2097152,'TREE/LL128/48',35.02,'TREE/LL128/48',35.18,0.5,0.89,0.8,0.3],
+ [4194304,'TREE/LL128/48',61.61,'TREE/LL128/48',61.93,0.5,0.67,2.2,1.0],
+ [8388608,'TREE/LL128/48',102.65,'TREE/LL128/48',102.19,-0.4,0.22,1.4,6.7],
+ [16777216,'TREE/LL128/48',149.21,'TREE/LL128/48',149.45,0.2,0.67,0.8,0.2],
+ [33554432,'TREE/LL128/48',186.37,'RING/LL128/32',203.81,9.4,1.0,0.6,4.8],
+ [67108864,'RING/LL128/48',268.59,'RING/LL128/40',267.98,-0.2,0.0,0.0,2.1],
+ [134217728,'RING/LL128/48',244.71,'RING/LL128/40',271.37,10.9,1.0,1.3,0.9],
+ [268435456,'RING/LL128/48',295.97,'RING/SIMPLE/40',342.08,15.6,1.0,0.5,0.5],
+ [536870912,'RING/SIMPLE/48',374.02,'RING/SIMPLE/40',371.87,-0.6,0.0,0.0,0.4]
+],
+              2: [
+ [4096,'TREE/LL/2',0.2,'TREE/LL/2',0.2,0.0,0.33,0.0,233.3],
+ [8192,'TREE/LL/4',0.39,'TREE/LL/4',0.39,0.0,0.33,0.0,18.2],
+ [16384,'TREE/LL/8',0.78,'TREE/LL/8',0.78,0.0,0.67,1.3,0.0],
+ [32768,'TREE/LL/16',1.51,'TREE/LL/16',1.37,-9.3,0.11,1.3,9.5],
+ [65536,'TREE/LL/32',2.8,'TREE/LL/40',2.81,0.4,0.72,4.5,3.6],
+ [131072,'TREE/LL/48',4.88,'TREE/LL/40',4.96,1.6,0.78,2.3,1.0],
+ [262144,'TREE/LL/48',8.48,'TREE/LL128/32',9.15,7.9,1.0,1.7,2.1],
+ [524288,'TREE/LL128/48',16.81,'TREE/LL128/32',16.76,-0.3,0.33,1.7,0.4],
+ [1048576,'TREE/LL128/48',30.11,'TREE/LL128/48',30.31,0.7,0.72,1.0,2.1],
+ [2097152,'TREE/LL128/48',54.33,'TREE/LL128/48',54.57,0.4,0.78,1.8,1.1],
+ [4194304,'TREE/LL128/48',93.37,'TREE/LL128/48',92.8,-0.6,0.22,1.3,1.7],
+ [8388608,'TREE/LL128/48',144.64,'TREE/LL128/48',144.72,0.1,0.44,0.8,1.3],
+ [16777216,'TREE/LL128/48',193.45,'TREE/LL128/48',195.27,0.9,0.78,1.5,1.1],
+ [33554432,'TREE/LL128/48',225.25,'RING/LL128/40',250.89,11.4,1.0,2.1,0.6],
+ [67108864,'RING/LL128/48',292.21,'RING/LL128/48',291.16,-0.4,0.56,0.5,0.6],
+ [134217728,'RING/SIMPLE/48',320.38,'RING/SIMPLE/40',323.03,0.8,0.67,0.6,5.9],
+ [268435456,'RING/SIMPLE/48',370.15,'RING/SIMPLE/40',368.14,-0.5,0.0,0.4,0.1],
+ [536870912,'RING/SIMPLE/48',374.83,'RING/SIMPLE/32',372.18,-0.7,0.0,0.1,0.3]
+]};
+let CUR = 3;
+const fmt = b => b>=1048576 ? (b/1048576)+"M" : (b/1024)+"K";
+const NS="http://www.w3.org/2000/svg";
+const el=(n,a={})=>{const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);return e;};
+const tt=document.getElementById("tt");
+function showTT(ev,html){tt.innerHTML=html;tt.style.opacity=1;
+  const p=14,w=tt.offsetWidth,h=tt.offsetHeight;let x=ev.clientX+p,y=ev.clientY-h-p;
+  if(x+w>innerWidth-8)x=ev.clientX-w-p; if(y<8)y=ev.clientY+p;
+  tt.style.left=x+"px";tt.style.top=y+"px";}
+const hideTT=()=>tt.style.opacity=0;
+const good=r=>r[5]>=2&&r[6]>=0.95;
+
+function draw(){
+  const R=EST[CUR];
+  document.getElementById("ttl").textContent=
+    `Bandwidth, default vs the 1% config's choices — ${CUR} nodes`;
+
+  /* line chart */
+  const s1=document.getElementById("c1"); s1.textContent="";
+  const W=940,H=400,L=58,R2=100,T=16,B=44,pw=W-L-R2,ph=H-T-B;
+  const x=i=>L+pw*i/(R.length-1);
+  const lo=0.08,hi=500;
+  const y=v=>T+ph-ph*(Math.log10(v)-Math.log10(lo))/(Math.log10(hi)-Math.log10(lo));
+  [0.1,1,10,100,500].forEach(v=>{
+    s1.appendChild(el("line",{x1:L,x2:L+pw,y1:y(v),y2:y(v),class:"gl"}));
+    const t=el("text",{x:L-10,y:y(v)+4,class:"tk","text-anchor":"end"});
+    t.textContent=v>=1?v:v.toFixed(1); s1.appendChild(t);});
+  s1.appendChild(el("line",{x1:L,x2:L+pw,y1:T+ph,y2:T+ph,class:"ax"}));
+  const yl=el("text",{x:14,y:T+ph/2,class:"al","text-anchor":"middle",transform:`rotate(-90 14 ${T+ph/2})`});
+  yl.textContent="bus bandwidth (GB/s)"; s1.appendChild(yl);
+  R.forEach((r,i)=>{if(i%2)return;const t=el("text",{x:x(i),y:T+ph+18,class:"tk","text-anchor":"middle"});
+    t.textContent=fmt(r[0]); s1.appendChild(t);});
+  [[2,"var(--series-2)"],[4,"var(--series-1)"]].forEach(([k,col])=>{
+    s1.appendChild(el("path",{d:R.map((r,i)=>`${i?"L":"M"}${x(i).toFixed(1)},${y(r[k]).toFixed(1)}`).join(""),
+      fill:"none",stroke:col,"stroke-width":2,"stroke-linejoin":"round"}));
+    R.forEach((r,i)=>s1.appendChild(el("circle",{cx:x(i),cy:y(r[k]),r:4.5,fill:col,
+      stroke:"var(--surface-0)","stroke-width":2})));});
+  const li=R.length-1;
+  [[2,"var(--series-2)","default"],[4,"var(--series-1)","config"]].forEach(([k,col,lab])=>{
+    const t=el("text",{x:x(li)+10,y:y(R[li][k])+4,class:"al",fill:col}); t.textContent=lab; s1.appendChild(t);});
+  R.forEach((r,i)=>{
+    const hit=el("rect",{x:x(i)-pw/(R.length-1)/2,y:T,width:pw/(R.length-1),height:ph,fill:"transparent"});
+    hit.addEventListener("mousemove",e=>showTT(e,
+      `<div class="h">${fmt(r[0])}</div>
+       <div class="r"><span>${r[1]}</span><b>${r[2].toFixed(2)}</b></div>
+       <div class="r"><span>${r[3]}</span><b>${r[4].toFixed(2)}</b></div>
+       <div class="r"><span>est change</span><b>${r[5]>=0?"+":""}${r[5].toFixed(1)}%</b></div>`));
+    hit.addEventListener("mouseleave",hideTT); s1.appendChild(hit);});
+
+  /* delta bars */
+  const s2=document.getElementById("c2"); s2.textContent="";
+  const H2=300,B2=48,ph2=H2-T-B2,bw=pw/R.length,mx=20,mn=-20;
+  const y2=v=>T+ph2*(mx-Math.max(mn,Math.min(mx,v)))/(mx-mn);
+  [15,10,5,0,-5,-10,-15].forEach(v=>{
+    s2.appendChild(el("line",{x1:L,x2:L+pw,y1:y2(v),y2:y2(v),class:v?"gl":"ax"}));
+    const t=el("text",{x:L-10,y:y2(v)+4,class:"tk","text-anchor":"end"});
+    t.textContent=(v>0?"+":"")+v+"%"; s2.appendChild(t);});
+  const yl2=el("text",{x:14,y:T+ph2/2,class:"al","text-anchor":"middle",transform:`rotate(-90 14 ${T+ph2/2})`});
+  yl2.textContent="estimated change"; s2.appendChild(yl2);
+  R.forEach((r,i)=>{
+    const cx=L+bw*i+bw/2,top=Math.min(y2(0),y2(r[5])),hg=Math.abs(y2(r[5])-y2(0));
+    s2.appendChild(el("rect",{x:cx-bw*0.32,y:top,width:bw*0.64,height:Math.max(hg,1.5),rx:4,
+      fill:r[5]>=0?"var(--pos)":"var(--neg)"}));
+    if(good(r)) s2.appendChild(el("circle",{cx:cx,cy:top-9,r:3.5,fill:"var(--good)"}));
+    if(Math.abs(r[5])>=2){const t=el("text",{x:cx,y:r[5]>=0?top-16:top+hg+15,class:"tk","text-anchor":"middle"});
+      t.textContent=(r[5]>0?"+":"")+r[5].toFixed(0); s2.appendChild(t);}
+    const lt=el("text",{x:cx,y:T+ph2+20,class:"tk","text-anchor":"middle"});
+    lt.textContent=fmt(r[0]); s2.appendChild(lt);
+    const hit=el("rect",{x:L+bw*i,y:T,width:bw,height:ph2,fill:"transparent"});
+    hit.addEventListener("mousemove",e=>showTT(e,
+      `<div class="h">${fmt(r[0])}</div>
+       <div class="r"><span>est change</span><b>${r[5]>=0?"+":""}${r[5].toFixed(1)}%</b></div>
+       <div class="r"><span>P(sup)</span><b>${r[6].toFixed(2)}</b></div>
+       <div class="r"><span>would keep</span><b>${good(r)?"yes":"no"}</b></div>`));
+    hit.addEventListener("mouseleave",hideTT); s2.appendChild(hit);});
+
+  /* table */
+  const tb=document.querySelector("#tbl tbody"); tb.textContent="";
+  const mono="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;text-align:left";
+  R.forEach(r=>{
+    const noisy=Math.max(r[7],r[8])>25;
+    tb.insertAdjacentHTML("beforeend",
+      `<tr><td class="k">${fmt(r[0])}</td>
+       <td style="${mono}">${r[1]}</td><td>${r[2].toFixed(2)}</td>
+       <td style="${mono}${r[1]!==r[3]?';color:var(--text-primary);font-weight:600':''}">${r[3]}</td>
+       <td>${r[4].toFixed(2)}</td>
+       <td class="${r[5]>=2?'up':r[5]<=-2?'dn':''}">${r[5]>=0?'+':''}${r[5].toFixed(1)}%</td>
+       <td>${r[6].toFixed(2)}</td>
+       <td style="${noisy?'color:var(--warning);font-weight:600':'color:var(--text-muted)'}">${r[7].toFixed(0)}/${r[8].toFixed(0)}%</td></tr>`);
+  });
+}
+function pick(n){CUR=n;
+  document.getElementById("t3").setAttribute("aria-selected",n===3);
+  document.getElementById("t2").setAttribute("aria-selected",n===2);
+  draw();}
+draw();
+</script>
+</body>
+</html>

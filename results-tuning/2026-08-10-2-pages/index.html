@@ -27,11 +27,12 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--tx3)
   <div class="d">+9% to +65% from 4K to 1M, all at P(sup) 1.00. WarpSpeed channel-unit bug found and fixed;
   ≥2M now matches the default exactly.</div>
   <span class="b ok">valid</span></a>
-<a class="c" href="#" onclick="return false" style="opacity:.55;cursor:default">
-  <div class="t">2 and 3 nodes — not measured</div>
-  <div class="d">A co-tenant job was saturating the shared fabric; repeats of the same configuration
-  ranged 1.5–25 GB/s. Needs a quiet cluster.</div>
-  <span class="b no">void</span></a>
+<a class="c" href="multi-node-estimate.html">
+  <div class="t">2 and 3 nodes — estimate from existing sweep data</div>
+  <div class="d">No A/B possible: a co-tenant saturated the fabric (599% spread on identical runs).
+  Instead, RCCL's own default reference from the sweep vs the 1% config's choices — predicts 6 wins
+  at 3 nodes incl. +15.6% @256M, 2 at 2 nodes.</div>
+  <span class="b">prediction, not measured</span></a>
 
 <h2>Earlier — 2026-08-04, 5% selection tolerance</h2>
 <a class="c" href="1-node.html"><div class="t">1 node</div><div class="d">8 of 12 rules, +12.5% to +63.0%</div></a>
