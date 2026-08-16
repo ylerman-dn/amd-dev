@@ -166,6 +166,39 @@ def parse_busbw(text):
     return out
 
 
+
+def load_sweep_env(path):
+    """Read env_vars: from sweep_config.yaml -- the single source the sweep already uses.
+
+    Before this, the sweep read that file automatically while the A/B took --env hand-typed on the
+    command line, so the two ran under different environments. run_mn.sh (the reference the A/B was
+    typed from) carries OMPI_MCA_* but none of the IONIC_* settings the yaml has, and that divergence
+    was live from 2026-08-04 and invisible. On 2026-08-16 hand-typing also produced a wrong
+    NCCL_IB_GID_INDEX and a truncated HCA list.
+
+    Returns {} when the file or PyYAML is missing -- this must never be the reason an A/B cannot run.
+    """
+    if not path or not os.path.exists(path):
+        return {}
+    try:
+        import yaml
+    except ImportError:
+        print(f"  note: PyYAML not available, not loading env from {path}", file=sys.stderr)
+        return {}
+    try:
+        with open(path) as fh:
+            doc = yaml.safe_load(fh) or {}
+    except Exception as exc:
+        print(f"  note: could not read {path}: {exc}", file=sys.stderr)
+        return {}
+    env = doc.get("env_vars") or {}
+    # Never inherit these: the A/B sets its own logging, and PATH belongs to the caller.
+    for drop in ("NCCL_DEBUG", "NCCL_DEBUG_FILE", "NCCL_DEBUG_SUBSYS", "PATH",
+                 "NCCL_TOPO_DUMP_FILE", "NCCL_GRAPH_DUMP_FILE"):
+        env.pop(drop, None)
+    return {k: str(v) for k, v in env.items()}
+
+
 def preflight(args, scales):
     """Measure whether the machine can currently produce a decidable answer, before spending an A/B.
 
@@ -248,6 +281,9 @@ def run_once(args, nodes, conf_path, log_path):
     lib = os.path.join(os.path.dirname(args.binary), "librccl.so")
     if os.path.exists(lib):
         env["LD_PRELOAD"] = lib
+    # GPU-107: sweep_config.yaml first, --env second -- so the A/B inherits exactly what the sweep
+    # ran with, and an explicit --env still wins.
+    env.update(getattr(args, "_sweep_env", {}) or {})
     for kv in args.env:
         if "=" in kv:
             k, v = kv.split("=", 1)
@@ -351,6 +387,12 @@ def main():
     ap.add_argument("--max-noisy-fraction", type=float, default=0.20,
                     help="if more than this fraction of points are noisy, the run is reported as "
                          "NOT VALID and exits 2 instead of issuing verdicts (default 0.20)")
+    ap.add_argument("--sweep-config", default=None,
+                    help="path to sweep_config.yaml whose env_vars: block supplies the base "
+                         "environment (default: the copy beside this script). --env overrides it. "
+                         "Use --no-sweep-env to ignore it entirely.")
+    ap.add_argument("--no-sweep-env", action="store_true",
+                    help="do not take any environment from sweep_config.yaml")
     ap.add_argument("--preflight", type=int, default=3,
                     help="default-config runs per scale before the A/B, to check the machine can "
                          "decide anything at all (default 3). Repeats of one config that disagree "
@@ -395,6 +437,14 @@ def main():
 
     args = ap.parse_args()
 
+    # Resolve the base environment once, before anything runs, and record it with the run.
+    default_cfg = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sweep_config.yaml")
+    cfg_path = args.sweep_config or default_cfg
+    args._sweep_env = {} if args.no_sweep_env else load_sweep_env(cfg_path)
+    if args._sweep_env:
+        print(f"env: {len(args._sweep_env)} vars from {cfg_path}"
+              + (f", {len(args.env)} overridden by --env" if args.env else ""))
+
     comments, header, rules = parse_rules(args.config)
     if not rules:
         print(f"no rules found in {args.config}", file=sys.stderr)
@@ -405,8 +455,18 @@ def main():
     # GPU-107: check the ACTUAL environment too, not just --env. srun runs with --export=ALL, so
     # fabric settings exported by the calling shell are inherited and are perfectly valid. Looking
     # only at --env made this warn on correctly-configured runs, which trains the reader to ignore it.
-    _fabric_set = (any("IFNAME" in e or "IB_" in e for e in args.env)
-                   or any(k.startswith("NCCL_IB_") or k == "NCCL_SOCKET_IFNAME" for k in os.environ))
+    # GPU-107: check for the specific keys the sweep declares, not merely "some IB_ variable".
+    # The old check passed on 2026-08-16 while NCCL_IB_GID_INDEX was wrong, the HCA list truncated
+    # and the whole OMPI_MCA_* block missing -- a guard that green-lights a broken run is worse than
+    # none, because it teaches the reader to ignore it.
+    _have = set(os.environ) | {e.split("=", 1)[0] for e in args.env if "=" in e} | set(args._sweep_env)
+    _need = [k for k in (args._sweep_env or {})
+             if k.startswith(("NCCL_IB_", "OMPI_MCA_", "IONIC_")) or k == "NCCL_SOCKET_IFNAME"]
+    _missing = sorted(k for k in _need if k not in _have)
+    if max(scales) > 1 and _missing:
+        print(f"WARNING: {len(_missing)} fabric variable(s) the sweep uses are not set here: "
+              f"{', '.join(_missing)}", file=sys.stderr)
+    _fabric_set = any(k.startswith("NCCL_IB_") or k == "NCCL_SOCKET_IFNAME" for k in _have)
     if max(scales) > 1 and not _fabric_set:
         print("WARNING: validating multi-node rules but no fabric settings passed via --env. "
               "On most clusters 2+ node runs then produce no output and are miscounted as hangs.\n",
@@ -414,6 +474,21 @@ def main():
     print(f"validating {len(rules)} rule(s) across node counts {scales}, "
           f"{args.repeats} repeats each, keeping P(sup) >= {args.min_psup} and gain > {args.min_gain}%\n",
           flush=True)
+
+    # Record the environment this run actually used, so the folder is self-describing.
+    if args.logdir:
+        os.makedirs(args.logdir, exist_ok=True)
+        _probe_env = dict(args._sweep_env)
+        for kv in args.env:
+            if "=" in kv:
+                k, v = kv.split("=", 1)
+                _probe_env[k] = v
+        with open(os.path.join(args.logdir, "resolved_env.txt"), "w") as fh:
+            fh.write(f"# resolved by validate_tuner_config.py\n")
+            fh.write(f"# base: {cfg_path if not args.no_sweep_env else '(none, --no-sweep-env)'}\n")
+            fh.write(f"# overrides from --env: {len(args.env)}\n")
+            for k in sorted(_probe_env):
+                fh.write(f"{k}={_probe_env[k]}\n")
 
     if args.preflight and not args.no_preflight:
         if not preflight(args, scales):
