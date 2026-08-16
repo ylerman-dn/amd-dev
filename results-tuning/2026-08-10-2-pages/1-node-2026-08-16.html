@@ -92,6 +92,7 @@ li{margin:5px 0}
 .tt .r{display:flex;justify-content:space-between;gap:16px;color:var(--text-secondary)}
 .tt .r b{color:var(--text-primary);font-variant-numeric:tabular-nums;font-weight:600}
 .tt .h{font-weight:640;margin-bottom:5px;color:var(--text-primary)}
+.gD{color:var(--series-2)!important}.gC{color:var(--series-1)!important}
 footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--rule);
   font-size:12.5px;color:var(--text-muted)}
 </style>
@@ -141,7 +142,21 @@ footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--rule);
 what the config requested. RCCL substitutes silently, so requested and selected are different claims.</p>
 <div class="card scroll">
   <table id="sel">
-    <thead><tr><th>size</th><th>default selected</th><th>config selected</th><th>differs</th></tr></thead>
+    <thead>
+      <tr>
+        <th></th>
+        <th colspan="2" class="gD">RCCL default</th>
+        <th colspan="3" class="gC">tuned config</th>
+        <th></th><th></th>
+      </tr>
+      <tr>
+        <th>size</th>
+        <th class="gD" style="text-align:left">selected algo/proto/ch</th><th class="gD">busbw</th>
+        <th class="gC" style="text-align:left">requested</th>
+        <th class="gC" style="text-align:left">selected algo/proto/ch</th><th class="gC">busbw</th>
+        <th>&Delta;</th><th>spread d/c</th>
+      </tr>
+    </thead>
     <tbody></tbody>
   </table>
 </div>
@@ -152,10 +167,15 @@ selection — which is why the curves coincide there.</p>
 <strong><code>RING*/SIMPLE/14</code></strong> against the default's <code>56</code>: the ÷4, visible in the
 selection columns rather than guessed at from the bandwidth drop. After the fix both arms read
 <code>RING*/SIMPLE/56</code>, as shown above.</p>
+<p><strong>One outlier, shown not hidden.</strong> The <code>spread d/c</code> column is each arm's own
+max-over-min across its 7 repeats. Everything sits near 1–7% except <strong>256K on the default arm at
+196.9%</strong>: repeat 7 measured 4.26 GB/s against 12.50–12.65 for the other six. A single stall. It is
+in the <em>default</em> arm and the median (12.57) is unmoved, so the +41.8% is not inflated by it — and
+P(sup) is a rank statistic, so one outlier cannot manufacture a win.</p>
 <p class="meta" style="color:var(--text-muted);font-size:12.5px">Caveat: <code>-A 1</code> is trustworthy
 for algorithm and protocol, but its channel column reports a planned ceiling. Real per-channel spans come
 from <code>NCCL_DEBUG=INFO</code> <code>channel{Lo..Hi}</code>. Under WarpSpeed the figure shown is the
-base count, which is why 56 appears where 224 channels actually run.</p>
+base count — which is why the config requests <code>224</code> and the column reads <code>56</code>.</p>
 
 <h2>Why the config wins at small sizes</h2>
 <p>RCCL's 1-node default uses very few channels below 256 KB — 1, 1, 1, 2, 4, 8, 16 for 4 KB through
@@ -195,14 +215,6 @@ WarpSpeed applies.</strong> The charts above are the corrected run — the −60
 <em>matches</em> the default at ≥64 MB (−0.0%), so the rule is correctly dropped and those sizes fall
 through to RCCL. Nothing beats the default there. What the fix removes is a rule that would have cost
 60% in production.</p>
-</div>
-
-<h2>Every size</h2>
-<div class="card scroll">
-  <table id="tbl">
-    <thead><tr><th>size</th><th>default GB/s</th><th>config GB/s</th><th>change</th><th>verdict</th></tr></thead>
-    <tbody></tbody>
-  </table>
 </div>
 
 <h2>What made this run trustworthy</h2>
@@ -417,51 +429,43 @@ const hideTT = () => tt.style.opacity = 0;
 
 /* ---------- what actually ran ---------- */
 const SEL = [
- [4096,"TREE/LL/1","TREE/LL/24"],
- [8192,"TREE/LL/1","TREE/LL/4"],
- [16384,"TREE/LL/1","TREE/LL/40"],
- [32768,"TREE/LL/2","TREE/LL/40"],
- [65536,"TREE/LL/4","TREE/LL/32"],
- [131072,"TREE/LL/8","TREE/LL/32"],
- [262144,"TREE/LL/16","RING/LL/32"],
- [524288,"RING/SIMPLE/16","RING/LL/48"],
- [1048576,"RING/SIMPLE/32","RING/LL/40"],
- [2097152,"RING/SIMPLE/56","RING/SIMPLE/48"],
- [4194304,"RING/SIMPLE/56","RING/SIMPLE/56"],
- [8388608,"RING/SIMPLE/56","RING/SIMPLE/48"],
- [16777216,"RING/SIMPLE/56","RING/SIMPLE/56"],
- [33554432,"RING/SIMPLE/56","RING/SIMPLE/56"],
- [67108864,"RING*/SIMPLE/56","RING*/SIMPLE/56"],
- [134217728,"RING*/SIMPLE/56","RING*/SIMPLE/56"],
- [268435456,"RING*/SIMPLE/56","RING*/SIMPLE/56"],
- [536870912,"RING*/SIMPLE/56","RING*/SIMPLE/56"]
+ [4096,"TREE/LL/1",0.32,"tree/ll/24","TREE/LL/24",0.35,9.4,6.5,5.9],
+ [8192,"TREE/LL/1",0.55,"tree/ll/4","TREE/LL/4",0.7,27.3,3.7,14.8],
+ [16384,"TREE/LL/1",0.86,"tree/ll/40","TREE/LL/40",1.26,46.5,2.4,10.7],
+ [32768,"TREE/LL/2",1.72,"tree/ll/40","TREE/LL/40",2.69,56.4,1.8,4.2],
+ [65536,"TREE/LL/4",3.27,"tree/ll/32","TREE/LL/32",5.23,59.9,2.2,1.3],
+ [131072,"TREE/LL/8",6.32,"tree/ll/32","TREE/LL/32",8.87,40.3,1.4,6.8],
+ [262144,"TREE/LL/16",12.57,"ring/ll/32","RING/LL/32",17.83,41.8,196.9,2.1],
+ [524288,"RING/SIMPLE/16",21.19,"ring/ll/48","RING/LL/48",35.03,65.3,1.1,2.0],
+ [1048576,"RING/SIMPLE/32",41.41,"ring/ll/40","RING/LL/40",48.3,16.6,1.3,2.6],
+ [2097152,"RING/SIMPLE/56",79.14,"ring/simple/48","RING/SIMPLE/48",79.06,-0.1,1.3,2.1],
+ [4194304,"RING/SIMPLE/56",127.67,"ring/simple/56","RING/SIMPLE/56",127.49,-0.1,1.0,1.3],
+ [8388608,"RING/SIMPLE/56",197.48,"ring/simple/48","RING/SIMPLE/48",195.28,-1.1,0.7,1.3],
+ [16777216,"RING/SIMPLE/56",268.92,"ring/simple/56","RING/SIMPLE/56",267.73,-0.4,0.2,0.2],
+ [33554432,"RING/SIMPLE/56",318.21,"ring/simple/56","RING/SIMPLE/56",317.17,-0.3,0.2,0.6],
+ [67108864,"RING*/SIMPLE/56",355.38,"ring/simple/224","RING*/SIMPLE/56",354.51,-0.2,0.7,0.5],
+ [134217728,"RING*/SIMPLE/56",379.11,"ring/simple/224","RING*/SIMPLE/56",379.05,-0.0,0.4,0.2],
+ [268435456,"RING*/SIMPLE/56",390.58,"ring/simple/224","RING*/SIMPLE/56",390.09,-0.1,0.2,0.1],
+ [536870912,"RING*/SIMPLE/56",396.49,"ring/simple/224","RING*/SIMPLE/56",396.13,-0.1,0.3,0.6]
 ];
+
 (function(){
   const tb=document.querySelector("#sel tbody");
-  SEL.forEach(([s,d,c])=>{
-    const diff = d!==c;
-    const bad = c.endsWith("/14");
+  SEL.forEach(([s,dsel,dbw,rq,csel,cbw,dl,dsp,csp])=>{
+    const mono='font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;text-align:left';
+    const diff = dsel!==csel;
+    const noisy = Math.max(dsp,csp) > 25;
     tb.insertAdjacentHTML("beforeend",
       `<tr><td class="k">${fmt(s)}</td>
-       <td style="text-align:left;font-family:ui-monospace,monospace;font-size:12.5px">${d}</td>
-       <td style="text-align:left;font-family:ui-monospace,monospace;font-size:12.5px;${bad?"color:var(--critical);font-weight:600":diff?"color:var(--text-primary)":""}">${c}</td>
-       <td style="text-align:right">${bad?'<span class="pill no">÷4 bug</span>':diff?'<span class="pill">yes</span>':'<span style="color:var(--text-muted)">same</span>'}</td></tr>`);
+       <td style="${mono}">${dsel}</td><td>${dbw.toFixed(2)}</td>
+       <td style="${mono};color:var(--text-muted)">${rq}</td>
+       <td style="${mono}${diff?';color:var(--text-primary);font-weight:600':''}">${csel}</td>
+       <td>${cbw.toFixed(2)}</td>
+       <td class="${dl>=2?'up':dl<=-2?'dn':''}">${dl>=0?'+':''}${dl.toFixed(1)}%</td>
+       <td style="${noisy?'color:var(--warning);font-weight:600':'color:var(--text-muted)'}">${dsp.toFixed(1)}/${csp.toFixed(1)}%</td></tr>`);
   });
 })();
 
-/* ---------- table ---------- */
-(function(){
-  const tb=document.querySelector("#tbl tbody");
-  DATA.forEach(r=>{
-    const kept=KEPT.has(r.s);
-    const v = kept ? '<span class="pill ok">kept</span>'
-            : '<span class="pill">default wins</span>';
-    tb.insertAdjacentHTML("beforeend",
-      `<tr><td class="k">${fmt(r.s)}</td><td>${r.d.toFixed(2)}</td><td>${r.c.toFixed(2)}</td>
-       <td class="${r.delta>=2?"up":r.delta<=-2?"dn":""}">${r.delta>=0?"+":""}${r.delta.toFixed(1)}%</td>
-       <td style="text-align:right">${v}</td></tr>`);
-  });
-})();
 </script>
 </body>
 </html>
