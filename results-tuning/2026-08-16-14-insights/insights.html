@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RCCL Tuning Insights</title>
+<style>
+:root{
+  color-scheme: light;
+  --surface-0:#f6f6f4; --surface-1:#fcfcfb; --surface-2:#eeeeea;
+  --text-primary:#0b0b0b; --text-secondary:#52514e; --text-muted:#77766f;
+  --rule:#e0dfda; --grid:#e8e7e2;
+  --series-1:#2a78d6;  /* config  */
+  --series-2:#eb6834;  /* default */
+  --pos:#2a78d6; --neg:#e34948; --mid:#f0efec;
+  --good:#0ca30c; --critical:#d03b3b; --warning:#fab219;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --surface-0:#121211; --surface-1:#1a1a19; --surface-2:#232322;
+    --text-primary:#ffffff; --text-secondary:#c3c2b7; --text-muted:#8e8d84;
+    --rule:#33332f; --grid:#2b2b28;
+    --series-1:#3987e5; --series-2:#d95926;
+    --pos:#3987e5; --neg:#e66767; --mid:#383835;
+    --good:#0ca30c; --critical:#d03b3b; --warning:#fab219;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --surface-0:#121211; --surface-1:#1a1a19; --surface-2:#232322;
+  --text-primary:#ffffff; --text-secondary:#c3c2b7; --text-muted:#8e8d84;
+  --rule:#33332f; --grid:#2b2b28;
+  --series-1:#3987e5; --series-2:#d95926;
+  --pos:#3987e5; --neg:#e66767; --mid:#383835;
+  --good:#0ca30c; --critical:#d03b3b; --warning:#fab219;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--surface-0); color:var(--text-primary);
+  font:15px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1080px;margin:0 auto;padding:40px 24px 80px}
+header{border-bottom:1px solid var(--rule);padding-bottom:24px;margin-bottom:32px}
+h1{font-size:30px;line-height:1.2;margin:0 0 8px;letter-spacing:-.02em;font-weight:650}
+.sub{color:var(--text-secondary);margin:0;font-size:15px}
+.meta{color:var(--text-muted);font-size:13px;margin-top:12px}
+h2{font-size:20px;margin:44px 0 6px;letter-spacing:-.01em;font-weight:640}
+h3{font-size:15px;margin:26px 0 6px;font-weight:640}
+p{margin:8px 0;color:var(--text-secondary)}
+p.lede{color:var(--text-primary)}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em;
+  background:var(--surface-2);padding:1px 5px;border-radius:4px}
+.card{background:var(--surface-1);border:1px solid var(--rule);border-radius:10px;
+  padding:20px 22px;margin:18px 0}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin:24px 0}
+.tile{background:var(--surface-1);border:1px solid var(--rule);border-radius:10px;padding:16px 18px}
+.tile .k{font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em}
+.tile .v{font-size:30px;font-weight:640;letter-spacing:-.02em;margin-top:4px;line-height:1.1}
+.tile .n{font-size:12.5px;color:var(--text-secondary);margin-top:3px}
+.legend{display:flex;gap:20px;flex-wrap:wrap;margin:0 0 10px;font-size:13.5px;color:var(--text-secondary)}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.sw{width:12px;height:12px;border-radius:3px;flex:none}
+figure{margin:0}
+figcaption{font-size:13px;color:var(--text-muted);margin-top:10px}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+svg{display:block;max-width:100%;height:auto;font-family:inherit}
+.gl{stroke:var(--grid);stroke-width:1}
+.ax{stroke:var(--rule);stroke-width:1}
+.tk{fill:var(--text-muted);font-size:11px}
+.al{fill:var(--text-secondary);font-size:12px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:520px}
+th,td{text-align:right;padding:7px 10px;border-bottom:1px solid var(--rule)}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--text-muted);font-weight:560;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+td{color:var(--text-secondary);font-variant-numeric:tabular-nums}
+td.k{color:var(--text-primary);font-weight:560}
+.up{color:var(--good);font-weight:600}
+.dn{color:var(--critical);font-weight:600}
+.pill{display:inline-block;font-size:11.5px;padding:2px 9px;border-radius:99px;
+  border:1px solid var(--rule);color:var(--text-secondary);background:var(--surface-2)}
+.pill.ok{color:var(--good);border-color:color-mix(in srgb,var(--good) 35%,transparent)}
+.pill.no{color:var(--critical);border-color:color-mix(in srgb,var(--critical) 35%,transparent)}
+.note{border-left:3px solid var(--warning);padding:2px 0 2px 16px;margin:18px 0}
+.note strong{color:var(--text-primary)}
+ul{color:var(--text-secondary);padding-left:20px}
+li{margin:5px 0}
+.tt{position:fixed;pointer-events:none;opacity:0;transition:opacity .1s;z-index:9;
+  background:var(--surface-1);border:1px solid var(--rule);border-radius:8px;padding:9px 12px;
+  font-size:12.5px;color:var(--text-primary);box-shadow:0 6px 20px rgba(0,0,0,.14);white-space:nowrap}
+.tt .r{display:flex;justify-content:space-between;gap:16px;color:var(--text-secondary)}
+.tt .r b{color:var(--text-primary);font-variant-numeric:tabular-nums;font-weight:600}
+.tt .h{font-weight:640;margin-bottom:5px;color:var(--text-primary)}
+.gD{color:var(--series-2)!important}.gC{color:var(--series-1)!important}
+footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--rule);
+  font-size:12.5px;color:var(--text-muted)}
+</style>
+<style>
+.big{font-size:17px;line-height:1.65;color:var(--text-primary)}
+.num{font-size:34px;font-weight:650;letter-spacing:-.02em;line-height:1.1}
+h2{margin-top:52px;padding-top:8px;border-top:1px solid var(--rule)}
+h2 .n{color:var(--text-muted);font-weight:500;margin-right:10px;font-size:17px}
+.key{background:var(--surface-1);border-left:3px solid var(--series-1);border-radius:0 8px 8px 0;
+  padding:14px 18px;margin:18px 0}
+.key p{margin:0;color:var(--text-primary)}
+pre{background:var(--surface-1);border:1px solid var(--rule);border-radius:8px;padding:14px 16px;
+  overflow-x:auto;font-size:12.5px;line-height:1.6;color:var(--text-secondary)}
+.late{color:var(--critical);font-weight:600}
+.ok{color:var(--good);font-weight:600}
+nav{background:var(--surface-1);border:1px solid var(--rule);border-radius:10px;padding:16px 20px;margin:26px 0}
+nav ol{margin:0;padding-left:22px;columns:2;column-gap:32px}
+nav li{margin:3px 0;break-inside:avoid}
+nav a{color:var(--series-1);text-decoration:none}
+nav a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>What we learned tuning RCCL on MI355X</h1>
+  <p class="sub">Everything below is measured, not inferred. Plain language, one idea per section.</p>
+  <p class="meta">2026-08-16 · all_reduce · gfx950 · RCCL 2.28.3-develop:2e42aa8 · 8 ranks × 1 GPU per node</p>
+</header>
+
+<p class="big lede">The single most useful thing we found: <strong>RCCL switches algorithm and protocol
+too late at multi-node — five times out of six, and never too early.</strong> Every multi-node win we
+verified is one of those late switches. We have been fixing them one message size at a time.</p>
+
+<nav><ol>
+<li><a href="#s1">Two different problems</a></li>
+<li><a href="#s2">Where the money is</a></li>
+<li><a href="#s3">RCCL switches too late</a></li>
+<li><a href="#s4">More channels can hurt</a></li>
+<li><a href="#s5">Where the curve flattens</a></li>
+<li><a href="#s6">Five ways the measurement lied</a></li>
+<li><a href="#s7">Three environmental traps</a></li>
+<li><a href="#s8">How noisy it really is</a></li>
+<li><a href="#s9">How many repeats</a></li>
+<li><a href="#s10">The "smart search" does nothing</a></li>
+<li><a href="#s11">The trap that cost 65%</a></li>
+<li><a href="#s12">What to do next</a></li>
+</ol></nav>
+
+<h2 id="s1"><span class="n">1</span>Two completely different problems</h2>
+<div class="key"><p><strong>One node:</strong> RCCL uses too few channels. That is the whole story.<br>
+<strong>Two or three nodes:</strong> channels are already right. The switch points are wrong.</p></div>
+<p>At 1 node the default runs 1, 1, 1, 2, 4, 8, 16 channels for small messages where 24–56 is best.
+Turn the number up, gain 19–67%. At multi-node it already sits at 48 (the cap) nearly everywhere and
+there is almost nothing to gain by changing it.</p>
+<p>So "tune RCCL" means two different jobs depending on scale. A method that works at one scale may
+find nothing at the other.</p>
+
+<h2 id="s2"><span class="n">2</span>Where the money actually is</h2>
+<div class="card scroll"><table>
+<thead><tr><th></th><th>1 node</th><th>2 nodes</th><th>3 nodes</th></tr></thead>
+<tbody>
+<tr><td class="k">average headroom</td><td class="up">+22.7%</td><td>+1.3%</td><td>+3.2%</td></tr>
+<tr><td class="k">sizes with ≥10% headroom</td><td class="up">9 of 18</td><td>1 of 18</td><td>3 of 18</td></tr>
+<tr><td class="k">where it lives</td><td>4K–1M</td><td>256K, 32M</td><td>256K, 32M, 128M, 256M</td></tr>
+</tbody></table></div>
+<p>At 1 node, <strong>everything above 2 MB is already perfect</strong> — within 0.2% at every size.
+Don't spend effort there. At multi-node the headroom sits at a handful of specific sizes, not spread
+across the range.</p>
+
+<h2 id="s3"><span class="n">3</span>RCCL switches too late — every single time</h2>
+<div class="card scroll"><table>
+<thead><tr><th>scale</th><th>the switch</th><th>should be at</th><th>RCCL waits until</th><th></th></tr></thead>
+<tbody>
+<tr><td class="k">2 nodes</td><td>LL → LL128</td><td>256K</td><td>512K</td><td class="late">1 step late</td></tr>
+<tr><td class="k">2 nodes</td><td>TREE → RING</td><td>32M</td><td>64M</td><td class="late">1 step late</td></tr>
+<tr><td class="k">2 nodes</td><td>LL128 → SIMPLE</td><td>128M</td><td>128M</td><td class="ok">correct</td></tr>
+<tr><td class="k">3 nodes</td><td>LL → LL128</td><td>128K</td><td>512K</td><td class="late">2 steps late</td></tr>
+<tr><td class="k">3 nodes</td><td>TREE → RING</td><td>32M</td><td>64M</td><td class="late">1 step late</td></tr>
+<tr><td class="k">3 nodes</td><td>LL128 → SIMPLE</td><td>256M</td><td>512M</td><td class="late">1 step late</td></tr>
+</tbody></table></div>
+<div class="key"><p>Five of six late. <strong>None early.</strong> That is a systematic bias, not
+random error — and it means the cause is upstream, in the constants RCCL computes those switch points
+from.</p></div>
+<p>At 1 node there is a different error: RCCL goes straight from <code>TREE/LL</code> to
+<code>RING/SIMPLE</code> and never uses <code>RING/LL</code> at all — yet <code>RING/LL</code> is the
+best choice from 256K to 1M. It skips a whole regime.</p>
+
+<h2 id="s4"><span class="n">4</span>More channels is not always better</h2>
+<p>Everyone assumes bandwidth rises with channel count. True for TREE. For RING at multi-node small
+and mid sizes it collapses:</p>
+<pre>2 nodes, 256K, RING/LL      8 channels -> 5.96 GB/s
+                           48 channels -> 2.13 GB/s     <span class="late">-64%</span></pre>
+<p>38 curves at 2 nodes and 35 at 3 nodes lose more than 3% by going to maximum channels. Several
+lose more than half.</p>
+<div class="key"><p><strong>This is also the whole explanation for the famous 3-node 128M dip:</strong></p>
+<pre style="margin:10px 0 0">3 nodes, 128M, RING/LL128   32ch -> 256.4    40ch -> 271.4 (peak)    48ch -> 243.9</pre>
+<p style="margin-top:10px">The default uses 48 because that is the cap. The peak is at 40. Not a
+fabric problem, not a bug — over-provisioning past the optimum.</p></div>
+<p><strong>Consequence for any search method:</strong> you cannot assume the channel curve is
+monotonic and stop climbing early. It has a peak, and the peak moves with size and algorithm.</p>
+
+<h2 id="s5"><span class="n">5</span>How many channels you actually need</h2>
+<div class="card scroll"><table>
+<thead><tr><th>message size</th><th>1 node</th><th>3 nodes</th></tr></thead>
+<tbody>
+<tr><td class="k">4K</td><td>24</td><td>2</td></tr>
+<tr><td class="k">32K</td><td>16</td><td>16</td></tr>
+<tr><td class="k">256K</td><td>24</td><td>16</td></tr>
+<tr><td class="k">2M</td><td>32</td><td>48</td></tr>
+<tr><td class="k">16M</td><td>56</td><td>48</td></tr>
+<tr><td class="k">128M</td><td>48</td><td>40</td></tr>
+</tbody></table></div>
+<p>Small messages saturate almost immediately; large ones need everything available. The knee moves
+right as size grows — which is exactly why one channel count cannot serve all sizes, and why a tuner
+exists at all.</p>
+
+<h2 id="s6"><span class="n">6</span>The measurement was wrong five ways before it was right</h2>
+<p>None of these were visible in the output. Each alone would have produced confident nonsense.</p>
+<div class="card scroll"><table>
+<thead><tr><th style="text-align:left">what was wrong</th><th style="text-align:left">what it did</th></tr></thead>
+<tbody>
+<tr><td class="k" style="text-align:left">wrong report flag (<code>-M</code>, not <code>-A</code>)</td><td style="text-align:left">the sweep never saw what RCCL chose</td></tr>
+<tr><td class="k" style="text-align:left"><code>-R</code> was buffer registration</td><td style="text-align:left">silently changed the thing being measured</td></tr>
+<tr><td class="k" style="text-align:left">recorded what we asked, not what ran</td><td style="text-align:left">37% of rules named impossible combinations</td></tr>
+<tr><td class="k" style="text-align:left">ranked on a time column that had become CPU time</td><td style="text-align:left">picked 1-channel configs, 99% slower</td></tr>
+<tr><td class="k" style="text-align:left">A/B used 1 rank × 8 GPUs, sweep used 8 × 1</td><td style="text-align:left">compared two different machine shapes</td></tr>
+</tbody></table></div>
+<div class="key"><p>The lesson is not the individual bugs. It is that <strong>the tool reported
+success throughout.</strong> Every gate added afterwards exists because something passed silently.</p></div>
+
+<h2 id="s7"><span class="n">7</span>Three environmental traps</h2>
+<p><strong>GPUs start cold.</strong> They idle at 195 MHz against a 2400 MHz peak. The first runs after
+an allocation measure the ramp, not the hardware. One run kept 0 of 11 rules; the identical config kept
+7 of 11 once warm. 2 nodes need ~4 warm-up runs, 3 nodes need ~8.</p>
+<p><strong>A monitoring daemon disturbs multi-node runs.</strong> <code>amd-nic-metrics</code> spawns 9
+<code>nicctl</code> processes polling RDMA queue-pair stats every ~30 s for ~9 s. Runs take 11–15 s, so
+about a third land in a poll and come back 10× slow.</p>
+<p><strong>Co-tenants matter less than expected.</strong> Nodes 5 and 7 share a leaf switch, so traffic
+between them never reaches the spine another job is using. We wrongly blamed a neighbour job for hours
+before measuring it properly.</p>
+
+<h2 id="s8"><span class="n">8</span>How noisy the measurement really is</h2>
+<div class="card scroll"><table>
+<thead><tr><th>scale</th><th>median spread</th><th>90th pct</th><th>worst</th></tr></thead>
+<tbody>
+<tr><td class="k">1 node</td><td>0.62%</td><td>2.3%</td><td class="dn">172%</td></tr>
+<tr><td class="k">2 nodes</td><td>0.80%</td><td>4.5%</td><td class="dn">233%</td></tr>
+<tr><td class="k">3 nodes</td><td>0.65%</td><td>4.5%</td><td class="dn">200%</td></tr>
+</tbody></table></div>
+<p><strong>The median is tiny; the tail is huge.</strong> Most points repeat within 1%; a few stall
+completely. Two consequences: the old 5% equivalence tolerance was ~7× the real noise and declared
+genuinely different configs tied (now 0.5%), and a single stalled run can sink a good rule — one did,
+scoring a real +7.6% gain at P(sup) 0.86 because one repeat came back 16× slow.</p>
+<p><a href="variance.html">See every point →</a></p>
+
+<h2 id="s9"><span class="n">9</span>How many repeats do you need?</h2>
+<div class="card scroll"><table>
+<thead><tr><th>scale</th><th>configs differ at</th><th>typical cost</th><th>worst case</th></tr></thead>
+<tbody>
+<tr><td class="k">1 node</td><td>7 of 18 sizes</td><td>0.6%</td><td>2.7%</td></tr>
+<tr><td class="k">2 nodes</td><td>10 of 18 sizes</td><td>1.1%</td><td class="dn">10.2%</td></tr>
+<tr><td class="k">3 nodes</td><td>6 of 18 sizes</td><td>0.4%</td><td>0.7%</td></tr>
+</tbody></table></div>
+<p>One repeat is usually fine and occasionally costs a win. The configs that swap places are genuinely
+close, so it rarely matters — but sometimes it does. The A/B protects you either way: a weak candidate
+still has to beat the default over 7 repeats, so a 1-repeat sweep risks <em>missing</em> a win rather
+than <em>shipping</em> a bad rule.</p>
+<div class="key"><p><strong>Rule of thumb: 1 repeat to find where the wins are, 3 repeats to measure
+them properly.</strong></p></div>
+
+<h2 id="s10"><span class="n">10</span>The "smart search" in the tool does nothing here</h2>
+<pre>Hotspots detected: 0      Iterations: 1      (1, 2 and 3 nodes alike)</pre>
+<p>The hotspot loop looks for bandwidth <em>dropping</em> as size grows. Bandwidth rises monotonically,
+so on a healthy curve there is nothing to find. And the one real dip — 3 nodes at 128M — is 8.4%,
+below its own 10% trigger.</p>
+<p>Its apparent 3× speed advantage came entirely from doing 1 repeat instead of 3. The orchestration
+part of that script is genuinely useful; the hotspot part is not, as configured.</p>
+
+<h2 id="s11"><span class="n">11</span>The trap that cost 65%</h2>
+<p>Where WarpSpeed is active (≥64 MB, 1 node), RCCL multiplies the channel count by 4.</p>
+<pre>channels set by environment variable  ->  that is the BASE count
+channels set in a plugin rule         ->  that is the POST-MULTIPLIER TOTAL</pre>
+<p>Same integer, four times the meaning. We swept <code>48</code> via env var, wrote <code>48</code>
+into the config, and deployed 12 base / 48 actual against the default's 56 base / <strong>224</strong>
+actual. Measured <span class="late">−60.3%</span>. Writing <code>224</code> restores parity exactly.</p>
+<div class="key"><p>The general rule this illustrates: <strong>the path you measure on must be the path
+you deploy on, or you are not measuring what you ship.</strong></p></div>
+
+<h2 id="s12"><span class="n">12</span>What to do next, in order of value</h2>
+<p><strong>1. Fix the cause, not the symptoms.</strong> RCCL supports a v5 tuner plugin that lets a
+plugin rewrite its internal cost-model constants — latencies and per-channel bandwidths per algorithm
+and protocol. Those constants produce the switch points in section 3. We are on v4, which only
+overrides outcomes size by size. Correcting the constants could fix all six late transitions at once,
+and would apply to collectives we never swept.</p>
+<p><strong>2. Sweep the other five collectives.</strong> Everything we know is all_reduce. The split in
+section 1 is a prediction for the others, not a fact.</p>
+<p><strong>3. Find out which message sizes your workload uses.</strong> We can prove each rule helps.
+We cannot say what the config is worth to you, because that depends entirely on your size
+distribution — a model doing mostly 4 MB all_reduces gains nothing from our 1-node config; one doing
+512 KB gains 65%. This is the missing denominator under every number here.</p>
+<p><strong>4. Reduce runs only if the space grows.</strong> 54 configs per collective-scale takes ~35
+minutes exhaustively. Smarter search pays once the space is much bigger. Expect roughly half the runs
+from pruning, not a tenth.</p>
+
+<h2>Numbers worth remembering</h2>
+<div class="tiles">
+  <div class="tile"><div class="k">best 1-node gain</div><div class="num" style="color:var(--good)">+65.3%</div><div class="n">512K, P(sup) 1.00</div></div>
+  <div class="tile"><div class="k">best 3-node gain</div><div class="num" style="color:var(--good)">+17.3%</div><div class="n">256M–512M</div></div>
+  <div class="tile"><div class="k">noise floor</div><div class="num">0.65%</div><div class="n">median run-to-run spread</div></div>
+  <div class="tile"><div class="k">switches too late</div><div class="num" style="color:var(--critical)">5 of 6</div><div class="n">none too early</div></div>
+  <div class="tile"><div class="k">WarpSpeed unit trap</div><div class="num">48 vs 224</div><div class="n">same intent, 4× apart</div></div>
+  <div class="tile"><div class="k">hotspots found</div><div class="num">0</div><div class="n">by the "smart" search</div></div>
+</div>
+
+<footer>
+  Sources: <code>results-tuning/2026-08-03-*</code>, <code>2026-08-04-*</code>,
+  <code>2026-08-16-*</code>, <code>findings/</code>. Measured on MI355X (gfx950), RCCL
+  2.28.3-develop:2e42aa8, 8 ranks × 1 GPU per node, all_reduce, float/sum, 4K–512M.
+  A different RCCL version may behave differently — the acceptance map and the defaults being beaten
+  are both version-specific.
+</footer>
+</div>
+</body>
+</html>
