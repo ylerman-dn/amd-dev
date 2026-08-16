@@ -71,5 +71,16 @@ optimization_runs/**/*
 
 .clangd
 
-# GPU-107 tuning run output
-results-tuning/
+# GPU-107 tuning run output.
+# Track the evidence (.md/.conf/.csv, ~2 MB) so results are reviewable off this
+# VM; keep the raw per-rank logs out (~870 MB). Logs stay local and are still
+# cited by path from the SUMMARY files.
+results-tuning/**/*.log
+results-tuning/**/*.txt
+results-tuning/**/PROGRESS
+results-tuning/**/*.db
+results-tuning/**/*.tgz
+results-tuning/**/tool/
+results-tuning/**/__pycache__/
+# scratch list, churns constantly, not for review
+results-tuning/OPEN-ITEMS.md
