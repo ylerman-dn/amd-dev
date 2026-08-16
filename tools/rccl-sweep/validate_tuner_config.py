@@ -290,6 +290,10 @@ def main():
                     help="fail unless the INFO log proves the tuner plugin applied the config")
     ap.add_argument("--repeats", type=int, default=7,
                     help="repeats per variant; 7 is the practical floor for P(sup) to mean anything")
+    ap.add_argument("--warmup-runs", type=int, default=4,
+                    help="discarded full runs before the measured repeats, to bring the GPUs off "
+                         "idle clocks (default 4). Distinct from -w/--warmup, which is iterations "
+                         "inside one launch and does not affect DVFS. 0 disables.")
     ap.add_argument("--min-psup", type=float, default=0.95,
                     help="minimum probability-of-superiority to keep a rule (default 0.95)")
     ap.add_argument("--min-gain", type=float, default=2.0, help="minimum median %% gain (default 2)")
@@ -345,6 +349,29 @@ def main():
 
     for nodes in scales:
         measured[nodes] = {"default": defaultdict(list), "config": defaultdict(list)}
+
+        # --- clock warm-up ------------------------------------------------------------------------
+        # The GPUs idle at ~195 MHz sclk (peak ~2400) and each repeat is a separate srun, so the
+        # first few measured repeats run on a GPU that is still ramping. -w/--warmup does NOT cover
+        # this: those are iterations inside one launch, microseconds at small sizes, which warm the
+        # caches, not the clocks. DVFS needs seconds of sustained load.
+        #
+        # Measured 2026-08-16, 1 node, fresh allocation (results-tuning/2026-08-16-2-ab1node/):
+        #   4M default  r1=92.8 r2=91.1 r3=88.4 r4=90.1 | r5=128.1 r6=128.1 r7=127.8
+        # The step appears in BOTH arms at every size, so it does not bias which arm wins -- but it
+        # inflates each arm's own spread to ~40%, the arms overlap, and P(sup) (a rank statistic)
+        # collapses below the keep threshold. It rejected every rule in that run.
+        #
+        # 2026-08-04 did not hit this only because its A/B followed a 20-minute sweep on the same
+        # node: all 7 repeats were flat to 0.6%, and today's r5-r7 reproduce those values exactly.
+        #
+        # These runs are discarded, never recorded, and cost ~1 min per scale.
+        for w in range(1, args.warmup_runs + 1):
+            tag = f"{nodes}n_warmup_r{w}"
+            _, secs, hung = run_once(args, nodes, None, os.path.join(args.logdir, tag + ".log"))
+            log_time(args.times_csv, "warmup", nodes, f"warmup_r{w}", secs, hung)
+            print(f"  {nodes}n warm-up {w}/{args.warmup_runs} done (discarded)", flush=True)
+
         for rep in range(1, args.repeats + 1):
             for variant, conf in (("default", None), ("config", args.config)):
                 tag = f"{nodes}n_{variant}_r{rep}"
