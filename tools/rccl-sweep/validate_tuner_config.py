@@ -290,6 +290,12 @@ def main():
                     help="fail unless the INFO log proves the tuner plugin applied the config")
     ap.add_argument("--repeats", type=int, default=7,
                     help="repeats per variant; 7 is the practical floor for P(sup) to mean anything")
+    ap.add_argument("--max-arm-spread", type=float, default=25.0,
+                    help="a (size, arm) point is 'noisy' when its own repeats span more than this "
+                         "%% of their minimum (default 25). Clean 1-node runs sit near 1%%.")
+    ap.add_argument("--max-noisy-fraction", type=float, default=0.20,
+                    help="if more than this fraction of points are noisy, the run is reported as "
+                         "NOT VALID and exits 2 instead of issuing verdicts (default 0.20)")
     ap.add_argument("--warmup-runs", type=int, default=4,
                     help="discarded full runs before the measured repeats, to bring the GPUs off "
                          "idle clocks (default 4). Distinct from -w/--warmup, which is iterations "
@@ -476,10 +482,48 @@ def main():
         for rule, _ in kept:
             fh.write(rule["raw"] + "\n")
 
+    # --- validity gate: could this run decide anything at all? ------------------------------------
+    # "0 rules kept" has two very different causes and the old wording asserted the wrong one:
+    #   (a) the default genuinely wins        -> an empty config is the right answer
+    #   (b) the measurement could not decide  -> the run is void and must be repeated
+    # Both were printed as "RCCL's defaults are already optimal here". On 2026-08-16 that claim was
+    # made for a 2-node run whose config arm measured 1.48-25.36 GB/s at 1M (co-tenant saturating
+    # the shared fabric), and for a 1-node run on cold GPUs that kept 0 of 11 -- the same config
+    # kept 7 of 11 once warmed. Neither was evidence about RCCL's defaults.
+    #
+    # A rule cannot be judged when an arm's own repeats scatter more than the gap being tested for,
+    # so report spread and refuse to editorialise above the threshold.
+    spreads = []
+    for nodes in scales:
+        for variant in ("default", "config"):
+            for size, vals in measured[nodes][variant].items():
+                if len(vals) >= 2 and min(vals) > 0:
+                    spreads.append(((max(vals) - min(vals)) / min(vals) * 100, nodes, variant, size))
+    worst_spread = max(spreads)[0] if spreads else 0.0
+    noisy = [s for s in spreads if s[0] > args.max_arm_spread]
+
+    print(f"\nwithin-arm spread: worst {worst_spread:.1f}%, "
+          f"{len(noisy)} of {len(spreads)} (size, arm) points over {args.max_arm_spread:.0f}%")
+    invalid = len(noisy) > len(spreads) * args.max_noisy_fraction
+
     print(f"\nkept {len(kept)} of {len(rules)} rules -> {out}")
+
+    if invalid:
+        wp, wn, wv, ws = max(spreads)
+        print(f"\n*** RUN NOT VALID. {len(noisy)} of {len(spreads)} points exceed "
+              f"{args.max_arm_spread:.0f}% within-arm spread (worst {wp:.0f}% at "
+              f"{ws} bytes, {wn}n {wv}).\n"
+              f"    Repeats of the SAME configuration disagree by more than the effect being\n"
+              f"    measured, so neither KEEP nor DROP above means anything. Do not read this as\n"
+              f"    a statement about RCCL's defaults.\n"
+              f"    Usual causes: a co-tenant saturating the shared fabric (check squeue -p XAI),\n"
+              f"    GPUs still on idle clocks (raise --warmup-runs), or two runs competing for the\n"
+              f"    same nodes. Fix the cause and repeat. ***")
+        return 2
+
     if not kept:
-        print("No rule survived. That is a legitimate result: RCCL's defaults are already optimal here,\n"
-              "and an empty config is the correct thing to ship.")
+        print("No rule survived, and the run is measurement-valid: RCCL's defaults are already\n"
+              "optimal here, and an empty config is the correct thing to ship.")
     return 0 if kept else 1
 
 
