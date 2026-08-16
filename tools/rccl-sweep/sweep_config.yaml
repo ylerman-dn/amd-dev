@@ -41,6 +41,14 @@ test_defaults:
   show_algo_proto_channels: 1 # -A parameter (show algorithm, protocol, and channels)
   timeout: 600              # seconds per test
 
+# GPU-107: keep every run's NCCL_DEBUG=INFO log next to its results, as dbg_%p.log in the run folder.
+# Without it no sweep row meets this project's verification bar -- "a run only counts if the log
+# confirms which algo/proto/nchannels were actually SELECTED" -- because -A 1 alone is untrustworthy
+# for channels (it reports a planned ceiling, not what ran).
+# Free within measurement resolution: mean -0.06% across 18 sizes, 5-repeat ranges overlapping 18/18
+# (results-tuning/2026-08-03-5-lognoise/). Costs disk: roughly 1 MB per rank per run.
+keep_info_logs: true
+
 # Node Configuration
 nodes:
   gpus_per_node: 8
@@ -99,6 +107,10 @@ env_vars:
   NCCL_PXN_DISABLE: 0
   
   # Debug/dump settings
+  # GPU-107: overridden to INFO per-run by sweep_executor.py, which also sets NCCL_DEBUG_FILE so the
+  # log lands in that run's own folder. Kept as VERSION here so any code path that does NOT set a
+  # debug file cannot accidentally put INFO on stdout, where it costs up to 4% and interleaves with
+  # the data rows. See keep_info_logs below.
   NCCL_DEBUG: "VERSION"
   NCCL_TOPO_DUMP_FILE: "/tmp/system_run2.txt"
   NCCL_GRAPH_DUMP_FILE: "/tmp/dump_graph.txt"
