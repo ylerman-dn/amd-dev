@@ -218,6 +218,17 @@ def preflight(args, scales):
           f"anything before spending an A/B\n", flush=True)
     ok = True
     for nodes in scales:
+        # GPU-107: warm THIS scale's nodes before judging them. Preflight used to run before any
+        # warm-up, so on a freshly allocated node it measured the idle-clock ramp -- the very thing
+        # --warmup-runs exists to remove -- and refused a machine that was fine. On 2026-08-16 the
+        # 2-node scale passed only because those nodes had been warmed by earlier work, while the
+        # 3-node scale added a cold node 6 and failed at 210% spread.
+        for w in range(args.warmup_runs):
+            run_once(args, nodes, None,
+                     os.path.join(args.logdir, f"{nodes}n_preflight_warmup_r{w + 1}.log"))
+        if args.warmup_runs:
+            print(f"  {nodes}n warmed with {args.warmup_runs} discarded run(s)", flush=True)
+
         seen = defaultdict(list)
         for i in range(1, args.preflight + 1):
             data, _, hung = run_once(args, nodes, None,
@@ -517,7 +528,8 @@ def main():
         # node: all 7 repeats were flat to 0.6%, and today's r5-r7 reproduce those values exactly.
         #
         # These runs are discarded, never recorded, and cost ~1 min per scale.
-        for w in range(1, args.warmup_runs + 1):
+        _already_warm = bool(args.preflight and not args.no_preflight and args.warmup_runs)
+        for w in range(1, 0 if _already_warm else args.warmup_runs + 1):
             tag = f"{nodes}n_warmup_r{w}"
             _, secs, hung = run_once(args, nodes, None, os.path.join(args.logdir, tag + ".log"))
             log_time(args.times_csv, "warmup", nodes, f"warmup_r{w}", secs, hung)
