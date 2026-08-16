@@ -86,6 +86,68 @@ def parse_rules(path):
     return comments, header, rules
 
 
+def split_passing_runs(per_size, min_gain, min_psup, max_regression):
+    """Split a mixed rule range into the contiguous runs of sizes that individually pass.
+
+    `per_size` is [(size_bytes, gain_pct, psup)] ascending by size, covering only the sizes that
+    actually have data. A size passes on the same thresholds the whole-rule verdict uses.
+
+    Returns (runs, excluded_sizes) where runs is a list of lists of the passing tuples. Returns
+    ([], []) when splitting would not help -- nothing passes, or everything does (in which case the
+    caller's normal KEEP path already handles it).
+
+    Why contiguous: a tuner rule is a byte range, so only an unbroken span of sizes can become one
+    rule. A failing size in the middle genuinely has to break the range in two.
+    """
+    ok = {s for s, g, p in per_size
+          if g >= min_gain and p >= min_psup and g >= -max_regression}
+    if not ok or len(ok) == len(per_size):
+        return [], []
+    runs, cur = [], []
+    for s, g, p in per_size:
+        if s in ok:
+            cur.append((s, g, p))
+        elif cur:
+            runs.append(cur)
+            cur = []
+    if cur:
+        runs.append(cur)
+    return runs, [s for s, _, _ in per_size if s not in ok]
+
+
+def self_test():
+    """Unit-test split_passing_runs against the cases that motivated it. Returns an exit code."""
+    K, M = 1024, 1024 * 1024
+    cases = [
+        # (name, per_size, expected number of runs, expected excluded sizes)
+        ("3n 256K-1M ch16 (real landmine: +8.9% then -5.0%)",
+         [(256*K, +8.9, 1.00), (512*K, -5.0, 0.10), (1*M, -3.8, 0.14)], 1, [512*K, 1*M]),
+        ("3n 256M-512M ch32 (real landmine: +12.1% then -2.5%)",
+         [(256*M, +12.1, 1.00), (512*M, -2.5, 0.20)], 1, [512*M]),
+        ("failure in the MIDDLE must break the range in two",
+         [(64*K, +5.0, 1.0), (128*K, -4.0, 0.1), (256*K, +6.0, 1.0)], 2, [128*K]),
+        ("all sizes pass -> splitter declines, caller's KEEP path applies",
+         [(64*K, +5.0, 1.0), (128*K, +6.0, 1.0)], 0, []),
+        ("no size passes -> stays dropped",
+         [(64*K, -5.0, 0.1), (128*K, -4.0, 0.1)], 0, []),
+        ("good gain but P(sup) too low must NOT be smuggled in",
+         [(64*K, +9.0, 0.60), (128*K, +5.0, 1.00)], 1, [64*K]),
+        ("gain below --min-gain is excluded even when reproducible",
+         [(64*K, +0.5, 1.00), (128*K, +5.0, 1.00)], 1, [64*K]),
+    ]
+    bad = 0
+    for name, per_size, exp_runs, exp_excl in cases:
+        runs, excl = split_passing_runs(per_size, 2.0, 0.95, 2.0)
+        ok = len(runs) == exp_runs and excl == exp_excl
+        bad += not ok
+        print(f"  [{'PASS' if ok else 'FAIL'}] {name}")
+        if not ok:
+            print(f"         expected {exp_runs} run(s), excluded {exp_excl}")
+            print(f"         got      {len(runs)} run(s), excluded {excl}")
+    print(f"\n{len(cases) - bad}/{len(cases)} passed")
+    return 1 if bad else 0
+
+
 def parse_busbw(text):
     """Extract {size_bytes: in-place busbw} from benchmark stdout.
 
@@ -235,6 +297,14 @@ def main():
                     help="drop the rule if any size in its range loses more than this %% (default 2)")
     ap.add_argument("--max-hang-rate", type=float, default=0.05,
                     help="refuse to bless the config if it hangs more often than this (default 0.05)")
+    ap.add_argument("--self-test", action="store_true",
+                    help="run the range-splitting unit tests and exit (no cluster needed)")
+    ap.add_argument("--split-ranges", action="store_true",
+                    help="when a rule's range mixes passing and failing sizes, emit the passing "
+                         "contiguous sub-ranges instead of dropping the whole rule. Off by default: "
+                         "it changes which rules ship, so it must be asked for explicitly. Each "
+                         "sub-range still has to clear --min-gain, --min-psup and --max-regression "
+                         "on every size it covers.")
     ap.add_argument("--min-bytes", type=int, default=65536)
     ap.add_argument("--max-bytes", type=int, default=536870912)
     ap.add_argument("--iters", type=int, default=20)
@@ -247,6 +317,11 @@ def main():
                          "REQUIRE THIS: without the fabric settings (e.g. NCCL_SOCKET_IFNAME, "
                          "NCCL_IB_GID_INDEX, OMPI_MCA_btl_tcp_if_include) 2+ node runs produce no "
                          "output at all and would be miscounted as hangs.")
+    # --self-test needs no cluster, no config and no binary, so short-circuit before argparse
+    # enforces the required arguments.
+    if "--self-test" in sys.argv:
+        sys.exit(self_test())
+
     args = ap.parse_args()
 
     comments, header, rules = parse_rules(args.config)
@@ -304,13 +379,16 @@ def main():
         cand = measured[rule["nodes"]]["config"]
         sizes = [s for s in sorted(base) if rule["min_bytes"] <= s <= rule["max_bytes"]]
         gains, psups, worst = [], [], 0.0
+        per_size = []          # (size, gain, psup) for the sizes that actually have data
         for s in sizes:
             a, b = cand.get(s, []), base.get(s, [])
             if len(a) < 2 or len(b) < 2:
                 continue
             g = (statistics.median(a) / statistics.median(b) - 1) * 100
+            p = psup(a, b)
             gains.append(g)
-            psups.append(psup(a, b))
+            psups.append(p)
+            per_size.append((s, g, p))
             worst = min(worst, g)
         label = f"{rule['coll']} {rule['min_bytes']}-{rule['max_bytes']} ch{rule['channels']} {rule['nodes']}n"
         if not gains:
@@ -325,6 +403,35 @@ def main():
             verdict, reason = "KEEP", "verified"
         print(f"{label:<44} {len(gains):>6} {max(gains) if gains else 0:>+9.1f}% "
               f"{worst:>+7.1f}% {max(psups) if psups else 0:>7.2f}  {verdict} ({reason})")
+
+        # --- range splitting ----------------------------------------------------------------------
+        # generate_tuner_config.py merges adjacent sizes that share settings, so one rule can span a
+        # real win and a real regression. Dropping the whole rule is correct but throws the win away:
+        # at 3 nodes it discarded +8.9% @256K and +12.1% @256M. With --split-ranges, a mixed rule is
+        # instead narrowed to the contiguous runs of sizes that individually pass, and the failing
+        # sizes fall through to RCCL's default. Each emitted sub-rule is still backed by per-size
+        # measurements at the same thresholds -- nothing is kept that was not measured to pass.
+        if verdict == "DROP" and args.split_ranges and per_size:
+            runs, excluded = split_passing_runs(
+                per_size, args.min_gain, args.min_psup, args.max_regression)
+            if runs:
+                for run in runs:
+                    lo, hi = run[0][0], run[-1][0]
+                    # widen to the original bounds where nothing failed outside the run
+                    p_raw = rule["raw"].split(",")
+                    p_raw[1], p_raw[2] = str(lo), str(hi)
+                    sub = dict(rule, raw=",".join(p_raw), min_bytes=lo, max_bytes=hi)
+                    sub_label = f"  ↳ split {lo}-{hi} ch{rule['channels']} {rule['nodes']}n"
+                    bg = max(g for _, g, _ in run)
+                    bp = max(p for _, _, p in run)
+                    wg = min(g for _, g, _ in run)
+                    print(f"{sub_label:<44} {len(run):>6} {bg:>+9.1f}% {wg:>+7.1f}% {bp:>7.2f}  "
+                          f"KEEP (split from a mixed range)")
+                    kept.append((sub, f"split from {rule['min_bytes']}-{rule['max_bytes']}: {reason}"))
+                dropped.append((rule, f"{reason} -- SPLIT: kept {len(runs)} sub-range(s), "
+                                      f"excluded sizes {excluded}"))
+                continue
+
         (kept if verdict == "KEEP" else dropped).append((rule, reason))
 
     out = os.path.splitext(args.config)[0] + ".validated.csv"
