@@ -1,0 +1,603 @@
+<title>GPU-107 — RCCL tuning on MI355X</title>
+
+<style>
+  :root{
+    --bg:#F7F6FB; --surface:#FFFFFF;
+    --ink:#1B1A24; --ink-2:#55536A; --ink-3:#8A8799;
+    --rule:#E4E2EE; --rule-2:#CFCCDE; --grid:#E9E7F1;
+    --s-default:#5B54C4; --s-tuned:#B8860B;
+    --pos:#B8860B; --neg:#B02D63;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"DejaVu Sans Mono",monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#14131A; --surface:#1C1B24;
+      --ink:#EDECF3; --ink-2:#A8A5BA; --ink-3:#736F85;
+      --rule:#2C2A38; --rule-2:#3D3A4C; --grid:#282634;
+      --s-default:#7E75D8; --s-tuned:#C08A1E;
+      --pos:#C08A1E; --neg:#D2567E;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#14131A; --surface:#1C1B24;
+    --ink:#EDECF3; --ink-2:#A8A5BA; --ink-3:#736F85;
+    --rule:#2C2A38; --rule-2:#3D3A4C; --grid:#282634;
+    --s-default:#7E75D8; --s-tuned:#C08A1E;
+    --pos:#C08A1E; --neg:#D2567E;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:var(--sans); font-size:16px; line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .deck{max-width:1180px; margin:0 auto; padding:0 28px}
+
+  .slide{display:none; min-height:100vh; padding:56px 0 92px; flex-direction:column; justify-content:center}
+  .slide.on{display:flex}
+
+  .eyebrow{
+    font-family:var(--mono); font-size:11.5px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--ink-3); margin:0 0 18px; display:flex; align-items:center; gap:12px;
+  }
+  .eyebrow::after{content:""; flex:1; height:1px; background:var(--rule)}
+
+  h1{
+    font-family:var(--mono); font-weight:600; font-size:clamp(30px,4.2vw,50px);
+    line-height:1.1; letter-spacing:-.02em; margin:0 0 22px; text-wrap:balance; max-width:22ch;
+  }
+  h2{
+    font-family:var(--mono); font-weight:600; font-size:clamp(22px,2.8vw,32px);
+    line-height:1.18; letter-spacing:-.015em; margin:0 0 22px; text-wrap:balance; max-width:32ch;
+  }
+  p{margin:0 0 15px; max-width:66ch; color:var(--ink-2)}
+  p.lede{font-size:18.5px; color:var(--ink); max-width:60ch}
+  strong{color:var(--ink); font-weight:600}
+  em{font-style:italic}
+  .num{font-family:var(--mono); font-variant-numeric:tabular-nums; color:var(--ink); font-weight:600}
+
+  .meta{font-family:var(--mono); font-size:12.5px; color:var(--ink-3); margin-top:30px; line-height:1.9}
+  .meta span{color:var(--ink-2)}
+
+  ul.findings{list-style:none; padding:0; margin:0 0 22px; display:flex; flex-direction:column}
+  ul.findings li{
+    padding:12px 0 12px 40px; border-top:1px solid var(--rule); position:relative;
+    color:var(--ink-2); max-width:80ch;
+  }
+  ul.findings li:last-child{border-bottom:1px solid var(--rule)}
+  ul.findings li::before{
+    content:attr(data-n); position:absolute; left:0; top:12px;
+    font-family:var(--mono); font-size:11.5px; color:var(--ink-3);
+    font-variant-numeric:tabular-nums;
+  }
+
+  .aside{
+    border-left:2px solid var(--rule-2); padding:3px 0 3px 18px; margin:0;
+    font-size:14.5px; color:var(--ink-3); max-width:66ch;
+  }
+  .aside strong{color:var(--ink-2)}
+
+  .takeaway{
+    background:var(--surface); border:1px solid var(--rule); border-radius:3px;
+    padding:16px 19px; margin:20px 0 0;
+  }
+  .takeaway p{margin:0; max-width:82ch}
+  .takeaway p + p{margin-top:9px; font-size:14px; color:var(--ink-3)}
+
+  figure{margin:0}
+  figcaption{
+    font-family:var(--mono); font-size:11.5px; color:var(--ink-3);
+    margin-top:11px; max-width:90ch;
+  }
+  .chart{overflow-x:auto; background:var(--surface); border:1px solid var(--rule); border-radius:3px; padding:8px 6px 2px}
+  .chart svg{display:block; width:100%; height:auto; min-width:480px}
+  .diagram{overflow-x:auto}
+  .diagram svg{display:block; width:100%; height:auto; max-width:960px; min-width:600px}
+
+  /* ── SVG theming: presentation attributes cannot take var(), so style by class ── */
+  svg text{font-family:var(--mono); font-variant-numeric:tabular-nums}
+  .box{fill:var(--surface); stroke:var(--rule-2); stroke-width:1}
+  .box-hi{fill:var(--surface); stroke:var(--s-tuned); stroke-width:2}
+  .k{fill:var(--ink-3); font-size:12.5px}
+  .v{fill:var(--ink); font-size:12.5px}
+  .m{fill:var(--ink-2); font-size:12.5px}
+  .hi{fill:var(--s-tuned); font-size:12.5px}
+  .sm{fill:var(--ink-3); font-size:11px}
+  .eb{fill:var(--ink-3); font-size:11.5px; letter-spacing:.16em}
+  .eb-hi{fill:var(--s-tuned); font-size:11.5px; letter-spacing:.16em}
+  .hair{stroke:var(--rule); stroke-width:1}
+  .flow{stroke:var(--ink-3); stroke-width:1.5; fill:none}
+  .head{fill:var(--ink-3)}
+  .gl{stroke:var(--grid); stroke-width:1}
+  .axis{stroke:var(--rule-2); stroke-width:1}
+  .zero{stroke:var(--ink-3); stroke-width:1.5}
+  .tk{fill:var(--ink-3); font-size:10.5px}
+  .tk-s{fill:var(--ink-3); font-size:10px}
+  .cross{stroke:var(--ink-3); stroke-width:1; stroke-dasharray:2 3}
+  .marker-note{fill:var(--ink-3); font-size:10.5px}
+  .dash{stroke:var(--rule-2); stroke-width:1; stroke-dasharray:3 4}
+  .ln-d{stroke:var(--s-default)} .ln-c{stroke:var(--s-tuned)}
+  .dot-d{fill:var(--s-default)} .dot-c{fill:var(--s-tuned)}
+  .lab-d{fill:var(--s-default); font-size:12px} .lab-c{fill:var(--s-tuned); font-size:12px}
+  .dot-d,.dot-c{stroke:var(--surface); stroke-width:1.5}
+  .b-pos{fill:var(--pos)} .b-neg{fill:var(--neg)}
+  .b-mut{opacity:.32}
+  .b-out-pos{fill:none; stroke:var(--pos); stroke-width:2}
+  .b-out-neg{fill:none; stroke:var(--neg); stroke-width:2}
+  .bl{font-size:10px; fill:var(--ink); font-weight:600}
+  .bl-mut{font-size:10px; fill:var(--ink-3)}
+
+  .legend{
+    display:flex; flex-wrap:wrap; gap:7px 20px; margin:0 0 13px;
+    font-family:var(--mono); font-size:12px; color:var(--ink-2); align-items:center;
+  }
+  .legend i{display:inline-block; width:22px; height:3px; border-radius:2px; vertical-align:3px; margin-right:7px}
+  .legend i.blk{height:11px; border-radius:2px; vertical-align:-1px}
+  .legend i.out{height:11px; border-radius:2px; background:transparent; border:2px solid var(--pos); vertical-align:-1px}
+  .legend i.mut{opacity:.35}
+
+  .pair{display:grid; grid-template-columns:1fr 1fr; gap:20px}
+  @media (max-width:900px){ .pair{grid-template-columns:1fr} }
+  .pair h3{
+    font-family:var(--mono); font-size:12.5px; font-weight:600; letter-spacing:.06em;
+    text-transform:uppercase; color:var(--ink-2); margin:0 0 9px;
+  }
+
+  .plotwrap{position:relative}
+  .tip{
+    position:absolute; top:8px; transform:translateX(-50%); pointer-events:none;
+    background:var(--surface); border:1px solid var(--rule-2); border-radius:3px;
+    padding:8px 11px; font-family:var(--mono); font-size:11.5px; line-height:1.6;
+    color:var(--ink); opacity:0; transition:opacity .09s; white-space:nowrap;
+    box-shadow:0 4px 14px rgba(0,0,0,.10); z-index:3; font-variant-numeric:tabular-nums;
+  }
+  .tip.on{opacity:1}
+  .tip .q{color:var(--ink-3)}
+  .tip b{font-weight:600}
+  .tip .p{color:var(--pos)} .tip .n{color:var(--neg)}
+
+  .bar{
+    position:fixed; left:0; right:0; bottom:0; height:44px; display:flex; align-items:center;
+    gap:13px; padding:0 22px; background:var(--bg); border-top:1px solid var(--rule); z-index:9;
+  }
+  .rail{flex:1; height:2px; background:var(--rule); position:relative; border-radius:2px}
+  .rail i{position:absolute; left:0; top:0; bottom:0; background:var(--s-tuned); border-radius:2px; transition:width .18s}
+  .count{font-family:var(--mono); font-size:12px; color:var(--ink-3); font-variant-numeric:tabular-nums}
+  button{
+    font-family:var(--mono); font-size:12px; color:var(--ink-2); background:var(--surface);
+    border:1px solid var(--rule-2); border-radius:3px; padding:5px 11px; cursor:pointer;
+  }
+  button:hover{color:var(--ink); border-color:var(--ink-3)}
+  button:focus-visible{outline:2px solid var(--s-tuned); outline-offset:2px}
+
+  @media print{ .slide{display:flex !important; min-height:0; page-break-after:always} .bar{display:none} }
+  @media (prefers-reduced-motion:reduce){ *{transition:none !important} }
+</style>
+
+<div class="deck">
+
+<!-- 1 ─────────────────────────────────────────── -->
+<section class="slide on">
+  <p class="eyebrow">GPU-107 · MI355X cluster · 2026-08-10</p>
+  <h1>Does RCCL's default leave anything on the table?</h1>
+  <p class="lede">Two weeks: getting the tuning harness honest enough to believe, then A/B-ing a
+  generated config against RCCL's own default at 1, 2 and 3 nodes — to get a feel for whether
+  there is real value here.</p>
+  <p class="meta">
+    ylerman<br>
+    all_reduce · 4K–512M · <span>RCCL 2.28.3-develop</span><br>
+    nodes <span>amd-mi355x-5,6,7</span> · 8 GPUs each
+  </p>
+</section>
+
+<!-- 2 ─────────────────────────────────────────── -->
+<section class="slide">
+  <p class="eyebrow">Background</p>
+  <h2>RCCL makes three choices on every collective call</h2>
+
+  <figure>
+    <div class="diagram">
+      <svg viewBox="0 0 940 292" role="img"
+           aria-label="The tuner plugin receives the collective type, message size, node count and rank count, and returns an algorithm, a protocol and a channel count, which RCCL then uses to launch its kernels.">
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path class="head" d="M0,0 L10,5 L0,10 z"/>
+          </marker>
+        </defs>
+
+        <!-- inputs -->
+        <text class="eb" x="16" y="24">WHAT THE CALL KNOWS</text>
+        <rect class="box" x="16" y="40" width="228" height="178" rx="3"/>
+        <text class="k" x="34"  y="72">collective</text>
+        <text class="v" x="226" y="72"  text-anchor="end">all_reduce</text>
+        <text class="k" x="34"  y="106">message size</text>
+        <text class="v" x="226" y="106" text-anchor="end">4 MB</text>
+        <text class="k" x="34"  y="140">nodes</text>
+        <text class="v" x="226" y="140" text-anchor="end">3</text>
+        <text class="k" x="34"  y="174">ranks / GPUs</text>
+        <text class="v" x="226" y="174" text-anchor="end">24</text>
+        <line class="hair" x1="34" y1="190" x2="226" y2="190"/>
+        <text class="sm" x="34" y="207">that is the entire input</text>
+
+        <line class="flow" x1="254" y1="129" x2="314" y2="129" marker-end="url(#ar)"/>
+
+        <!-- who decides -->
+        <text class="eb" x="326" y="24">WHO DECIDES</text>
+        <rect class="box" x="326" y="40" width="250" height="60" rx="3"/>
+        <text class="m"  x="344" y="68">RCCL built-in heuristic</text>
+        <text class="sm" x="344" y="88">the default — what we measure against</text>
+
+        <rect class="box-hi" x="326" y="158" width="250" height="60" rx="3"/>
+        <text class="hi" x="344" y="186">tuner plugin + our config</text>
+        <text class="sm" x="344" y="206">overrides it, per size range</text>
+
+        <text class="sm" x="451" y="133" text-anchor="middle">one of these answers</text>
+
+        <path class="flow" d="M576 70 H598 V129"/>
+        <path class="flow" d="M576 188 H598 V129"/>
+        <line class="flow" x1="598" y1="129" x2="664" y2="129" marker-end="url(#ar)"/>
+
+        <!-- outputs -->
+        <text class="eb-hi" x="676" y="24">THE ANSWER — 3 NUMBERS</text>
+        <rect class="box-hi" x="676" y="40" width="248" height="178" rx="3"/>
+        <text class="k" x="696" y="72">algorithm</text>
+        <text class="v" x="906" y="72"  text-anchor="end">RING | TREE</text>
+        <text class="k" x="696" y="106">protocol</text>
+        <text class="v" x="906" y="106" text-anchor="end">SIMPLE | LL | LL128</text>
+        <text class="k" x="696" y="140">nchannels</text>
+        <text class="v" x="906" y="140" text-anchor="end">1 … 56</text>
+        <line class="hair" x1="696" y1="156" x2="906" y2="156"/>
+        <text class="sm" x="696" y="174">RCCL launches its kernels with</text>
+        <text class="sm" x="696" y="190">exactly this — and can still</text>
+        <text class="sm" x="696" y="206">substitute, silently</text>
+
+        <line class="hair" x1="16" y1="248" x2="924" y2="248"/>
+        <text class="marker-note" x="16" y="272">every tuning decision in this project is one of those three numbers, for one range of message sizes</text>
+      </svg>
+    </div>
+    <figcaption>The search space is small and fully visible — which is exactly why it is worth sweeping properly.</figcaption>
+  </figure>
+</section>
+
+<!-- 3 ─────────────────────────────────────────── -->
+<section class="slide">
+  <p class="eyebrow">What I did first</p>
+  <h2>The sweep tool needed work before its output meant anything</h2>
+  <p>There was already a sweep tool in the repo. I went through it and refreshed it — three things
+  were quietly wrong, and any one of them was enough to make every number downstream meaningless:</p>
+  <ul class="findings">
+    <li data-n="01">It asked the benchmark for the wrong report, so <strong>it never saw what actually ran</strong>.</li>
+    <li data-n="02">It recorded what it <em>requested</em>, not what RCCL <em>selected</em> — and RCCL substitutes silently. About a third of the previous config named combinations the library cannot deliver.</li>
+    <li data-n="03">It ranked candidates on a column that <strong>was not bandwidth</strong>. At one point that made it prefer configs 99% slower than the default.</li>
+  </ul>
+  <p>Every row now carries requested <em>and</em> measured algorithm, protocol and channel count, and
+  flags the row when the two disagree. That is what made the rest of this worth running at all.</p>
+  <p class="aside"><strong>Also looked at Optuna</strong> for the search itself. Today it is a plain
+  grid sweep — a few hundred runs. Bayesian search is the obvious upgrade, but there is no point
+  pointing a smart optimiser at an objective you do not yet believe.</p>
+</section>
+
+<!-- 4 ─────────────────────────────────────────── -->
+<section class="slide">
+  <p class="eyebrow">Result · 1 node</p>
+  <h2>Small and mid message sizes are wide open</h2>
+  <div class="legend">
+    <span><i style="background:var(--s-default)"></i>RCCL default</span>
+    <span><i style="background:var(--s-tuned)"></i>generated config</span>
+    <span style="color:var(--ink-3)">log scale · 7 repeats per arm, interleaved</span>
+  </div>
+  <figure>
+    <div class="chart plotwrap" id="w1"><div class="tip" id="t1"></div></div>
+    <figcaption>Bus bandwidth, all_reduce, 8 ranks on amd-mi355x-7. Hover a size for the selection each arm actually made.</figcaption>
+  </figure>
+  <div class="takeaway">
+    <p>RCCL uses <span class="num">1–16</span> channels below 256K. Pushing that count up is worth
+    <span class="num">+12%</span> to <span class="num">+63%</span> — and every rule we kept won
+    <strong>all 49</strong> head-to-head pairs against the default.</p>
+    <p>The collapse from 64M is our own bug, not the hardware: the plugin's channel field means
+    something different from the environment variable we swept with, so we deployed 4× fewer channels
+    than intended. The validator caught it and refused to ship it.</p>
+  </div>
+</section>
+
+<!-- 5 ─────────────────────────────────────────── -->
+<section class="slide">
+  <p class="eyebrow">Result · 2 and 3 nodes</p>
+  <h2>Multi-node defaults are already tight</h2>
+  <div class="legend">
+    <span><i class="blk" style="background:var(--pos)"></i>shipped win</span>
+    <span><i class="out"></i>verified win, <strong>not shipped</strong></span>
+    <span><i class="blk mut" style="background:var(--pos)"></i>faster, not significant</span>
+    <span><i class="blk mut" style="background:var(--neg)"></i>slower</span>
+  </div>
+  <div class="pair">
+    <figure>
+      <h3>2 nodes · 16 ranks</h3>
+      <div class="chart plotwrap" id="w2"><div class="tip" id="t2"></div></div>
+    </figure>
+    <figure>
+      <h3>3 nodes · 24 ranks</h3>
+      <div class="chart plotwrap" id="w3"><div class="tip" id="t3"></div></div>
+    </figure>
+  </div>
+  <div class="takeaway">
+    <p>Above 128K the default already sits at the <span class="num">48</span>-channel cap, so there is
+    no channel headroom left. The wins that do exist come from <strong>algorithm choice</strong> —
+    TREE→RING at 32M — not from retuning channels.</p>
+    <p>The two outlined bars are the interesting failure: verified wins of +8.9% and +12.1% that never
+    shipped, because the generator merged them into a size range that also contained a regression.</p>
+  </div>
+</section>
+
+<!-- 6 ─────────────────────────────────────────── -->
+<section class="slide">
+  <p class="eyebrow">What I don't trust yet</p>
+  <h2>The numbers are real. The pipeline isn't finished.</h2>
+  <ul class="findings">
+    <li data-n="01"><strong>The selection step gives away ~3.5%</strong> at 9–11 message sizes per
+    multi-node scale. It keeps every candidate within 5% of the best and then prefers the fewest
+    channels — but real run-to-run spread is ~0.7%, so that window swallows almost everything and
+    channel count decides instead of bandwidth. We measured faster configs and shipped slower ones.</li>
+    <li data-n="02"><strong>Rule ranges bury wins.</strong> Merging adjacent sizes keeps the config
+    compact, but a range holding one win and one regression is correctly rejected whole — losing both.</li>
+    <li data-n="03"><strong>Narrow scope.</strong> all_reduce only, one RCCL version, and co-tenants
+    shared the fabric during the multi-node runs — which moves absolute bandwidth, not the A/B contrast.</li>
+  </ul>
+  <p class="aside">None of this invalidates the measured gains — each was A/B'd against the default
+  under identical conditions, interleaved. It means the tool is currently <em>under</em>-delivering,
+  which is a good problem to have.</p>
+</section>
+
+<!-- 7 ─────────────────────────────────────────── -->
+<section class="slide">
+  <p class="eyebrow">Where I'd take it</p>
+  <h2>First make the tool deliver good value — then widen it</h2>
+  <ul class="findings">
+    <li data-n="01"><strong>Finish the tuning loop.</strong> Fix the selection tolerance and the rule
+    granularity, regenerate from the sweep data we already have, re-run the A/B. No new sweep needed —
+    the cheapest value on this list.</li>
+    <li data-n="02"><strong>Extend rccl-tests.</strong> Past all_reduce, and toward a harness we can
+    point at any collective without hand-driving it.</li>
+    <li data-n="03"><strong>Smarter search.</strong> Optuna over the grid, once the objective is worth
+    optimising against.</li>
+    <li data-n="04"><strong>Understand the plugin properly.</strong> The channel-unit surprise cost 65%
+    and we found it by accident. Worth knowing what else it reinterprets before trusting it anywhere
+    real.</li>
+  </ul>
+  <p class="meta">
+    config · <span>results-tuning/2026-08-04-7-validated/</span><br>
+    evidence · <span>2026-08-04-{2,3,5}-ab*node/</span> — raw logs, per-rule verdicts, charts<br>
+    every run · <span>results-tuning/RUNLOG.md</span>
+  </p>
+</section>
+
+</div>
+
+<div class="bar">
+  <button id="prev" aria-label="Previous slide">←</button>
+  <button id="next" aria-label="Next slide">→</button>
+  <div class="rail"><i id="fill"></i></div>
+  <span class="count" id="count">1 / 7</span>
+  <button id="theme" aria-label="Toggle light and dark">◑</button>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var NS="http://www.w3.org/2000/svg";
+  function el(n,a){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);return e;}
+  function txt(x,y,s,cls,extra){
+    var t=el("text",{x:x,y:y,"class":cls});
+    for(var k in (extra||{}))t.setAttribute(k,extra[k]);
+    t.textContent=s; return t;
+  }
+
+  /* data lifted from each A/B run's own presentation page in results-tuning/ */
+  var D1=[{s:"4K",d:0.32,c:0.36,dl:"TREE/LL/1",cl:"TREE/LL/2",g:12.5},
+{s:"8K",d:0.55,c:0.71,dl:"TREE/LL/1",cl:"TREE/LL/4",g:29.1},
+{s:"16K",d:0.86,c:1.25,dl:"TREE/LL/1",cl:"TREE/LL/8",g:45.3},
+{s:"32K",d:1.71,c:2.67,dl:"TREE/LL/2",cl:"TREE/LL/16",g:56.1},
+{s:"64K",d:3.27,c:5.24,dl:"TREE/LL/4",cl:"TREE/LL/32",g:60.2},
+{s:"128K",d:6.31,c:8.35,dl:"TREE/LL/8",cl:"RING/LL/8",g:32.3},
+{s:"256K",d:12.55,c:17.51,dl:"TREE/LL/16",cl:"RING/LL/16",g:39.5},
+{s:"512K",d:21.2,c:34.56,dl:"RING/SIMPLE/16",cl:"RING/LL/32",g:63.0},
+{s:"1M",d:41.68,c:47.85,dl:"RING/SIMPLE/32",cl:"RING/LL/32",g:14.8},
+{s:"2M",d:79.41,c:78.44,dl:"RING/SIMPLE/56",cl:"RING/SIMPLE/32",g:-1.2},
+{s:"4M",d:128.22,c:124.76,dl:"RING/SIMPLE/56",cl:"RING/SIMPLE/32",g:-2.7},
+{s:"8M",d:197.68,c:195.37,dl:"RING/SIMPLE/56",cl:"RING/SIMPLE/48",g:-1.2},
+{s:"16M",d:268.83,c:267.65,dl:"RING/SIMPLE/56",cl:"RING/SIMPLE/56",g:-0.4},
+{s:"32M",d:317.79,c:317.07,dl:"RING/SIMPLE/56",cl:"RING/SIMPLE/56",g:-0.2},
+{s:"64M",d:355.63,c:130.12,dl:"RING*/SIMPLE/56",cl:"RING*/SIMPLE/12",g:-63.4},
+{s:"128M",d:379.85,c:134.85,dl:"RING*/SIMPLE/56",cl:"RING*/SIMPLE/12",g:-64.5},
+{s:"256M",d:389.74,c:134.99,dl:"RING*/SIMPLE/56",cl:"RING*/SIMPLE/12",g:-65.4},
+{s:"512M",d:396.12,c:135.96,dl:"RING*/SIMPLE/56",cl:"RING*/SIMPLE/12",g:-65.7}];
+
+  var D2=[{s:"4K",d:0.2,c:0.2,dl:"TREE/LL/2",cl:"TREE/LL/2",g:0.0,p:0.43,k:"none"},
+{s:"8K",d:0.4,c:0.4,dl:"TREE/LL/4",cl:"TREE/LL/4",g:0.0,p:0.5,k:"none"},
+{s:"16K",d:0.79,c:0.78,dl:"TREE/LL/8",cl:"TREE/LL/8",g:-1.27,p:0.12,k:"none"},
+{s:"32K",d:1.52,c:1.51,dl:"TREE/LL/16",cl:"TREE/LL/16",g:-0.66,p:0.33,k:"none"},
+{s:"64K",d:2.86,c:2.85,dl:"TREE/LL/32",cl:"TREE/LL/32",g:-0.35,p:0.3,k:"none"},
+{s:"128K",d:4.95,c:4.81,dl:"TREE/LL/48",cl:"TREE/LL128/16",g:-2.83,p:0.0,k:"none"},
+{s:"256K",d:8.56,c:8.84,dl:"TREE/LL/48",cl:"TREE/LL128/16",g:3.27,p:0.86,k:"none"},
+{s:"512K",d:16.87,c:16.3,dl:"TREE/LL128/48",cl:"TREE/LL128/24",g:-3.38,p:0.0,k:"none"},
+{s:"1M",d:30.46,c:29.5,dl:"TREE/LL128/48",cl:"TREE/LL128/24",g:-3.15,p:0.0,k:"none"},
+{s:"2M",d:54.88,c:52.72,dl:"TREE/LL128/48",cl:"TREE/LL128/32",g:-3.94,p:0.0,k:"none"},
+{s:"4M",d:94.16,c:90.99,dl:"TREE/LL128/48",cl:"TREE/LL128/40",g:-3.37,p:0.0,k:"none"},
+{s:"8M",d:144.86,c:139.66,dl:"TREE/LL128/48",cl:"TREE/LL128/40",g:-3.59,p:0.1,k:"none"},
+{s:"16M",d:194.99,c:194.03,dl:"TREE/LL128/48",cl:"TREE/LL128/48",g:-0.49,p:0.31,k:"none"},
+{s:"32M",d:222.23,c:246.88,dl:"TREE/LL128/48",cl:"RING/LL128/40",g:11.09,p:1.0,k:"ship"},
+{s:"64M",d:292.2,c:291.11,dl:"RING/LL128/48",cl:"RING/LL128/48",g:-0.37,p:0.17,k:"none"},
+{s:"128M",d:322.73,c:311.24,dl:"RING/SIMPLE/48",cl:"RING/SIMPLE/32",g:-3.56,p:0.0,k:"none"},
+{s:"256M",d:374.24,c:361.8,dl:"RING/SIMPLE/48",cl:"RING/SIMPLE/32",g:-3.32,p:0.0,k:"none"},
+{s:"512M",d:379.07,c:375.51,dl:"RING/SIMPLE/48",cl:"RING/SIMPLE/32",g:-0.94,p:0.0,k:"none"}];
+
+  var D3=[{s:"4K",d:0.11,c:0.11,dl:"TREE/LL/2",cl:"TREE/LL/2",g:0.0,p:0.5,k:"none"},
+{s:"8K",d:0.22,c:0.22,dl:"TREE/LL/4",cl:"TREE/LL/4",g:0.0,p:0.43,k:"none"},
+{s:"16K",d:0.43,c:0.43,dl:"TREE/LL/8",cl:"TREE/LL/8",g:0.0,p:0.61,k:"none"},
+{s:"32K",d:0.84,c:0.83,dl:"TREE/LL/16",cl:"TREE/LL/16",g:-1.19,p:0.37,k:"none"},
+{s:"64K",d:1.59,c:1.59,dl:"TREE/LL/32",cl:"TREE/LL/32",g:0.0,p:0.59,k:"none"},
+{s:"128K",d:2.79,c:2.78,dl:"TREE/LL/48",cl:"TREE/LL128/8",g:-0.36,p:0.12,k:"none"},
+{s:"256K",d:4.92,c:5.36,dl:"TREE/LL/48",cl:"TREE/LL128/16",g:8.94,p:1.0,k:"lost"},
+{s:"512K",d:10.3,c:9.79,dl:"TREE/LL128/48",cl:"TREE/LL128/16",g:-4.95,p:0.0,k:"none"},
+{s:"1M",d:18.92,c:18.2,dl:"TREE/LL128/48",cl:"TREE/LL128/16",g:-3.81,p:0.06,k:"none"},
+{s:"2M",d:34.96,c:33.73,dl:"TREE/LL128/48",cl:"TREE/LL128/24",g:-3.52,p:0.0,k:"none"},
+{s:"4M",d:61.91,c:60.16,dl:"TREE/LL128/48",cl:"TREE/LL128/32",g:-2.83,p:0.27,k:"none"},
+{s:"8M",d:103.07,c:103.12,dl:"TREE/LL128/48",cl:"TREE/LL128/48",g:0.05,p:0.47,k:"none"},
+{s:"16M",d:149.62,c:149.12,dl:"TREE/LL128/48",cl:"TREE/LL128/48",g:-0.33,p:0.28,k:"none"},
+{s:"32M",d:186.89,c:203.09,dl:"TREE/LL128/48",cl:"RING/LL128/32",g:8.67,p:1.0,k:"ship"},
+{s:"64M",d:268.78,c:268.14,dl:"RING/LL128/48",cl:"RING/LL128/40",g:-0.24,p:0.24,k:"none"},
+{s:"128M",d:247.7,c:272.92,dl:"RING/LL128/48",cl:"RING/LL128/40",g:10.18,p:1.0,k:"ship"},
+{s:"256M",d:297.87,c:333.85,dl:"RING/LL128/48",cl:"RING/SIMPLE/32",g:12.08,p:1.0,k:"lost"},
+{s:"512M",d:378.26,c:368.84,dl:"RING/SIMPLE/48",cl:"RING/SIMPLE/32",g:-2.49,p:0.0,k:"none"}];
+
+  function sel(p){
+    return '<span class="q">'+p.s+'</span><br>'+
+      'default <b>'+p.d.toFixed(2)+'</b> <span class="q">'+p.dl+'</span><br>'+
+      'config&nbsp; <b>'+p.c.toFixed(2)+'</b> <span class="q">'+p.cl+'</span><br>'+
+      '<b class="'+(p.g>=0?'p':'n')+'">'+(p.g>=0?'+':'')+p.g.toFixed(1)+'%</b>'+
+      (p.p!==undefined?' <span class="q">P(sup) '+p.p.toFixed(2)+'</span>':'');
+  }
+
+  /* ── line chart, log y ── */
+  function lineChart(host,tipEl,D){
+    var W=1000,H=420,L=52,R=100,T=20,B=44;
+    var pw=W-L-R, ph=H-T-B, n=D.length;
+    var lo=Math.log10(0.1), hi=Math.log10(560);
+    function X(i){return L+i*pw/(n-1);}
+    function Y(v){return T+(1-(Math.log10(v)-lo)/(hi-lo))*ph;}
+    var svg=el("svg",{viewBox:"0 0 "+W+" "+H,role:"img",
+      "aria-label":"Bus bandwidth against message size at one node, RCCL default versus the generated config, logarithmic scale."});
+
+    [0.1,1,10,100].forEach(function(v){
+      svg.appendChild(el("line",{"class":"gl",x1:L,x2:L+pw,y1:Y(v),y2:Y(v)}));
+      svg.appendChild(txt(L-10,Y(v)+4,v<1?"0.1":String(v),"tk",{"text-anchor":"end"}));
+    });
+    svg.appendChild(txt(L-10,T-5,"GB/s","tk-s",{"text-anchor":"end"}));
+
+    D.forEach(function(p,i){
+      if(i%2)return;
+      svg.appendChild(txt(X(i),H-15,p.s,"tk-s",{"text-anchor":"middle"}));
+    });
+    svg.appendChild(el("line",{"class":"axis",x1:L,x2:L+pw,y1:T+ph,y2:T+ph}));
+
+    var bx=X(14);
+    svg.appendChild(el("line",{"class":"dash",x1:bx,x2:bx,y1:T,y2:T+ph}));
+    svg.appendChild(txt(bx+7,T+15,"plugin unit bug","marker-note"));
+    svg.appendChild(txt(bx+7,T+29,"— not shipped","marker-note"));
+
+    [["d","ln-d","dot-d","lab-d","default"],["c","ln-c","dot-c","lab-c","config"]].forEach(function(sr){
+      svg.appendChild(el("polyline",{"class":sr[1],
+        points:D.map(function(p,i){return X(i)+","+Y(p[sr[0]]);}).join(" "),
+        fill:"none","stroke-width":2,"stroke-linejoin":"round","stroke-linecap":"round"}));
+      D.forEach(function(p,i){
+        svg.appendChild(el("circle",{"class":sr[2],cx:X(i),cy:Y(p[sr[0]]),r:2.8}));
+      });
+      svg.appendChild(txt(X(n-1)+10,Y(D[n-1][sr[0]])+4,sr[4],sr[3]));
+    });
+
+    var cross=el("line",{"class":"cross",x1:0,x2:0,y1:T,y2:T+ph,opacity:0});
+    svg.appendChild(cross);
+
+    D.forEach(function(p,i){
+      var w=pw/(n-1), f=X(i)/W;
+      var hit=el("rect",{x:X(i)-w/2,y:T,width:w,height:ph,fill:"transparent",style:"cursor:crosshair"});
+      function show(){
+        tipEl.innerHTML=sel(p);
+        tipEl.style.left=(Math.min(0.85,Math.max(0.15,f))*100)+"%";
+        tipEl.classList.add("on");
+        cross.setAttribute("x1",X(i)); cross.setAttribute("x2",X(i)); cross.setAttribute("opacity",1);
+      }
+      hit.addEventListener("mouseenter",show); hit.addEventListener("mousemove",show);
+      svg.appendChild(hit);
+    });
+    svg.addEventListener("mouseleave",function(){
+      tipEl.classList.remove("on"); cross.setAttribute("opacity",0);
+    });
+    host.appendChild(svg);
+  }
+
+  /* ── diverging gain bars; m is fixed so the two panels compare directly ── */
+  function barChart(host,tipEl,D,m){
+    var W=520,H=330,L=42,R=12,T=16,B=52;
+    var pw=W-L-R, ph=H-T-B, n=D.length, bw=pw/n-4;
+    function X(i){return L+i*pw/n;}
+    function Y(v){return T+(1-(v+m)/(2*m))*ph;}
+    var z=Y(0);
+    var svg=el("svg",{viewBox:"0 0 "+W+" "+H,role:"img",
+      "aria-label":"Percent change in bus bandwidth against the RCCL default, per message size."});
+
+    [-m,-m/2,m/2,m].forEach(function(v){
+      svg.appendChild(el("line",{"class":"gl",x1:L,x2:L+pw,y1:Y(v),y2:Y(v)}));
+      svg.appendChild(txt(L-7,Y(v)+4,(v>0?"+":"")+v+"%","tk-s",{"text-anchor":"end"}));
+    });
+
+    D.forEach(function(p,i){
+      var up=p.g>=0, h=Math.max(1.5,Math.abs(Y(p.g)-z));
+      var x=X(i)+2, y=up?z-h:z, r=Math.min(4,h,bw/2);
+      var d=up
+        ? "M"+x+","+(y+h)+" L"+x+","+(y+r)+" Q"+x+","+y+" "+(x+r)+","+y+
+          " L"+(x+bw-r)+","+y+" Q"+(x+bw)+","+y+" "+(x+bw)+","+(y+r)+" L"+(x+bw)+","+(y+h)+" Z"
+        : "M"+x+","+y+" L"+x+","+(y+h-r)+" Q"+x+","+(y+h)+" "+(x+r)+","+(y+h)+
+          " L"+(x+bw-r)+","+(y+h)+" Q"+(x+bw)+","+(y+h)+" "+(x+bw)+","+(y+h-r)+" L"+(x+bw)+","+y+" Z";
+
+      var cls;
+      if(p.k==="ship")      cls = up?"b-pos":"b-neg";
+      else if(p.k==="lost") cls = up?"b-out-pos":"b-out-neg";
+      else                  cls = (up?"b-pos":"b-neg")+" b-mut";
+      svg.appendChild(el("path",{"class":cls,d:d}));
+
+      if(Math.abs(p.g)>=2.5){
+        svg.appendChild(txt(x+bw/2, up?Y(p.g)-7:Y(p.g)+13,
+          (up?"+":"")+p.g.toFixed(1), p.k==="none"?"bl-mut":"bl",{"text-anchor":"middle"}));
+      }
+      if(i%3===0){
+        svg.appendChild(txt(x+bw/2,H-28,p.s,"tk-s",{"text-anchor":"middle"}));
+      }
+      var hit=el("rect",{x:X(i),y:T,width:pw/n,height:ph,fill:"transparent",style:"cursor:crosshair"});
+      function show(){
+        tipEl.innerHTML=sel(p);
+        tipEl.style.left=(Math.min(0.78,Math.max(0.22,(X(i)+bw/2)/W))*100)+"%";
+        tipEl.classList.add("on");
+      }
+      hit.addEventListener("mouseenter",show); hit.addEventListener("mousemove",show);
+      svg.appendChild(hit);
+    });
+
+    svg.appendChild(el("line",{"class":"zero",x1:L,x2:L+pw,y1:z,y2:z}));
+    svg.appendChild(txt(L,H-8,"message size  →","tk-s"));
+    svg.addEventListener("mouseleave",function(){tipEl.classList.remove("on");});
+    host.appendChild(svg);
+  }
+
+  lineChart(document.getElementById("w1"),document.getElementById("t1"),D1);
+  barChart(document.getElementById("w2"),document.getElementById("t2"),D2,14);
+  barChart(document.getElementById("w3"),document.getElementById("t3"),D3,14);
+
+  /* ── deck nav ── */
+  var slides=[].slice.call(document.querySelectorAll(".slide")), i=0;
+  var fill=document.getElementById("fill"), count=document.getElementById("count");
+  function go(k){
+    i=Math.max(0,Math.min(slides.length-1,k));
+    slides.forEach(function(s,j){s.classList.toggle("on",j===i);});
+    fill.style.width=((i+1)/slides.length*100)+"%";
+    count.textContent=(i+1)+" / "+slides.length;
+    window.scrollTo(0,0);
+  }
+  document.getElementById("next").addEventListener("click",function(){go(i+1);});
+  document.getElementById("prev").addEventListener("click",function(){go(i-1);});
+  document.addEventListener("keydown",function(e){
+    if(e.key==="ArrowRight"||e.key===" "||e.key==="PageDown"){e.preventDefault();go(i+1);}
+    else if(e.key==="ArrowLeft"||e.key==="PageUp"){e.preventDefault();go(i-1);}
+    else if(e.key==="Home"){go(0);}
+    else if(e.key==="End"){go(slides.length-1);}
+  });
+  document.getElementById("theme").addEventListener("click",function(){
+    var r=document.documentElement, cur=r.getAttribute("data-theme");
+    var darkNow = cur ? cur==="dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+    r.setAttribute("data-theme", darkNow?"light":"dark");
+  });
+  go(0);
+})();
+</script>

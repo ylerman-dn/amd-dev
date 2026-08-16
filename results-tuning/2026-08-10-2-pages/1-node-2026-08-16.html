@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RCCL 1-Node Tuning</title>
+<style>
+:root{
+  color-scheme: light;
+  --surface-0:#f6f6f4; --surface-1:#fcfcfb; --surface-2:#eeeeea;
+  --text-primary:#0b0b0b; --text-secondary:#52514e; --text-muted:#77766f;
+  --rule:#e0dfda; --grid:#e8e7e2;
+  --series-1:#2a78d6;  /* config  */
+  --series-2:#eb6834;  /* default */
+  --pos:#2a78d6; --neg:#e34948; --mid:#f0efec;
+  --good:#0ca30c; --critical:#d03b3b; --warning:#fab219;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --surface-0:#121211; --surface-1:#1a1a19; --surface-2:#232322;
+    --text-primary:#ffffff; --text-secondary:#c3c2b7; --text-muted:#8e8d84;
+    --rule:#33332f; --grid:#2b2b28;
+    --series-1:#3987e5; --series-2:#d95926;
+    --pos:#3987e5; --neg:#e66767; --mid:#383835;
+    --good:#0ca30c; --critical:#d03b3b; --warning:#fab219;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --surface-0:#121211; --surface-1:#1a1a19; --surface-2:#232322;
+  --text-primary:#ffffff; --text-secondary:#c3c2b7; --text-muted:#8e8d84;
+  --rule:#33332f; --grid:#2b2b28;
+  --series-1:#3987e5; --series-2:#d95926;
+  --pos:#3987e5; --neg:#e66767; --mid:#383835;
+  --good:#0ca30c; --critical:#d03b3b; --warning:#fab219;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--surface-0); color:var(--text-primary);
+  font:15px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1080px;margin:0 auto;padding:40px 24px 80px}
+header{border-bottom:1px solid var(--rule);padding-bottom:24px;margin-bottom:32px}
+h1{font-size:30px;line-height:1.2;margin:0 0 8px;letter-spacing:-.02em;font-weight:650}
+.sub{color:var(--text-secondary);margin:0;font-size:15px}
+.meta{color:var(--text-muted);font-size:13px;margin-top:12px}
+h2{font-size:20px;margin:44px 0 6px;letter-spacing:-.01em;font-weight:640}
+h3{font-size:15px;margin:26px 0 6px;font-weight:640}
+p{margin:8px 0;color:var(--text-secondary)}
+p.lede{color:var(--text-primary)}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em;
+  background:var(--surface-2);padding:1px 5px;border-radius:4px}
+.card{background:var(--surface-1);border:1px solid var(--rule);border-radius:10px;
+  padding:20px 22px;margin:18px 0}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin:24px 0}
+.tile{background:var(--surface-1);border:1px solid var(--rule);border-radius:10px;padding:16px 18px}
+.tile .k{font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em}
+.tile .v{font-size:30px;font-weight:640;letter-spacing:-.02em;margin-top:4px;line-height:1.1}
+.tile .n{font-size:12.5px;color:var(--text-secondary);margin-top:3px}
+.legend{display:flex;gap:20px;flex-wrap:wrap;margin:0 0 10px;font-size:13.5px;color:var(--text-secondary)}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.sw{width:12px;height:12px;border-radius:3px;flex:none}
+figure{margin:0}
+figcaption{font-size:13px;color:var(--text-muted);margin-top:10px}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+svg{display:block;max-width:100%;height:auto;font-family:inherit}
+.gl{stroke:var(--grid);stroke-width:1}
+.ax{stroke:var(--rule);stroke-width:1}
+.tk{fill:var(--text-muted);font-size:11px}
+.al{fill:var(--text-secondary);font-size:12px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:520px}
+th,td{text-align:right;padding:7px 10px;border-bottom:1px solid var(--rule)}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--text-muted);font-weight:560;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+td{color:var(--text-secondary);font-variant-numeric:tabular-nums}
+td.k{color:var(--text-primary);font-weight:560}
+.up{color:var(--good);font-weight:600}
+.dn{color:var(--critical);font-weight:600}
+.pill{display:inline-block;font-size:11.5px;padding:2px 9px;border-radius:99px;
+  border:1px solid var(--rule);color:var(--text-secondary);background:var(--surface-2)}
+.pill.ok{color:var(--good);border-color:color-mix(in srgb,var(--good) 35%,transparent)}
+.pill.no{color:var(--critical);border-color:color-mix(in srgb,var(--critical) 35%,transparent)}
+.note{border-left:3px solid var(--warning);padding:2px 0 2px 16px;margin:18px 0}
+.note strong{color:var(--text-primary)}
+ul{color:var(--text-secondary);padding-left:20px}
+li{margin:5px 0}
+.tt{position:fixed;pointer-events:none;opacity:0;transition:opacity .1s;z-index:9;
+  background:var(--surface-1);border:1px solid var(--rule);border-radius:8px;padding:9px 12px;
+  font-size:12.5px;color:var(--text-primary);box-shadow:0 6px 20px rgba(0,0,0,.14);white-space:nowrap}
+.tt .r{display:flex;justify-content:space-between;gap:16px;color:var(--text-secondary)}
+.tt .r b{color:var(--text-primary);font-variant-numeric:tabular-nums;font-weight:600}
+.tt .h{font-weight:640;margin-bottom:5px;color:var(--text-primary)}
+.gD{color:var(--series-2)!important}.gC{color:var(--series-1)!important}
+footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--rule);
+  font-size:12.5px;color:var(--text-muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>RCCL tuner config vs default — 1 node, MI355X</h1>
+  <p class="sub">all_reduce, 8 ranks × 1 GPU, <code>amd-mi355x-7</code>. Seven interleaved repeats per arm.</p>
+  <p class="meta">2026-08-16 · RCCL 2.28.3-develop:2e42aa8 · job 14457 · config generated at 1% selection tolerance</p>
+</header>
+
+<p class="lede">The tuned config beats RCCL's default at every message size from 4 KB to 1 MB, by
+9% to 65%. From 2 MB up the default is already optimal and the config leaves it alone — including
+≥64 MB, once a channel-unit bug in our own config was corrected.</p>
+
+<div class="tiles">
+  <div class="tile"><div class="k">Rules verified</div><div class="v">7 <span style="font-size:17px;color:var(--text-muted);font-weight:500">of 12</span></div><div class="n">every one at P(sup) 1.00</div></div>
+  <div class="tile"><div class="k">Best gain</div><div class="v" style="color:var(--good)">+65.3%</div><div class="n">at 512 KB</div></div>
+  <div class="tile"><div class="k">Range won</div><div class="v">4K–1M</div><div class="n">8 consecutive sizes</div></div>
+  <div class="tile"><div class="k">Regressions shipped</div><div class="v">0</div><div class="n">≥2M falls through to default</div></div>
+</div>
+
+<h2>Bandwidth, default vs tuned</h2>
+<div class="legend">
+  <span><i class="sw" style="background:var(--series-2)"></i>RCCL default</span>
+  <span><i class="sw" style="background:var(--series-1)"></i>Tuned config</span>
+</div>
+<figure>
+  <div class="scroll"><svg id="c1" viewBox="0 0 940 430" role="img"
+     aria-label="Bus bandwidth versus message size, log-log. The tuned config is above the default from 4 KB to 1 MB; from 2 MB upward the two curves coincide."></svg></div>
+  <figcaption>In-place bus bandwidth, median of 7 repeats. Both axes logarithmic. From 2 MB the curves
+  sit on top of each other — the config deliberately matches the default there.</figcaption>
+</figure>
+
+<h2>Change vs default, per size</h2>
+<figure>
+  <div class="scroll"><svg id="c2" viewBox="0 0 940 330" role="img"
+     aria-label="Percent change versus default per message size. Gains of 9 to 65 percent from 4 KB to 1 MB, and within one percent of zero from 2 MB to 512 MB."></svg></div>
+  <figcaption>Median % change. Blue is faster than default, red is slower. Bars are labelled directly;
+  the table below carries every value.</figcaption>
+</figure>
+
+<h2>What actually ran, per size, per arm</h2>
+<p>Read back from the benchmark's own <code>-A 1</code> selection columns on every repeat, not from
+what the config requested. RCCL substitutes silently, so requested and selected are different claims.</p>
+<div class="card scroll">
+  <table id="sel">
+    <thead>
+      <tr>
+        <th></th>
+        <th colspan="2" class="gD">RCCL default</th>
+        <th colspan="3" class="gC">tuned config</th>
+        <th></th><th></th>
+      </tr>
+      <tr>
+        <th>size</th>
+        <th class="gD" style="text-align:left">selected algo/proto/ch</th><th class="gD">busbw</th>
+        <th class="gC" style="text-align:left">requested</th>
+        <th class="gC" style="text-align:left">selected algo/proto/ch</th><th class="gC">busbw</th>
+        <th>&Delta;</th><th>spread d/c</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+<p>What this makes visible: the default really does run <strong>1–16 channels</strong> below 512 KB,
+which is the whole headroom the config exploits. From 2 MB up, config and default converge on the same
+selection — which is why the curves coincide there.</p>
+<p>This table is also how the ≥64 MB bug was caught. In the first run the config selected
+<strong><code>RING*/SIMPLE/14</code></strong> against the default's <code>56</code>: the ÷4, visible in the
+selection columns rather than guessed at from the bandwidth drop. After the fix both arms read
+<code>RING*/SIMPLE/56</code>, as shown above.</p>
+<p><strong>One outlier, shown not hidden.</strong> The <code>spread d/c</code> column is each arm's own
+max-over-min across its 7 repeats. Everything sits near 1–7% except <strong>256K on the default arm at
+196.9%</strong>: repeat 7 measured 4.26 GB/s against 12.50–12.65 for the other six. A single stall. It is
+in the <em>default</em> arm and the median (12.57) is unmoved, so the +41.8% is not inflated by it — and
+P(sup) is a rank statistic, so one outlier cannot manufacture a win.</p>
+<p class="meta" style="color:var(--text-muted);font-size:12.5px">Caveat: <code>-A 1</code> is trustworthy
+for algorithm and protocol, but its channel column reports a planned ceiling. Real per-channel spans come
+from <code>NCCL_DEBUG=INFO</code> <code>channel{Lo..Hi}</code>. Under WarpSpeed the figure shown is the
+base count — which is why the config requests <code>224</code> and the column reads <code>56</code>.</p>
+
+<h2>Why the config wins at small sizes</h2>
+<p>RCCL's 1-node default uses very few channels below 256 KB — 1, 1, 1, 2, 4, 8, 16 for 4 KB through
+256 KB. The tuned config raises those to 24–48 and switches protocol where measured to help. Pushing
+channel count <em>up</em> was the untested direction; every earlier experiment in this project forced
+it down, which always hurt.</p>
+
+<h2 id="warpspeed">The ≥64 MB channel-unit bug — found, fixed, re-measured</h2>
+<p>At ≥64 MB RCCL enables <strong>WarpSpeed</strong> by itself (<code>RING*</code> in the logs), which
+multiplies the channel count by 4. Nobody asks for it — both arms get it.</p>
+<p>It changes what a channel number <em>means</em>. The sweep set channels through an environment
+variable, which sets the <em>base</em> count. The plugin's <code>channels</code> field is the
+<em>post-multiplier total</em>. Same integer, four times the meaning — so a config that copies the swept
+number straight into a plugin rule under-provisions by 4×.</p>
+
+<div class="card">
+  <table>
+    <thead><tr><th>how the number was set</th><th>base</th><th>actual</th><th>result at ≥64 MB</th></tr></thead>
+    <tbody>
+      <tr><td class="k">env var, during the sweep</td><td>56</td><td>—</td><td>what we measured</td></tr>
+      <tr><td class="k">plugin rule <code>channels=56</code></td><td>14</td><td>56</td><td class="dn">−60.3%</td></tr>
+      <tr><td class="k">RCCL default, untouched</td><td>56</td><td>224</td><td>baseline</td></tr>
+      <tr><td class="k">plugin rule <code>channels=224</code></td><td>56</td><td>224</td><td class="up">−0.0% — parity</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<p>The plugin log confirms the mechanism directly:
+<code>WarpSpeed enabled: warpSpeedChannelMultiplier 4, maxNchannels 448, nc 224</code>, and both arms then
+report <code>RING* SIMPLE 56</code>.</p>
+
+<p><strong>The rule: multiply the swept channel count by 4 before writing it into a plugin rule wherever
+WarpSpeed applies.</strong> The charts above are the corrected run — the −60% hole is gone.</p>
+
+<div class="note">
+<p><strong>The fix buys safety, not speed.</strong> With the right channel count the config
+<em>matches</em> the default at ≥64 MB (−0.0%), so the rule is correctly dropped and those sizes fall
+through to RCCL. Nothing beats the default there. What the fix removes is a rule that would have cost
+60% in production.</p>
+</div>
+
+<h2>What made this run trustworthy</h2>
+<p>An earlier attempt the same day, with the identical config on the identical node, kept
+<strong>0 of 11</strong> rules. The difference was GPU clocks.</p>
+<div class="card">
+<p style="margin-top:0">The GPUs idle at ~195 MHz against a ~2400 MHz peak, and each repeat is a separate
+<code>srun</code>. The first four repeats measured a GPU still ramping:</p>
+<div class="scroll"><table>
+<thead><tr><th>4 MB, default arm</th><th>r1</th><th>r2</th><th>r3</th><th>r4</th><th>r5</th><th>r6</th><th>r7</th></tr></thead>
+<tbody>
+<tr><td class="k">cold (first attempt)</td><td>92.8</td><td>91.1</td><td>88.4</td><td>90.1</td><td>128.1</td><td>128.1</td><td>127.8</td></tr>
+<tr><td class="k">with warm-up</td><td>127.5</td><td>128.3</td><td>128.3</td><td>128.3</td><td>127.9</td><td>127.5</td><td>128.0</td></tr>
+</tbody></table></div>
+</div>
+<p>The step appears in <em>both</em> arms at <em>every</em> size, so it never biased which arm won — but it
+inflated each arm's own spread to ~40%. P(sup) is a rank statistic, so overlapping arms collapse it below
+the 0.95 gate and every rule was rejected despite gains up to +47.9%.</p>
+<p><code>-w/--warmup</code> does not cover this: those are iterations inside one launch, microseconds at small
+sizes, warming caches rather than clocks. The fix is <code>--warmup-runs 4</code>, discarded runs before the
+measured repeats.</p>
+
+<div class="note">
+<p><strong>Two guards were added as a result.</strong> The harness now refuses to issue verdicts when
+within-arm spread exceeds a threshold — a run that cannot decide is reported as <span class="pill no">NOT VALID</span>
+rather than as evidence that RCCL's defaults are optimal. And a mixed rule range is now split into its
+passing sub-ranges instead of being discarded whole.</p>
+</div>
+
+<h2>How this compares to the 2026-08-04 run</h2>
+<p>Nearly identical. This run used a config generated at a <strong>1% selection tolerance</strong> instead
+of 5%, and at 1 node that barely mattered:</p>
+<div class="card scroll">
+<table>
+<thead><tr><th>size</th><th>2026-08-04 (5% tol)</th><th>2026-08-16 (1% tol)</th></tr></thead>
+<tbody>
+<tr><td class="k">4K</td><td>+12.5%</td><td>+9.4%</td></tr>
+<tr><td class="k">8K</td><td>+29.1%</td><td>+27.3%</td></tr>
+<tr><td class="k">16K</td><td>+45.3%</td><td>+46.5%</td></tr>
+<tr><td class="k">32K</td><td>+56.1%</td><td>+56.4%</td></tr>
+<tr><td class="k">64K</td><td>+60.2%</td><td>+59.9%</td></tr>
+<tr><td class="k">128K</td><td>+32.3%</td><td>+40.3%</td></tr>
+<tr><td class="k">256K</td><td>+39.5%</td><td>+41.8%</td></tr>
+<tr><td class="k">512K</td><td>+63.0%</td><td>+65.3%</td></tr>
+</tbody></table>
+</div>
+<p>The tolerance change was expected to matter more than it did here: at 1 node the sweep was only giving
+away ~2.5% by picking fewest-channels within a 5% window. At <strong>2 and 3 nodes the give-away was 2.9%
+and 3.5%</strong>, and the resulting configs differed at 10 and 8 sizes respectively — but those A/Bs could
+not be measured (see limits below). <strong>So 1% remains unproven as an improvement; its case rests
+entirely on multi-node.</strong></p>
+<p>What this run does establish: the 1-node result <strong>reproduces independently</strong> 12 days later,
+on a fresh allocation, with a materially changed harness. Two agreeing runs is a stronger claim than one.</p>
+
+<h2>Scope and limits</h2>
+<ul>
+  <li><strong>1 node only.</strong> The 2-node and 3-node A/Bs on the same day were void — a co-tenant job
+      was saturating the shared fabric, and repeats of the same configuration ranged 1.5–25 GB/s. Multi-node
+      needs a quiet cluster; single-node never touches the fabric, so this result is unaffected.</li>
+  <li><strong>all_reduce only.</strong> No other collective was swept.</li>
+  <li><strong>RCCL 2.28.3-develop:2e42aa8.</strong> The acceptance map is version-specific.</li>
+  <li><strong>Sweep and A/B bandwidth are not comparable</strong> — the sweep runs under mpirun outside
+      Slurm. Each A/B is self-contained: both arms under <code>srun</code>, interleaved, identical logging.</li>
+  <li>Plugin firing verified in every per-rank INFO log via <code>TUNER/Plugin: Applied config</code>.</li>
+</ul>
+
+<footer>
+  Evidence: <code>results-tuning/2026-08-16-3-ab1node-valid/</code> — <code>v2_1n/validate.log</code>,
+  the 14 arm logs under <code>v2_1n/logs/</code>, <code>probe/</code>, and <code>chartdata.json</code>.
+  Config under test: <code>gen_1n_t1.conf</code>.
+</footer>
+</div>
+
+<div class="tt" id="tt"></div>
+
+<script>
+const DATA = [
+ {s:4096,d:0.32,c:0.35},
+ {s:8192,d:0.55,c:0.7},
+ {s:16384,d:0.86,c:1.26},
+ {s:32768,d:1.72,c:2.69},
+ {s:65536,d:3.27,c:5.23},
+ {s:131072,d:6.32,c:8.87},
+ {s:262144,d:12.57,c:17.83},
+ {s:524288,d:21.19,c:35.03},
+ {s:1048576,d:41.41,c:48.3},
+ {s:2097152,d:79.14,c:79.06},
+ {s:4194304,d:127.67,c:127.49},
+ {s:8388608,d:197.48,c:195.28},
+ {s:16777216,d:268.92,c:267.73},
+ {s:33554432,d:318.21,c:317.17},
+ {s:67108864,d:355.38,c:354.51},
+ {s:134217728,d:379.11,c:379.05},
+ {s:268435456,d:390.58,c:390.09},
+ {s:536870912,d:396.49,c:396.13}
+];
+const KEPT = new Set([4096,8192,16384,32768,65536,131072,262144,524288,1048576]);
+DATA.forEach(r=>{ r.delta = (r.c/r.d-1)*100; });
+
+const fmt = b => b>=1048576 ? (b/1048576)+"M" : (b/1024)+"K";
+const NS = "http://www.w3.org/2000/svg";
+const el = (n,a={}) => { const e=document.createElementNS(NS,n);
+  for(const k in a) e.setAttribute(k,a[k]); return e; };
+
+const tt = document.getElementById("tt");
+function showTT(evt, html){
+  tt.innerHTML = html; tt.style.opacity = 1;
+  const pad = 14, w = tt.offsetWidth, h = tt.offsetHeight;
+  let x = evt.clientX + pad, y = evt.clientY - h - pad;
+  if (x + w > innerWidth - 8) x = evt.clientX - w - pad;
+  if (y < 8) y = evt.clientY + pad;
+  tt.style.left = x+"px"; tt.style.top = y+"px";
+}
+const hideTT = () => tt.style.opacity = 0;
+
+/* ---------- chart 1: log-log bandwidth ---------- */
+(function(){
+  const svg = document.getElementById("c1");
+  const W=940,H=430,L=58,R=118,T=16,B=44;
+  const pw=W-L-R, ph=H-T-B;
+  const x = i => L + (pw*i)/(DATA.length-1);
+  const lo=0.2, hi=500;
+  const y = v => T + ph - ph*(Math.log10(v)-Math.log10(lo))/(Math.log10(hi)-Math.log10(lo));
+
+  [0.2,1,10,100,500].forEach(v=>{
+    svg.appendChild(el("line",{x1:L,x2:L+pw,y1:y(v),y2:y(v),class:"gl"}));
+    const t=el("text",{x:L-10,y:y(v)+4,class:"tk","text-anchor":"end"});
+    t.textContent = v>=1? v : v.toFixed(1); svg.appendChild(t);
+  });
+  const yl=el("text",{x:14,y:T+ph/2,class:"al","text-anchor":"middle",
+    transform:`rotate(-90 14 ${T+ph/2})`}); yl.textContent="bus bandwidth (GB/s)"; svg.appendChild(yl);
+  svg.appendChild(el("line",{x1:L,x2:L+pw,y1:T+ph,y2:T+ph,class:"ax"}));
+
+  DATA.forEach((r,i)=>{ if(i%2) return;
+    const t=el("text",{x:x(i),y:T+ph+18,class:"tk","text-anchor":"middle"});
+    t.textContent=fmt(r.s); svg.appendChild(t); });
+  const xl=el("text",{x:L+pw/2,y:H-6,class:"al","text-anchor":"middle"});
+  xl.textContent="message size"; svg.appendChild(xl);
+
+  const line = (key,color) => {
+    const d = DATA.map((r,i)=>`${i?"L":"M"}${x(i).toFixed(1)},${y(r[key]).toFixed(1)}`).join("");
+    svg.appendChild(el("path",{d,fill:"none",stroke:color,"stroke-width":2,
+      "stroke-linejoin":"round","stroke-linecap":"round"}));
+    DATA.forEach((r,i)=>{
+      svg.appendChild(el("circle",{cx:x(i),cy:y(r[key]),r:4.5,fill:color,
+        stroke:"var(--surface-0)","stroke-width":2}));
+    });
+  };
+  line("d","var(--series-2)");
+  line("c","var(--series-1)");
+
+  const lastD=DATA[DATA.length-1], li=DATA.length-1;
+  const ld=el("text",{x:x(li)+10,y:y(lastD.d)+4,class:"al",fill:"var(--series-2)"});
+  ld.textContent="default"; svg.appendChild(ld);
+  const lc=el("text",{x:x(li)+10,y:y(lastD.c)+4,class:"al",fill:"var(--series-1)"});
+  lc.textContent="config"; svg.appendChild(lc);
+
+  DATA.forEach((r,i)=>{
+    const hit=el("rect",{x:x(i)-pw/(DATA.length-1)/2,y:T,width:pw/(DATA.length-1),height:ph,
+      fill:"transparent"});
+    hit.addEventListener("mousemove",e=>showTT(e,
+      `<div class="h">${fmt(r.s)}</div>
+       <div class="r"><span>default</span><b>${r.d.toFixed(2)}</b></div>
+       <div class="r"><span>config</span><b>${r.c.toFixed(2)}</b></div>
+       <div class="r"><span>change</span><b>${r.delta>=0?"+":""}${r.delta.toFixed(1)}%</b></div>`));
+    hit.addEventListener("mouseleave",hideTT);
+    svg.appendChild(hit);
+  });
+})();
+
+/* ---------- chart 2: diverging delta bars ---------- */
+(function(){
+  const svg = document.getElementById("c2");
+  const W=940,H=330,L=58,R=24,T=16,B=52;
+  const pw=W-L-R, ph=H-T-B;
+  const bw = pw/DATA.length;
+  const max=70, min=-70;
+  const y = v => T + ph*(max-v)/(max-min);
+
+  [60,30,0,-30,-60].forEach(v=>{
+    svg.appendChild(el("line",{x1:L,x2:L+pw,y1:y(v),y2:y(v),class:v?"gl":"ax"}));
+    const t=el("text",{x:L-10,y:y(v)+4,class:"tk","text-anchor":"end"});
+    t.textContent=(v>0?"+":"")+v+"%"; svg.appendChild(t);
+  });
+  const yl=el("text",{x:14,y:T+ph/2,class:"al","text-anchor":"middle",
+    transform:`rotate(-90 14 ${T+ph/2})`}); yl.textContent="change vs default"; svg.appendChild(yl);
+
+  DATA.forEach((r,i)=>{
+    const v=Math.max(min,Math.min(max,r.delta));
+    const cx=L+bw*i+bw/2, top=Math.min(y(0),y(v)), hgt=Math.abs(y(v)-y(0));
+    const g=el("rect",{x:cx-bw*0.32,y:top,width:bw*0.64,height:Math.max(hgt,1.5),
+      rx:4,fill:r.delta>=0?"var(--pos)":"var(--neg)"});
+    svg.appendChild(g);
+    if(Math.abs(r.delta)>4){
+      const t=el("text",{x:cx,y:r.delta>=0?top-6:top+hgt+15,class:"tk","text-anchor":"middle"});
+      t.textContent=(r.delta>0?"+":"")+r.delta.toFixed(0); svg.appendChild(t);
+    }
+    const lt=el("text",{x:cx,y:T+ph+20,class:"tk","text-anchor":"middle"});
+    lt.textContent=fmt(r.s); svg.appendChild(lt);
+
+    const hit=el("rect",{x:L+bw*i,y:T,width:bw,height:ph,fill:"transparent"});
+    hit.addEventListener("mousemove",e=>showTT(e,
+      `<div class="h">${fmt(r.s)}</div>
+       <div class="r"><span>change</span><b>${r.delta>=0?"+":""}${r.delta.toFixed(1)}%</b></div>
+       <div class="r"><span>verdict</span><b>${KEPT.has(r.s)?"kept":"not kept"}</b></div>`));
+    hit.addEventListener("mouseleave",hideTT);
+    svg.appendChild(hit);
+  });
+  const xl=el("text",{x:L+pw/2,y:H-8,class:"al","text-anchor":"middle"});
+  xl.textContent="message size"; svg.appendChild(xl);
+})();
+
+/* ---------- what actually ran ---------- */
+const SEL = [
+ [4096,"TREE/LL/1",0.32,"tree/ll/24","TREE/LL/24",0.35,9.4,6.5,5.9],
+ [8192,"TREE/LL/1",0.55,"tree/ll/4","TREE/LL/4",0.7,27.3,3.7,14.8],
+ [16384,"TREE/LL/1",0.86,"tree/ll/40","TREE/LL/40",1.26,46.5,2.4,10.7],
+ [32768,"TREE/LL/2",1.72,"tree/ll/40","TREE/LL/40",2.69,56.4,1.8,4.2],
+ [65536,"TREE/LL/4",3.27,"tree/ll/32","TREE/LL/32",5.23,59.9,2.2,1.3],
+ [131072,"TREE/LL/8",6.32,"tree/ll/32","TREE/LL/32",8.87,40.3,1.4,6.8],
+ [262144,"TREE/LL/16",12.57,"ring/ll/32","RING/LL/32",17.83,41.8,196.9,2.1],
+ [524288,"RING/SIMPLE/16",21.19,"ring/ll/48","RING/LL/48",35.03,65.3,1.1,2.0],
+ [1048576,"RING/SIMPLE/32",41.41,"ring/ll/40","RING/LL/40",48.3,16.6,1.3,2.6],
+ [2097152,"RING/SIMPLE/56",79.14,"ring/simple/48","RING/SIMPLE/48",79.06,-0.1,1.3,2.1],
+ [4194304,"RING/SIMPLE/56",127.67,"ring/simple/56","RING/SIMPLE/56",127.49,-0.1,1.0,1.3],
+ [8388608,"RING/SIMPLE/56",197.48,"ring/simple/48","RING/SIMPLE/48",195.28,-1.1,0.7,1.3],
+ [16777216,"RING/SIMPLE/56",268.92,"ring/simple/56","RING/SIMPLE/56",267.73,-0.4,0.2,0.2],
+ [33554432,"RING/SIMPLE/56",318.21,"ring/simple/56","RING/SIMPLE/56",317.17,-0.3,0.2,0.6],
+ [67108864,"RING*/SIMPLE/56",355.38,"ring/simple/224","RING*/SIMPLE/56",354.51,-0.2,0.7,0.5],
+ [134217728,"RING*/SIMPLE/56",379.11,"ring/simple/224","RING*/SIMPLE/56",379.05,-0.0,0.4,0.2],
+ [268435456,"RING*/SIMPLE/56",390.58,"ring/simple/224","RING*/SIMPLE/56",390.09,-0.1,0.2,0.1],
+ [536870912,"RING*/SIMPLE/56",396.49,"ring/simple/224","RING*/SIMPLE/56",396.13,-0.1,0.3,0.6]
+];
+
+(function(){
+  const tb=document.querySelector("#sel tbody");
+  SEL.forEach(([s,dsel,dbw,rq,csel,cbw,dl,dsp,csp])=>{
+    const mono='font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;text-align:left';
+    const diff = dsel!==csel;
+    const noisy = Math.max(dsp,csp) > 25;
+    tb.insertAdjacentHTML("beforeend",
+      `<tr><td class="k">${fmt(s)}</td>
+       <td style="${mono}">${dsel}</td><td>${dbw.toFixed(2)}</td>
+       <td style="${mono};color:var(--text-muted)">${rq}</td>
+       <td style="${mono}${diff?';color:var(--text-primary);font-weight:600':''}">${csel}</td>
+       <td>${cbw.toFixed(2)}</td>
+       <td class="${dl>=2?'up':dl<=-2?'dn':''}">${dl>=0?'+':''}${dl.toFixed(1)}%</td>
+       <td style="${noisy?'color:var(--warning);font-weight:600':'color:var(--text-muted)'}">${dsp.toFixed(1)}/${csp.toFixed(1)}%</td></tr>`);
+  });
+})();
+
+</script>
+</body>
+</html>

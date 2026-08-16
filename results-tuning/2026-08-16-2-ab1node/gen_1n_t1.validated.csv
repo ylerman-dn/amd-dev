@@ -1,0 +1,15 @@
+# Validated by validate_tuner_config.py: only rules that beat RCCL default
+# with P(sup) >= 0.95 over 7 repeats, gain > 2.0%,
+# and no size in range regressing more than 2.0%.
+# dropped: allreduce,4096,4096,tree,ll,24,1,8,-1,-1   (best gain only +0.0%)
+# dropped: allreduce,8192,8192,tree,ll,4,1,8,-1,-1   (P(sup) only 0.65, not reproducible)
+# dropped: allreduce,16384,32768,tree,ll,40,1,8,-1,-1   (P(sup) only 0.84, not reproducible)
+# dropped: allreduce,65536,131072,tree,ll,32,1,8,-1,-1   (P(sup) only 0.88, not reproducible)
+# dropped: allreduce,262144,262144,ring,ll,32,1,8,-1,-1   (P(sup) only 0.76, not reproducible)
+# dropped: allreduce,524288,524288,ring,ll,48,1,8,-1,-1   (P(sup) only 0.82, not reproducible)
+# dropped: allreduce,1048576,1048576,ring,ll,40,1,8,-1,-1   (P(sup) only 0.67, not reproducible)
+# dropped: allreduce,2097152,2097152,ring,simple,48,1,8,-1,-1   (P(sup) only 0.59, not reproducible)
+# dropped: allreduce,4194304,4194304,ring,simple,56,1,8,-1,-1   (best gain only -0.9%)
+# dropped: allreduce,8388608,8388608,ring,simple,48,1,8,-1,-1   (best gain only -1.5%)
+# dropped: allreduce,16777216,536870912,ring,simple,56,1,8,-1,-1   (contains a regression of -61.0% (landmine))
+collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff

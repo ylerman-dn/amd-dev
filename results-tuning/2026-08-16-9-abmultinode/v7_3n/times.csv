@@ -1,0 +1,15 @@
+utc_start,phase,scale,detail,duration_s,rc,notes
+2026-08-16T12:32:19Z,validate_conf,3n,default_r1,12,0,ok
+2026-08-16T12:32:31Z,validate_conf,3n,config_r1,12,0,ok
+2026-08-16T12:32:44Z,validate_conf,3n,default_r2,12,0,ok
+2026-08-16T12:32:56Z,validate_conf,3n,config_r2,12,0,ok
+2026-08-16T12:33:09Z,validate_conf,3n,default_r3,12,0,ok
+2026-08-16T12:33:21Z,validate_conf,3n,config_r3,12,0,ok
+2026-08-16T12:33:34Z,validate_conf,3n,default_r4,12,0,ok
+2026-08-16T12:33:47Z,validate_conf,3n,config_r4,12,0,ok
+2026-08-16T12:33:59Z,validate_conf,3n,default_r5,12,0,ok
+2026-08-16T12:34:12Z,validate_conf,3n,config_r5,12,0,ok
+2026-08-16T12:34:25Z,validate_conf,3n,default_r6,12,0,ok
+2026-08-16T12:34:38Z,validate_conf,3n,config_r6,12,0,ok
+2026-08-16T12:34:51Z,validate_conf,3n,default_r7,12,0,ok
+2026-08-16T12:35:03Z,validate_conf,3n,config_r7,12,0,ok
