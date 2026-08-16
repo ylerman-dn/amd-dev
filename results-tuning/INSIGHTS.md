@@ -36,6 +36,34 @@ At 2 and 3 nodes the headroom is concentrated in a handful of specific sizes, no
 
 ---
 
+## 2b. The biggest win in the project is on a collective nobody tuned
+
+`broadcast` and `reduce` at 1 node beat their default by **more than double** in the 512K–2M band.
+Verified by A/B, 7 repeats per arm, probability-of-superiority 1.00:
+
+| size | default | forced `RING/LL` | change |
+|---|---|---|---|
+| 256K | 13.08 | 12.93 | −1.1% |
+| **512K** | **10.18** | **25.28** | **+148.3%** |
+| **1M** | 19.38 | 37.59 | **+93.9%** |
+| **2M** | 37.89 | 50.29 | **+32.7%** |
+| 4M | 65.92 | 60.47 | −8.3% |
+| 8M | 107.86 | 66.95 | −37.9% |
+
+`reduce` is the same shape: +143.5% / +99% / +28.3%.
+
+**The tell is that the default goes backwards.** 13.08 GB/s at 256K falls to 10.18 at 512K —
+bandwidth should never drop as the message grows. RCCL switches away from LL around 512K and the
+replacement is half as fast for three consecutive sizes, then becomes correct again by 4M.
+
+Same class of error as everything in section 3 — a switch at the wrong size — but two to three times
+larger, on collectives that have never been swept.
+
+Evidence: `results-tuning/2026-08-16-15-bcast/`. Found by mining `2026-08-03-7-collmap/`, which had
+sat unanalysed since it was collected.
+
+---
+
 ## 3. RCCL switches algorithms too late — every single time
 
 This is the most useful thing we found.
@@ -246,7 +274,8 @@ half the runs, not a tenth.
 
 ## 13. Numbers worth remembering
 
-- **+65.3%** — best verified 1-node gain (512K), probability-of-superiority 1.00
+- **+148.3%** — best verified gain anywhere: broadcast, 1 node, 512K
+- **+65.3%** — best verified all_reduce gain (1 node, 512K)
 - **+17.3%** — best verified 3-node gain (256M–512M)
 - **0.65%** — median run-to-run spread; the noise floor everything must clear
 - **5 of 6** — multi-node algorithm/protocol switches that happen too late
