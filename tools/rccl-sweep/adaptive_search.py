@@ -676,22 +676,55 @@ def cmd_live(args):
 
     guard = Guard(oracle)
     trace = []
+    t0 = time.time()
     winners, evals, stats = adaptive_search(
         guard, combos, grid, anchors, args.margin, explore, final,
         args.tol, args.band, sizes=None, trace=trace)
+    search_wall_s = time.time() - t0
+
+    # default (NCCL-auto) runs for same-day context, like the grid's 3
+    default_bw = []
+    for i in range(args.default_runs):
+        rid = f"d{i:04d}"
+        out = f"{args.remote_out}/{rid}"
+        cmd = (f"cd {args.remote_tool} && export MY_PATH={args.my_path} && "
+               f"python3 rccl_sweep.py --servers {args.servers_file} "
+               f"--output-dir {out} --nodes {args.nodes} "
+               f"--collective {args.collective} "
+               f"--min-size {args.min_size} --max-size {args.max_size}")
+        p = subprocess.run(["ssh", args.exec_node, cmd],
+                           stdin=subprocess.DEVNULL, capture_output=True,
+                           text=True, timeout=900)
+        m = subprocess.run(["ssh", args.exec_node,
+                            f"cat {out}/run_*/metrics.csv"],
+                           stdin=subprocess.DEVNULL, capture_output=True,
+                           text=True)
+        with open(log, "a") as f:
+            f.write(f"{rid} cfg=default rc={p.returncode} out={out}\n")
+        if p.returncode == 0 and m.returncode == 0:
+            default_bw.append({int(r["size_bytes"]): float(r["busbw_ip"])
+                               for r in csv.DictReader(m.stdout.splitlines())})
+
     report = {
+        "policy": {"anchors": anchors, "margin": args.margin,
+                   "repeat_policy": args.repeat_policy, "tol": args.tol,
+                   "band": args.band, "grid": grid,
+                   "combos": [list(c) for c in combos]},
         "winners": {str(s): {"cfg": "/".join(map(str, w["cfg"])),
                              "busbw": w["busbw"]}
                     for s, w in winners.items()},
         "runs": oracle.runs, "configs": stats["configs"],
+        "default_runs": len(default_bw),
+        "search_wall_s": round(search_wall_s, 1),
         "alive_combos": stats["alive_combos"],
         "dead_combos": [list(c) for c in guard.dead_combos],
         "failures": [(r, list(c), rc) for r, c, rc in oracle.failures],
         "trace": [str(t) for t in trace],
+        "default_busbw": [{str(s): v for s, v in d.items()}
+                          for d in default_bw],
         "evals": {"/".join(map(str, cfg)):
-                  {str(s): v for s, v in
-                   {s: [r[s] for r in rs] for s in sorted(rs[0])}.items()}
-                  for cfg, rs in evals.items() for rs in [evals[cfg]]},
+                  {str(s): [r.get(s) for r in rs] for s in sorted(rs[0])}
+                  for cfg, rs in evals.items()},
     }
     out = Path(args.local_out) / "adaptive_report.json"
     with open(out, "w") as f:
@@ -757,6 +790,8 @@ def main():
     pl.add_argument("--min-size", default="4K")
     pl.add_argument("--max-size", default="512M")
     pl.add_argument("--my-path", default="/opt/shared/ylerman/GPU-107/bin")
+    pl.add_argument("--default-runs", type=int, default=3,
+                    help="NCCL-default context runs after the search")
 
     args = p.parse_args()
     return {"selftest": cmd_selftest, "replay": cmd_replay, "tune": cmd_tune,
