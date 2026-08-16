@@ -6,6 +6,7 @@ Validates RCCL collective/algo/proto/node combinations against known
 unsupported configurations defined in unsupported_combos.yaml.
 """
 
+import os
 import yaml
 from pathlib import Path
 from typing import Tuple, List, Dict, Any, Optional
@@ -30,14 +31,28 @@ class ComboValidator:
     # Default config path (relative to this module)
     DEFAULT_CONFIG = Path(__file__).parent.parent / 'unsupported_combos.yaml'
     
-    def __init__(self, config_path: Optional[Path] = None):
+    def __init__(self, config_path: Optional[Path] = None, rccl_build: Optional[str] = None):
         """
         Initialize the validator.
-        
+
         Args:
             config_path: Path to unsupported_combos.yaml. If None, uses default.
+            rccl_build: identifier of the RCCL build in use, e.g.
+                "gfx950 / RCCL 2.28.3-develop:2e42aa8". Rules carrying a
+                `measured_on:` field are EMPIRICAL -- observed on one machine and
+                one build rather than derived from tuning.cc -- and are skipped
+                with a warning when this does not match. Pass None to keep every
+                rule (previous behaviour), or set RCCL_BUILD_ID in the
+                environment.
+
+        Why this exists: a wrong empirical rule is invisible. A skipped
+        combination leaves no trace in the results, so a rule that was true on
+        gfx950/2.28.3 and false elsewhere silently removes a candidate that might
+        have won, and nothing in the output would ever say so.
         """
         self.config_path = Path(config_path) if config_path else self.DEFAULT_CONFIG
+        self.rccl_build = rccl_build if rccl_build is not None else os.environ.get("RCCL_BUILD_ID")
+        self.skipped_rules: List[Dict[str, Any]] = []
         self.rules: List[Dict[str, Any]] = []
         self._load_rules()
     
@@ -52,7 +67,21 @@ class ComboValidator:
                 data = yaml.safe_load(f)
             
             if data and 'unsupported' in data:
-                self.rules = data['unsupported']
+                all_rules = data['unsupported'] or []
+                if self.rccl_build is None:
+                    self.rules = all_rules
+                else:
+                    for r in all_rules:
+                        measured = r.get('measured_on')
+                        if measured and measured != self.rccl_build:
+                            self.skipped_rules.append(r)
+                        else:
+                            self.rules.append(r)
+                    if self.skipped_rules:
+                        print(f"Note: {len(self.skipped_rules)} empirical combo rule(s) skipped -- "
+                              f"measured on a different build than {self.rccl_build!r}. "
+                              f"Those combinations will now be swept. "
+                              f"Re-measure and update measured_on: to re-enable them.")
         except Exception as e:
             print(f"Warning: Could not load combo rules from {self.config_path}: {e}")
             self.rules = []
