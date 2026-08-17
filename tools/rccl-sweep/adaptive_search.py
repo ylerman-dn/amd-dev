@@ -736,6 +736,66 @@ def cmd_live(args):
     return 0
 
 
+def cmd_compare(args):
+    """Live adaptive report vs a reference full grid: same winners? and the
+    bandwidth gap, measured in BOTH sessions' own data where possible."""
+    with open(args.report) as f:
+        rep = json.load(f)
+    live_evals = {}
+    for cfg_s, sizes in rep["evals"].items():
+        algo, proto, ch = cfg_s.split("/")
+        live_evals[(algo, proto, int(ch))] = \
+            {int(s): [v for v in vals if v is not None]
+             for s, vals in sizes.items()}
+    live_medians = {cfg: {s: statistics.median(v) for s, v in m.items() if v}
+                    for cfg, m in live_evals.items()}
+    ref = load_dataset(args)
+    ref_medians = medians_of(ref)
+    ref_winners = select_winners(ref_medians, args.tol)
+    out = []
+    for s_str, w in sorted(rep["winners"].items(), key=lambda kv: int(kv[0])):
+        size = int(s_str)
+        a_cfg = tuple(w["cfg"].split("/")[:2]) + (int(w["cfg"].split("/")[2]),)
+        r = ref_winners.get(size)
+        r_cfg = r["cfg"] if r else None
+        # gap in the LIVE session: live median of ref winner vs live pick
+        live_gap = None
+        if r_cfg in live_medians and size in live_medians[r_cfg] \
+                and size in live_medians.get(a_cfg, {}):
+            ref_in_live = live_medians[r_cfg][size]
+            pick_in_live = live_medians[a_cfg][size]
+            live_gap = (ref_in_live - pick_in_live) / ref_in_live * 100.0
+        # gap in the REFERENCE grid: ref median of live pick vs ref winner
+        ref_gap = None
+        if a_cfg in ref_medians and size in ref_medians[a_cfg] and r:
+            ref_gap = (r["busbw"] - ref_medians[a_cfg][size]) \
+                / r["busbw"] * 100.0
+        out.append({
+            "size": size,
+            "live_cfg": w["cfg"], "live_busbw": w["busbw"],
+            "ref_cfg": "/".join(map(str, r_cfg)) if r_cfg else None,
+            "ref_busbw": r["busbw"] if r else None,
+            "exact": (r_cfg == a_cfg),
+            "gap_pct_in_live_data": round(live_gap, 3)
+            if live_gap is not None else None,
+            "gap_pct_in_ref_data": round(ref_gap, 3)
+            if ref_gap is not None else None,
+            "ref_winner_evaluated_live": r_cfg in live_medians,
+        })
+    summary = {
+        "exact": sum(r["exact"] for r in out), "n_sizes": len(out),
+        "worst_gap_in_live_data": max((r["gap_pct_in_live_data"] for r in out
+                                       if r["gap_pct_in_live_data"] is not None),
+                                      default=None),
+        "worst_gap_in_ref_data": max((r["gap_pct_in_ref_data"] for r in out
+                                      if r["gap_pct_in_ref_data"] is not None),
+                                     default=None),
+        "rows": out,
+    }
+    print(json.dumps(summary, indent=2))
+    return 0
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     sub = p.add_subparsers(dest="mode", required=True)
@@ -792,6 +852,13 @@ def main():
     pl.add_argument("--my-path", default="/opt/shared/ylerman/GPU-107/bin")
     pl.add_argument("--default-runs", type=int, default=3,
                     help="NCCL-default context runs after the search")
+
+    pc = sub.add_parser("compare", parents=[common])
+    pc.add_argument("--report", required=True,
+                    help="adaptive_report.json from a live run")
+    pc.add_argument("--dataset", required=True,
+                    help="reference full grid (merged.csv or variance.json)")
+    pc.add_argument("--nodes", type=int)
 
     args = p.parse_args()
     return {"selftest": cmd_selftest, "replay": cmd_replay, "tune": cmd_tune,
