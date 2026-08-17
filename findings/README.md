@@ -6,12 +6,17 @@ came from. Hypotheses live in the run `SUMMARY.md` files, not here.
 8 ranks × 1 GPU per node, RCCL 2.28.3-develop:2e42aa8. Finding 02 covers 1, 2 and 3 nodes;
 01 and 03 are single-node unless stated.
 
+**Start here:** [INSIGHTS.md](INSIGHTS.md) — the whole project in plain language, 13 sections.
+Same content as [insights.html](insights.html), which is self-contained (open it in a browser
+directly; no server needed).
+
 | # | finding |
 |---|---|
 | [01](01-verifying-what-ran.md) | How to verify what RCCL ran — `-A 1`, and why it can't be trusted for channels |
 | [02](02-per-collective-defaults-and-accepted.md) | **Defaults and accepted combinations, 6 collectives × 1/2/3 nodes** |
 | [03](03-logging-affects-busbw.md) | Logging shifts busbw — never compare logged against unlogged |
 | [04](04-pipeline-flow-and-ownership.md) | The sweep→config pipeline, step by step — and the median step that is not in the tool |
+| [05](05-nic-metrics-poller-disturbs-multinode.md) | A NIC-metrics poller disturbs multi-node runs every ~30s |
 
 ## Open — deliberately not findings
 
