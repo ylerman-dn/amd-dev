@@ -1,0 +1,206 @@
+{
+  "exact": 12,
+  "n_sizes": 18,
+  "worst_gap_in_live_data": 0.0,
+  "worst_gap_in_ref_data": 5.109,
+  "rows": [
+    {
+      "size": 4096,
+      "live_cfg": "TREE/LL/4",
+      "live_busbw": 0.36,
+      "ref_cfg": "TREE/LL/24",
+      "ref_busbw": 0.38,
+      "exact": false,
+      "gap_pct_in_live_data": -2.857,
+      "gap_pct_in_ref_data": 2.632,
+      "ref_winner_evaluated_live": true
+    },
+    {
+      "size": 8192,
+      "live_cfg": "TREE/LL/4",
+      "live_busbw": 0.7,
+      "ref_cfg": "TREE/LL/4",
+      "ref_busbw": 0.71,
+      "exact": true,
+      "gap_pct_in_live_data": 0.0,
+      "gap_pct_in_ref_data": 0.0,
+      "ref_winner_evaluated_live": true
+    },
+    {
+      "size": 16384,
+      "live_cfg": "TREE/LL/56",
+      "live_busbw": 1.29,
+      "ref_cfg": "TREE/LL/40",
+      "ref_busbw": 1.37,
+      "exact": false,
+      "gap_pct_in_live_data": -0.781,
+      "gap_pct_in_ref_data": 5.109,
+      "ref_winner_evaluated_live": true
+    },
+    {
+      "size": 32768,
+      "live_cfg": "TREE/LL/16",
+      "live_busbw": 2.72,
+      "ref_cfg": "TREE/LL/40",
+      "ref_busbw": 2.76,
+      "exact": false,
+      "gap_pct_in_live_data": -0.369,
+      "gap_pct_in_ref_data": 1.087,
+      "ref_winner_evaluated_live": true
+    },
+    {
+      "size": 65536,
+      "live_cfg": "TREE/LL/32",
+      "live_busbw": 5.32,
+      "ref_cfg": "TREE/LL/40",
+      "ref_busbw": 5.37,
+      "exact": false,
+      "gap_pct_in_live_data": -0.758,
+      "gap_pct_in_ref_data": 0.559,
+      "ref_winner_evaluated_live": true
+    },
+    {
+      "size": 131072,
+      "live_cfg": "TREE/LL/56",
+      "live_busbw": 9.15,
+      "ref_cfg": "TREE/LL/32",
+      "ref_busbw": 9.33,
+      "exact": false,
+      "gap_pct_in_live_data": -2.349,
+      "gap_pct_in_ref_data": 0.322,
+      "ref_winner_evaluated_live": true
+    },
+    {
+      "size": 262144,
+      "live_cfg": "RING/LL/32",
+      "live_busbw": 17.91,
+      "ref_cfg": "RING/LL/32",
+      "ref_busbw": 18.13,
+      "exact": true,
+      "gap_pct_in_live_data": 0.0,
+      "gap_pct_in_ref_data": 0.0,
+      "ref_winner_evaluated_live": true
+    },
+    {
+      "size": 524288,
+      "live_cfg": "RING/LL/56",
+      "live_busbw": 35.34,
+      "ref_cfg": "RING/LL/48",
+      "ref_busbw": 35.54,
+      "exact": false,
+      "gap_pct_in_live_data": -0.77,
+      "gap_pct_in_ref_data": 0.535,
+      "ref_winner_evaluated_live": true
+    },
+    {
+      "size": 1048576,
+      "live_cfg": "RING/LL/56",
+      "live_busbw": 49.32,
+      "ref_cfg": "RING/LL/56",
+      "ref_busbw": 49.62,
+      "exact": true,
+      "gap_pct_in_live_data": 0.0,
+      "gap_pct_in_ref_data": 0.0,
+      "ref_winner_evaluated_live": true
+    },
+    {
+      "size": 2097152,
+      "live_cfg": "RING/SIMPLE/48",
+      "live_busbw": 80.07,
+      "ref_cfg": "RING/SIMPLE/48",
+      "ref_busbw": 80.27,
+      "exact": true,
+      "gap_pct_in_live_data": 0.0,
+      "gap_pct_in_ref_data": 0.0,
+      "ref_winner_evaluated_live": true
+    },
+    {
+      "size": 4194304,
+      "live_cfg": "RING/SIMPLE/56",
+      "live_busbw": 128.11,
+      "ref_cfg": "RING/SIMPLE/56",
+      "ref_busbw": 128.56,
+      "exact": true,
+      "gap_pct_in_live_data": 0.0,
+      "gap_pct_in_ref_data": 0.0,
+      "ref_winner_evaluated_live": true
+    },
+    {
+      "size": 8388608,
+      "live_cfg": "RING/SIMPLE/56",
+      "live_busbw": 197.25,
+      "ref_cfg": "RING/SIMPLE/56",
+      "ref_busbw": 197.8,
+      "exact": true,
+      "gap_pct_in_live_data": 0.0,
+      "gap_pct_in_ref_data": 0.0,
+      "ref_winner_evaluated_live": true
+    },
+    {
+      "size": 16777216,
+      "live_cfg": "RING/SIMPLE/56",
+      "live_busbw": 268.89,
+      "ref_cfg": "RING/SIMPLE/56",
+      "ref_busbw": 269.37,
+      "exact": true,
+      "gap_pct_in_live_data": 0.0,
+      "gap_pct_in_ref_data": 0.0,
+      "ref_winner_evaluated_live": true
+    },
+    {
+      "size": 33554432,
+      "live_cfg": "RING/SIMPLE/56",
+      "live_busbw": 317.55,
+      "ref_cfg": "RING/SIMPLE/56",
+      "ref_busbw": 318.54,
+      "exact": true,
+      "gap_pct_in_live_data": 0.0,
+      "gap_pct_in_ref_data": 0.0,
+      "ref_winner_evaluated_live": true
+    },
+    {
+      "size": 67108864,
+      "live_cfg": "RING/SIMPLE/56",
+      "live_busbw": 354.63,
+      "ref_cfg": "RING/SIMPLE/56",
+      "ref_busbw": 355.85,
+      "exact": true,
+      "gap_pct_in_live_data": 0.0,
+      "gap_pct_in_ref_data": 0.0,
+      "ref_winner_evaluated_live": true
+    },
+    {
+      "size": 134217728,
+      "live_cfg": "RING/SIMPLE/56",
+      "live_busbw": 379.13,
+      "ref_cfg": "RING/SIMPLE/56",
+      "ref_busbw": 379.09,
+      "exact": true,
+      "gap_pct_in_live_data": 0.0,
+      "gap_pct_in_ref_data": 0.0,
+      "ref_winner_evaluated_live": true
+    },
+    {
+      "size": 268435456,
+      "live_cfg": "RING/SIMPLE/56",
+      "live_busbw": 390.49,
+      "ref_cfg": "RING/SIMPLE/56",
+      "ref_busbw": 389.81,
+      "exact": true,
+      "gap_pct_in_live_data": 0.0,
+      "gap_pct_in_ref_data": 0.0,
+      "ref_winner_evaluated_live": true
+    },
+    {
+      "size": 536870912,
+      "live_cfg": "RING/SIMPLE/56",
+      "live_busbw": 395.95,
+      "ref_cfg": "RING/SIMPLE/56",
+      "ref_busbw": 396.31,
+      "exact": true,
+      "gap_pct_in_live_data": 0.0,
+      "gap_pct_in_ref_data": 0.0,
+      "ref_winner_evaluated_live": true
+    }
+  ]
+}

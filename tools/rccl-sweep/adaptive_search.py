@@ -862,7 +862,8 @@ def main():
 
     args = p.parse_args()
     return {"selftest": cmd_selftest, "replay": cmd_replay, "tune": cmd_tune,
-            "baseline": cmd_baseline, "live": cmd_live}[args.mode](args)
+            "baseline": cmd_baseline, "live": cmd_live,
+            "compare": cmd_compare}[args.mode](args)
 
 
 if __name__ == "__main__":
