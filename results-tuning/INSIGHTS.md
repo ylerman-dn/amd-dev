@@ -247,11 +247,24 @@ on, or you are not measuring what you ship.*
 
 ## 12. What to do next, in order of value
 
-**1. Fix the cause, not the symptoms (highest value).**
-RCCL supports a v5 tuner plugin that lets you rewrite its internal cost-model constants — latencies
-and per-channel bandwidths per algorithm and protocol. Those constants are what produce the switch
-points in section 3. We are on v4, which only lets us override outcomes size by size. Correcting the
-constants could fix all six late transitions at once, and would apply to collectives we never swept.
+**1. Fix the cause, not the symptoms — but check it is reachable first.**
+RCCL supports a v5 tuner plugin whose `init()` receives its internal cost-model constants as an
+in/out parameter — latencies and per-channel bandwidths per algorithm and protocol. Those constants
+are what produce the switch points in section 3. We are on v4, which only overrides outcomes size by
+size. Correcting the constants *would* fix all six late transitions at once and apply to collectives
+we never swept.
+
+**Caveat found 2026-08-17, and it may kill this for our build.** The deployed
+`librccl.so` predates the RCCL commit that wires v5 constants into the AMD path. Its constants
+struct is the older **1152-byte** layout with no `bwRatio` — verified by
+`readelf -sW librccl.so | grep ncclTunerConstantsDefaults`, against 1488 bytes for the layout the
+`rccl-src` header declares. Per that era's source, `llMaxBws`, `perChMax*` and `hwLatencies` are read
+on non-AMD paths only. So on **this** build the constants may be dead knobs, and correcting them
+would change nothing.
+
+That does not retire the idea — it moves it behind a version check. A newer RCCL is likely needed
+before the v5 route pays. An empirical probe was queued by the v5 session; treat the above as
+verified-struct-size plus an unverified source claim until that lands.
 
 **2. Sweep the other five collectives.**
 Everything we know is all_reduce. `reduce_scatter`, `all_gather`, `broadcast`, `reduce` and
