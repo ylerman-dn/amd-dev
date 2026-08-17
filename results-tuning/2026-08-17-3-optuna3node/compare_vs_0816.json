@@ -1,0 +1,206 @@
+{
+  "exact": 15,
+  "n_sizes": 18,
+  "worst_gap_in_live_data": 0.465,
+  "worst_gap_in_ref_data": 0.727,
+  "rows": [
+    {
+      "size": 4096,
+      "live_cfg": "TREE/LL/2",
+      "live_busbw": 0.1,
+      "ref_cfg": "TREE/LL/2",
+      "ref_busbw": 0.11,
+      "exact": true,
+      "gap_pct_in_live_data": 0.0,
+      "gap_pct_in_ref_data": 0.0,
+      "ref_winner_evaluated_live": true
+    },
+    {
+      "size": 8192,
+      "live_cfg": "TREE/LL/4",
+      "live_busbw": 0.2,
+      "ref_cfg": "TREE/LL/4",
+      "ref_busbw": 0.22,
+      "exact": true,
+      "gap_pct_in_live_data": 0.0,
+      "gap_pct_in_ref_data": 0.0,
+      "ref_winner_evaluated_live": true
+    },
+    {
+      "size": 16384,
+      "live_cfg": "TREE/LL/8",
+      "live_busbw": 0.41,
+      "ref_cfg": "TREE/LL/8",
+      "ref_busbw": 0.43,
+      "exact": true,
+      "gap_pct_in_live_data": 0.0,
+      "gap_pct_in_ref_data": 0.0,
+      "ref_winner_evaluated_live": true
+    },
+    {
+      "size": 32768,
+      "live_cfg": "TREE/LL/16",
+      "live_busbw": 0.79,
+      "ref_cfg": "TREE/LL/16",
+      "ref_busbw": 0.83,
+      "exact": true,
+      "gap_pct_in_live_data": 0.0,
+      "gap_pct_in_ref_data": 0.0,
+      "ref_winner_evaluated_live": true
+    },
+    {
+      "size": 65536,
+      "live_cfg": "TREE/LL/32",
+      "live_busbw": 1.5,
+      "ref_cfg": "TREE/LL/32",
+      "ref_busbw": 1.58,
+      "exact": true,
+      "gap_pct_in_live_data": 0.0,
+      "gap_pct_in_ref_data": 0.0,
+      "ref_winner_evaluated_live": true
+    },
+    {
+      "size": 131072,
+      "live_cfg": "TREE/LL128/16",
+      "live_busbw": 2.76,
+      "ref_cfg": "TREE/LL128/16",
+      "ref_busbw": 2.89,
+      "exact": true,
+      "gap_pct_in_live_data": 0.0,
+      "gap_pct_in_ref_data": 0.0,
+      "ref_winner_evaluated_live": true
+    },
+    {
+      "size": 262144,
+      "live_cfg": "TREE/LL128/32",
+      "live_busbw": 5.28,
+      "ref_cfg": "TREE/LL128/48",
+      "ref_busbw": 5.5,
+      "exact": false,
+      "gap_pct_in_live_data": -0.956,
+      "gap_pct_in_ref_data": 0.727,
+      "ref_winner_evaluated_live": true
+    },
+    {
+      "size": 524288,
+      "live_cfg": "TREE/LL128/32",
+      "live_busbw": 9.83,
+      "ref_cfg": "TREE/LL128/32",
+      "ref_busbw": 10.27,
+      "exact": true,
+      "gap_pct_in_live_data": 0.0,
+      "gap_pct_in_ref_data": 0.0,
+      "ref_winner_evaluated_live": true
+    },
+    {
+      "size": 1048576,
+      "live_cfg": "TREE/LL128/48",
+      "live_busbw": 18.19,
+      "ref_cfg": "TREE/LL128/48",
+      "ref_busbw": 18.84,
+      "exact": true,
+      "gap_pct_in_live_data": 0.0,
+      "gap_pct_in_ref_data": 0.0,
+      "ref_winner_evaluated_live": true
+    },
+    {
+      "size": 2097152,
+      "live_cfg": "TREE/LL128/48",
+      "live_busbw": 33.92,
+      "ref_cfg": "TREE/LL128/48",
+      "ref_busbw": 35.18,
+      "exact": true,
+      "gap_pct_in_live_data": 0.0,
+      "gap_pct_in_ref_data": 0.0,
+      "ref_winner_evaluated_live": true
+    },
+    {
+      "size": 4194304,
+      "live_cfg": "TREE/LL128/48",
+      "live_busbw": 60.23,
+      "ref_cfg": "TREE/LL128/48",
+      "ref_busbw": 61.93,
+      "exact": true,
+      "gap_pct_in_live_data": 0.0,
+      "gap_pct_in_ref_data": 0.0,
+      "ref_winner_evaluated_live": true
+    },
+    {
+      "size": 8388608,
+      "live_cfg": "TREE/LL128/48",
+      "live_busbw": 99.99,
+      "ref_cfg": "TREE/LL128/48",
+      "ref_busbw": 102.19,
+      "exact": true,
+      "gap_pct_in_live_data": 0.0,
+      "gap_pct_in_ref_data": 0.0,
+      "ref_winner_evaluated_live": true
+    },
+    {
+      "size": 16777216,
+      "live_cfg": "TREE/LL128/48",
+      "live_busbw": 146.61,
+      "ref_cfg": "TREE/LL128/48",
+      "ref_busbw": 149.45,
+      "exact": true,
+      "gap_pct_in_live_data": 0.0,
+      "gap_pct_in_ref_data": 0.0,
+      "ref_winner_evaluated_live": true
+    },
+    {
+      "size": 33554432,
+      "live_cfg": "RING/LL128/32",
+      "live_busbw": 201.84,
+      "ref_cfg": "RING/LL128/32",
+      "ref_busbw": 203.81,
+      "exact": true,
+      "gap_pct_in_live_data": 0.0,
+      "gap_pct_in_ref_data": 0.0,
+      "ref_winner_evaluated_live": true
+    },
+    {
+      "size": 67108864,
+      "live_cfg": "RING/LL128/48",
+      "live_busbw": 268.23,
+      "ref_cfg": "RING/LL128/40",
+      "ref_busbw": 267.98,
+      "exact": false,
+      "gap_pct_in_live_data": -2.743,
+      "gap_pct_in_ref_data": -0.116,
+      "ref_winner_evaluated_live": true
+    },
+    {
+      "size": 134217728,
+      "live_cfg": "RING/LL128/40",
+      "live_busbw": 271.43,
+      "ref_cfg": "RING/LL128/40",
+      "ref_busbw": 271.37,
+      "exact": true,
+      "gap_pct_in_live_data": 0.0,
+      "gap_pct_in_ref_data": 0.0,
+      "ref_winner_evaluated_live": true
+    },
+    {
+      "size": 268435456,
+      "live_cfg": "RING/SIMPLE/48",
+      "live_busbw": 346.68,
+      "ref_cfg": "RING/SIMPLE/48",
+      "ref_busbw": 344.52,
+      "exact": true,
+      "gap_pct_in_live_data": 0.0,
+      "gap_pct_in_ref_data": 0.0,
+      "ref_winner_evaluated_live": true
+    },
+    {
+      "size": 536870912,
+      "live_cfg": "RING/SIMPLE/40",
+      "live_busbw": 372.08,
+      "ref_cfg": "RING/SIMPLE/48",
+      "ref_busbw": 374.16,
+      "exact": false,
+      "gap_pct_in_live_data": 0.465,
+      "gap_pct_in_ref_data": 0.612,
+      "ref_winner_evaluated_live": true
+    }
+  ]
+}
