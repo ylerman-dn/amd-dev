@@ -1,0 +1,202 @@
+[
+  {
+    "sampler": "tpe",
+    "seed": 0,
+    "target_size": 268435456,
+    "configs_total": 30,
+    "configs_to_exact": 3,
+    "configs_to_gap5": 3,
+    "runs_to_exact": 9,
+    "runs_to_gap5": 9
+  },
+  {
+    "sampler": "tpe",
+    "seed": 1,
+    "target_size": 268435456,
+    "configs_total": 30,
+    "configs_to_exact": 12,
+    "configs_to_gap5": 1,
+    "runs_to_exact": 36,
+    "runs_to_gap5": 3
+  },
+  {
+    "sampler": "tpe",
+    "seed": 2,
+    "target_size": 268435456,
+    "configs_total": 30,
+    "configs_to_exact": 22,
+    "configs_to_gap5": 10,
+    "runs_to_exact": 66,
+    "runs_to_gap5": 30
+  },
+  {
+    "sampler": "tpe",
+    "seed": 3,
+    "target_size": 268435456,
+    "configs_total": 30,
+    "configs_to_exact": 2,
+    "configs_to_gap5": 2,
+    "runs_to_exact": 6,
+    "runs_to_gap5": 6
+  },
+  {
+    "sampler": "tpe",
+    "seed": 4,
+    "target_size": 268435456,
+    "configs_total": 30,
+    "configs_to_exact": 15,
+    "configs_to_gap5": 6,
+    "runs_to_exact": 45,
+    "runs_to_gap5": 18
+  },
+  {
+    "sampler": "tpe",
+    "seed": 5,
+    "target_size": 268435456,
+    "configs_total": 30,
+    "configs_to_exact": 14,
+    "configs_to_gap5": 11,
+    "runs_to_exact": 42,
+    "runs_to_gap5": 33
+  },
+  {
+    "sampler": "tpe",
+    "seed": 6,
+    "target_size": 268435456,
+    "configs_total": 30,
+    "configs_to_exact": 13,
+    "configs_to_gap5": 13,
+    "runs_to_exact": 39,
+    "runs_to_gap5": 39
+  },
+  {
+    "sampler": "tpe",
+    "seed": 7,
+    "target_size": 268435456,
+    "configs_total": 30,
+    "configs_to_exact": 13,
+    "configs_to_gap5": 10,
+    "runs_to_exact": 39,
+    "runs_to_gap5": 30
+  },
+  {
+    "sampler": "tpe",
+    "seed": 8,
+    "target_size": 268435456,
+    "configs_total": 30,
+    "configs_to_exact": 1,
+    "configs_to_gap5": 1,
+    "runs_to_exact": 3,
+    "runs_to_gap5": 3
+  },
+  {
+    "sampler": "tpe",
+    "seed": 9,
+    "target_size": 268435456,
+    "configs_total": 30,
+    "configs_to_exact": 1,
+    "configs_to_gap5": 1,
+    "runs_to_exact": 3,
+    "runs_to_gap5": 3
+  },
+  {
+    "sampler": "random",
+    "seed": 0,
+    "target_size": 268435456,
+    "configs_total": 30,
+    "configs_to_exact": 15,
+    "configs_to_gap5": 3,
+    "runs_to_exact": 45,
+    "runs_to_gap5": 9
+  },
+  {
+    "sampler": "random",
+    "seed": 1,
+    "target_size": 268435456,
+    "configs_total": 30,
+    "configs_to_exact": 16,
+    "configs_to_gap5": 16,
+    "runs_to_exact": 48,
+    "runs_to_gap5": 48
+  },
+  {
+    "sampler": "random",
+    "seed": 2,
+    "target_size": 268435456,
+    "configs_total": 30,
+    "configs_to_exact": 20,
+    "configs_to_gap5": 14,
+    "runs_to_exact": 60,
+    "runs_to_gap5": 42
+  },
+  {
+    "sampler": "random",
+    "seed": 3,
+    "target_size": 268435456,
+    "configs_total": 30,
+    "configs_to_exact": 25,
+    "configs_to_gap5": 25,
+    "runs_to_exact": 75,
+    "runs_to_gap5": 75
+  },
+  {
+    "sampler": "random",
+    "seed": 4,
+    "target_size": 268435456,
+    "configs_total": 30,
+    "configs_to_exact": 6,
+    "configs_to_gap5": 1,
+    "runs_to_exact": 18,
+    "runs_to_gap5": 3
+  },
+  {
+    "sampler": "random",
+    "seed": 5,
+    "target_size": 268435456,
+    "configs_total": 30,
+    "configs_to_exact": 30,
+    "configs_to_gap5": 14,
+    "runs_to_exact": 90,
+    "runs_to_gap5": 42
+  },
+  {
+    "sampler": "random",
+    "seed": 6,
+    "target_size": 268435456,
+    "configs_total": 30,
+    "configs_to_exact": 2,
+    "configs_to_gap5": 2,
+    "runs_to_exact": 6,
+    "runs_to_gap5": 6
+  },
+  {
+    "sampler": "random",
+    "seed": 7,
+    "target_size": 268435456,
+    "configs_total": 30,
+    "configs_to_exact": 17,
+    "configs_to_gap5": 17,
+    "runs_to_exact": 51,
+    "runs_to_gap5": 51
+  },
+  {
+    "sampler": "random",
+    "seed": 8,
+    "target_size": 268435456,
+    "configs_total": 30,
+    "configs_to_exact": 5,
+    "configs_to_gap5": 5,
+    "runs_to_exact": 15,
+    "runs_to_gap5": 15
+  },
+  {
+    "sampler": "random",
+    "seed": 9,
+    "target_size": 268435456,
+    "configs_total": 30,
+    "configs_to_exact": 29,
+    "configs_to_gap5": 15,
+    "runs_to_exact": 87,
+    "runs_to_gap5": 45
+  }
+]

@@ -383,16 +383,31 @@ def scalarize(median_map, size_max):
     return f
 
 
-def run_sampler_baseline(data, sampler_name, tol, seed, gap_ok=5.0):
+def run_sampler_baseline(data, sampler_name, tol, seed, gap_ok=5.0,
+                          target_size=None):
     """How many unique configs must a sampler evaluate before the winners
     selected from its evaluated set match the full grid?  Duplicate asks are
-    free (cached). Runs = unique configs x 3 (same repeats as the grid)."""
+    free (cached). Runs = unique configs x 3 (same repeats as the grid).
+
+    target_size: if given, score/check ONLY that one size's busbw directly
+    (no cross-size scalarization) - the single-objective variant, since a
+    fixed size has one true argmax and needs no averaging."""
     full_medians = medians_of(data)
     grid_winners = select_winners(full_medians, tol)
     sizes = sorted({s for m in full_medians.values() for s in m})
-    size_max = {s: max(m[s] for m in full_medians.values() if s in m)
-                for s in sizes}
-    obj = scalarize(full_medians, size_max)
+    if target_size is not None:
+        if target_size not in sizes:
+            raise ValueError(f"target size {target_size} not in dataset "
+                              f"sizes {sizes}")
+        check_sizes = [target_size]
+
+        def obj(cfg):
+            return full_medians[cfg].get(target_size, 0.0)
+    else:
+        check_sizes = sizes
+        size_max = {s: max(m[s] for m in full_medians.values() if s in m)
+                    for s in sizes}
+        obj = scalarize(full_medians, size_max)
     cfgs = sorted(data)
     combos = sorted({(c[0], c[1]) for c in cfgs})
     chans = sorted({c[2] for c in cfgs})
@@ -436,11 +451,11 @@ def run_sampler_baseline(data, sampler_name, tol, seed, gap_ok=5.0):
         evaluated[cfg] = full_medians[cfg]
         w = select_winners(evaluated, tol)
         if first_exact is None and all(
-                w[s]["cfg"] == grid_winners[s]["cfg"] for s in sizes):
+                w[s]["cfg"] == grid_winners[s]["cfg"] for s in check_sizes):
             first_exact = i
         if first_gap_ok is None:
             ok = True
-            for s in sizes:
+            for s in check_sizes:
                 pick = w[s]["cfg"]
                 gap = (grid_winners[s]["busbw"] - full_medians[pick][s]) \
                     / grid_winners[s]["busbw"] * 100.0
@@ -450,6 +465,7 @@ def run_sampler_baseline(data, sampler_name, tol, seed, gap_ok=5.0):
             if ok:
                 first_gap_ok = i
     return {"sampler": sampler_name, "seed": seed,
+            "target_size": target_size,
             "configs_total": len(cfgs),
             "configs_to_exact": first_exact,
             "configs_to_gap5": first_gap_ok,
@@ -638,7 +654,8 @@ def cmd_baseline(args):
     out = []
     for sampler in args.samplers.split(","):
         for seed in range(args.seeds):
-            out.append(run_sampler_baseline(data, sampler, args.tol, seed))
+            out.append(run_sampler_baseline(data, sampler, args.tol, seed,
+                                             target_size=args.target_size))
     print(json.dumps(out, indent=2))
     return 0
 
@@ -836,6 +853,9 @@ def main():
     pb.add_argument("--nodes", type=int)
     pb.add_argument("--samplers", default="tpe,random")
     pb.add_argument("--seeds", type=int, default=10)
+    pb.add_argument("--target-size", type=int, default=None,
+                    help="score/check only this one size in bytes (e.g. "
+                         "4096), instead of the scalarized mean over all 18")
 
     pl = sub.add_parser("live", parents=[common])
     pl.add_argument("--nodes", type=int, required=True)
