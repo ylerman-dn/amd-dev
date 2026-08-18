@@ -1,0 +1,202 @@
+[
+  {
+    "sampler": "tpe",
+    "seed": 0,
+    "target_size": 65536,
+    "configs_total": 54,
+    "configs_to_exact": 19,
+    "configs_to_gap5": 6,
+    "runs_to_exact": 57,
+    "runs_to_gap5": 18
+  },
+  {
+    "sampler": "tpe",
+    "seed": 1,
+    "target_size": 65536,
+    "configs_total": 54,
+    "configs_to_exact": 9,
+    "configs_to_gap5": 9,
+    "runs_to_exact": 27,
+    "runs_to_gap5": 27
+  },
+  {
+    "sampler": "tpe",
+    "seed": 2,
+    "target_size": 65536,
+    "configs_total": 54,
+    "configs_to_exact": 16,
+    "configs_to_gap5": 5,
+    "runs_to_exact": 48,
+    "runs_to_gap5": 15
+  },
+  {
+    "sampler": "tpe",
+    "seed": 3,
+    "target_size": 65536,
+    "configs_total": 54,
+    "configs_to_exact": 27,
+    "configs_to_gap5": 27,
+    "runs_to_exact": 81,
+    "runs_to_gap5": 81
+  },
+  {
+    "sampler": "tpe",
+    "seed": 4,
+    "target_size": 65536,
+    "configs_total": 54,
+    "configs_to_exact": 23,
+    "configs_to_gap5": 7,
+    "runs_to_exact": 69,
+    "runs_to_gap5": 21
+  },
+  {
+    "sampler": "tpe",
+    "seed": 5,
+    "target_size": 65536,
+    "configs_total": 54,
+    "configs_to_exact": 2,
+    "configs_to_gap5": 1,
+    "runs_to_exact": 6,
+    "runs_to_gap5": 3
+  },
+  {
+    "sampler": "tpe",
+    "seed": 6,
+    "target_size": 65536,
+    "configs_total": 54,
+    "configs_to_exact": 20,
+    "configs_to_gap5": 8,
+    "runs_to_exact": 60,
+    "runs_to_gap5": 24
+  },
+  {
+    "sampler": "tpe",
+    "seed": 7,
+    "target_size": 65536,
+    "configs_total": 54,
+    "configs_to_exact": 33,
+    "configs_to_gap5": 15,
+    "runs_to_exact": 99,
+    "runs_to_gap5": 45
+  },
+  {
+    "sampler": "tpe",
+    "seed": 8,
+    "target_size": 65536,
+    "configs_total": 54,
+    "configs_to_exact": 31,
+    "configs_to_gap5": 27,
+    "runs_to_exact": 93,
+    "runs_to_gap5": 81
+  },
+  {
+    "sampler": "tpe",
+    "seed": 9,
+    "target_size": 65536,
+    "configs_total": 54,
+    "configs_to_exact": 34,
+    "configs_to_gap5": 20,
+    "runs_to_exact": 102,
+    "runs_to_gap5": 60
+  },
+  {
+    "sampler": "random",
+    "seed": 0,
+    "target_size": 65536,
+    "configs_total": 54,
+    "configs_to_exact": 5,
+    "configs_to_gap5": 5,
+    "runs_to_exact": 15,
+    "runs_to_gap5": 15
+  },
+  {
+    "sampler": "random",
+    "seed": 1,
+    "target_size": 65536,
+    "configs_total": 54,
+    "configs_to_exact": 25,
+    "configs_to_gap5": 25,
+    "runs_to_exact": 75,
+    "runs_to_gap5": 75
+  },
+  {
+    "sampler": "random",
+    "seed": 2,
+    "target_size": 65536,
+    "configs_total": 54,
+    "configs_to_exact": 31,
+    "configs_to_gap5": 12,
+    "runs_to_exact": 93,
+    "runs_to_gap5": 36
+  },
+  {
+    "sampler": "random",
+    "seed": 3,
+    "target_size": 65536,
+    "configs_total": 54,
+    "configs_to_exact": 5,
+    "configs_to_gap5": 5,
+    "runs_to_exact": 15,
+    "runs_to_gap5": 15
+  },
+  {
+    "sampler": "random",
+    "seed": 4,
+    "target_size": 65536,
+    "configs_total": 54,
+    "configs_to_exact": 39,
+    "configs_to_gap5": 38,
+    "runs_to_exact": 117,
+    "runs_to_gap5": 114
+  },
+  {
+    "sampler": "random",
+    "seed": 5,
+    "target_size": 65536,
+    "configs_total": 54,
+    "configs_to_exact": 47,
+    "configs_to_gap5": 26,
+    "runs_to_exact": 141,
+    "runs_to_gap5": 78
+  },
+  {
+    "sampler": "random",
+    "seed": 6,
+    "target_size": 65536,
+    "configs_total": 54,
+    "configs_to_exact": 18,
+    "configs_to_gap5": 18,
+    "runs_to_exact": 54,
+    "runs_to_gap5": 54
+  },
+  {
+    "sampler": "random",
+    "seed": 7,
+    "target_size": 65536,
+    "configs_total": 54,
+    "configs_to_exact": 5,
+    "configs_to_gap5": 5,
+    "runs_to_exact": 15,
+    "runs_to_gap5": 15
+  },
+  {
+    "sampler": "random",
+    "seed": 8,
+    "target_size": 65536,
+    "configs_total": 54,
+    "configs_to_exact": 1,
+    "configs_to_gap5": 1,
+    "runs_to_exact": 3,
+    "runs_to_gap5": 3
+  },
+  {
+    "sampler": "random",
+    "seed": 9,
+    "target_size": 65536,
+    "configs_total": 54,
+    "configs_to_exact": 33,
+    "configs_to_gap5": 2,
+    "runs_to_exact": 99,
+    "runs_to_gap5": 6
+  }
+]
