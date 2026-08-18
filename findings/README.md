@@ -12,6 +12,7 @@ came from. Hypotheses live in the run `SUMMARY.md` files, not here.
 | [02](02-per-collective-defaults-and-accepted.md) | **Defaults and accepted combinations, 6 collectives × 1/2/3 nodes** |
 | [03](03-logging-affects-busbw.md) | Logging shifts busbw — never compare logged against unlogged |
 | [04](04-pipeline-flow-and-ownership.md) | The sweep→config pipeline, step by step — and the median step that is not in the tool |
+| [06](06-optuna-not-viable-here.md) | Optuna (TPE) loses to the racing search, scalarized or fixed to one size |
 
 ## Open — deliberately not findings
 
