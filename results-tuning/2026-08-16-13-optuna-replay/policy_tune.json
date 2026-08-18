@@ -1,0 +1,2978 @@
+[
+  {
+    "anchors": [
+      8,
+      24,
+      48
+    ],
+    "margin": 10.0,
+    "policy": "3",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 30.0,
+        "runs": 63,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 30.0,
+        "runs": 63,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 42.6,
+        "runs": 93,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 37.0,
+        "runs": 102,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 30.0,
+    "min_exact": 18,
+    "max_gap": 0,
+    "gate": true
+  },
+  {
+    "anchors": [
+      8,
+      48
+    ],
+    "margin": 10.0,
+    "policy": "3",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 33.3,
+        "runs": 60,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 33.3,
+        "runs": 60,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 53.7,
+        "runs": 75,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 46.3,
+        "runs": 87,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 33.3,
+    "min_exact": 17,
+    "max_gap": 0,
+    "gate": true
+  },
+  {
+    "anchors": [
+      16,
+      48
+    ],
+    "margin": 10.0,
+    "policy": "3",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 33.3,
+        "runs": 60,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 33.3,
+        "runs": 60,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 50.0,
+        "runs": 81,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 46.3,
+        "runs": 87,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 33.3,
+    "min_exact": 17,
+    "max_gap": 0,
+    "gate": true
+  },
+  {
+    "anchors": [
+      16,
+      48
+    ],
+    "margin": 15.0,
+    "policy": "3",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 33.3,
+        "runs": 60,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 33.3,
+        "runs": 60,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 46.3,
+        "runs": 87,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 46.3,
+        "runs": 87,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 33.3,
+    "min_exact": 17,
+    "max_gap": 0,
+    "gate": true
+  },
+  {
+    "anchors": [
+      8,
+      24,
+      48
+    ],
+    "margin": 10.0,
+    "policy": "1+2",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 44.4,
+        "runs": 50,
+        "full_runs": 90,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 44.4,
+        "runs": 50,
+        "full_runs": 90,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 62.3,
+        "runs": 61,
+        "full_runs": 162,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 54.3,
+        "runs": 74,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 44.4,
+    "min_exact": 16,
+    "max_gap": 0,
+    "gate": true
+  },
+  {
+    "anchors": [
+      8,
+      24,
+      48
+    ],
+    "margin": 15.0,
+    "policy": "1+2",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 44.4,
+        "runs": 50,
+        "full_runs": 90,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 44.4,
+        "runs": 50,
+        "full_runs": 90,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 60.5,
+        "runs": 64,
+        "full_runs": 162,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 54.3,
+        "runs": 74,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 44.4,
+    "min_exact": 16,
+    "max_gap": 0,
+    "gate": true
+  },
+  {
+    "anchors": [
+      8,
+      24,
+      48
+    ],
+    "margin": 20.0,
+    "policy": "1+2",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 40.0,
+        "runs": 54,
+        "full_runs": 90,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 40.0,
+        "runs": 54,
+        "full_runs": 90,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 59.9,
+        "runs": 65,
+        "full_runs": 162,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 54.3,
+        "runs": 74,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 40.0,
+    "min_exact": 16,
+    "max_gap": 0,
+    "gate": true
+  },
+  {
+    "anchors": [
+      8,
+      24,
+      48
+    ],
+    "margin": 25.0,
+    "policy": "1+2",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 40.0,
+        "runs": 54,
+        "full_runs": 90,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 40.0,
+        "runs": 54,
+        "full_runs": 90,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 59.9,
+        "runs": 65,
+        "full_runs": 162,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 54.3,
+        "runs": 74,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 40.0,
+    "min_exact": 16,
+    "max_gap": 0,
+    "gate": true
+  },
+  {
+    "anchors": [
+      8,
+      48
+    ],
+    "margin": 10.0,
+    "policy": "1+2",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 51.1,
+        "runs": 44,
+        "full_runs": 90,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.165
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 51.1,
+        "runs": 44,
+        "full_runs": 90,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.165
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 68.5,
+        "runs": 51,
+        "full_runs": 162,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 61.1,
+        "runs": 63,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.584
+      }
+    },
+    "min_saving": 51.1,
+    "min_exact": 16,
+    "max_gap": 0.584,
+    "gate": true
+  },
+  {
+    "anchors": [
+      8,
+      48
+    ],
+    "margin": 15.0,
+    "policy": "1+2",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 45.6,
+        "runs": 49,
+        "full_runs": 90,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.165
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 45.6,
+        "runs": 49,
+        "full_runs": 90,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.165
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 64.8,
+        "runs": 57,
+        "full_runs": 162,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 60.5,
+        "runs": 64,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.584
+      }
+    },
+    "min_saving": 45.6,
+    "min_exact": 16,
+    "max_gap": 0.584,
+    "gate": true
+  },
+  {
+    "anchors": [
+      16,
+      48
+    ],
+    "margin": 10.0,
+    "policy": "1+2",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 44.4,
+        "runs": 50,
+        "full_runs": 90,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.165
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 44.4,
+        "runs": 50,
+        "full_runs": 90,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.165
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 64.8,
+        "runs": 57,
+        "full_runs": 162,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 59.9,
+        "runs": 65,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.584
+      }
+    },
+    "min_saving": 44.4,
+    "min_exact": 16,
+    "max_gap": 0.584,
+    "gate": true
+  },
+  {
+    "anchors": [
+      16,
+      48
+    ],
+    "margin": 15.0,
+    "policy": "1+2",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 44.4,
+        "runs": 50,
+        "full_runs": 90,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.165
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 44.4,
+        "runs": 50,
+        "full_runs": 90,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.165
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 63.6,
+        "runs": 59,
+        "full_runs": 162,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 59.3,
+        "runs": 66,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.584
+      }
+    },
+    "min_saving": 44.4,
+    "min_exact": 16,
+    "max_gap": 0.584,
+    "gate": true
+  },
+  {
+    "anchors": [
+      8,
+      48
+    ],
+    "margin": 20.0,
+    "policy": "1+2",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 41.1,
+        "runs": 53,
+        "full_runs": 90,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.165
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 41.1,
+        "runs": 53,
+        "full_runs": 90,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.165
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 64.2,
+        "runs": 58,
+        "full_runs": 162,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 60.5,
+        "runs": 64,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.584
+      }
+    },
+    "min_saving": 41.1,
+    "min_exact": 16,
+    "max_gap": 0.584,
+    "gate": true
+  },
+  {
+    "anchors": [
+      8,
+      48
+    ],
+    "margin": 25.0,
+    "policy": "1+2",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 41.1,
+        "runs": 53,
+        "full_runs": 90,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.165
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 41.1,
+        "runs": 53,
+        "full_runs": 90,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.165
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 63.0,
+        "runs": 60,
+        "full_runs": 162,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 60.5,
+        "runs": 64,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.584
+      }
+    },
+    "min_saving": 41.1,
+    "min_exact": 16,
+    "max_gap": 0.584,
+    "gate": true
+  },
+  {
+    "anchors": [
+      16,
+      48
+    ],
+    "margin": 20.0,
+    "policy": "1+2",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 38.9,
+        "runs": 55,
+        "full_runs": 90,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.165
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 38.9,
+        "runs": 55,
+        "full_runs": 90,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.165
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 63.6,
+        "runs": 59,
+        "full_runs": 162,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 59.3,
+        "runs": 66,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.584
+      }
+    },
+    "min_saving": 38.9,
+    "min_exact": 16,
+    "max_gap": 0.584,
+    "gate": true
+  },
+  {
+    "anchors": [
+      16,
+      48
+    ],
+    "margin": 25.0,
+    "policy": "1+2",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 38.9,
+        "runs": 55,
+        "full_runs": 90,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.165
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 38.9,
+        "runs": 55,
+        "full_runs": 90,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.165
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 62.3,
+        "runs": 61,
+        "full_runs": 162,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 59.3,
+        "runs": 66,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.584
+      }
+    },
+    "min_saving": 38.9,
+    "min_exact": 16,
+    "max_gap": 0.584,
+    "gate": true
+  },
+  {
+    "anchors": [
+      4,
+      16,
+      48
+    ],
+    "margin": 10.0,
+    "policy": "1+2",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 36.7,
+        "runs": 57,
+        "full_runs": 90,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.165
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 36.7,
+        "runs": 57,
+        "full_runs": 90,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.165
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 61.7,
+        "runs": 62,
+        "full_runs": 162,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 56.2,
+        "runs": 71,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.584
+      }
+    },
+    "min_saving": 36.7,
+    "min_exact": 16,
+    "max_gap": 0.584,
+    "gate": true
+  },
+  {
+    "anchors": [
+      4,
+      16,
+      48
+    ],
+    "margin": 15.0,
+    "policy": "1+2",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 33.3,
+        "runs": 60,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 33.3,
+        "runs": 60,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 59.9,
+        "runs": 65,
+        "full_runs": 162,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 55.6,
+        "runs": 72,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.584
+      }
+    },
+    "min_saving": 33.3,
+    "min_exact": 16,
+    "max_gap": 0.584,
+    "gate": true
+  },
+  {
+    "anchors": [
+      4,
+      32
+    ],
+    "margin": 10.0,
+    "policy": "1+2",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 43.3,
+        "runs": 51,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 43.3,
+        "runs": 51,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 65.4,
+        "runs": 56,
+        "full_runs": 162,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.06
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 59.3,
+        "runs": 66,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.692
+      }
+    },
+    "min_saving": 43.3,
+    "min_exact": 16,
+    "max_gap": 1.632,
+    "gate": true
+  },
+  {
+    "anchors": [
+      4,
+      32
+    ],
+    "margin": 20.0,
+    "policy": "1+2",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 43.3,
+        "runs": 51,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 43.3,
+        "runs": 51,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 62.3,
+        "runs": 61,
+        "full_runs": 162,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.06
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 57.4,
+        "runs": 69,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.692
+      }
+    },
+    "min_saving": 43.3,
+    "min_exact": 16,
+    "max_gap": 1.632,
+    "gate": true
+  },
+  {
+    "anchors": [
+      4,
+      32
+    ],
+    "margin": 25.0,
+    "policy": "1+2",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 43.3,
+        "runs": 51,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 43.3,
+        "runs": 51,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 61.7,
+        "runs": 62,
+        "full_runs": 162,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 56.8,
+        "runs": 70,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.692
+      }
+    },
+    "min_saving": 43.3,
+    "min_exact": 16,
+    "max_gap": 1.632,
+    "gate": true
+  },
+  {
+    "anchors": [
+      8,
+      32
+    ],
+    "margin": 10.0,
+    "policy": "1+2",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 42.2,
+        "runs": 52,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 42.2,
+        "runs": 52,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 65.4,
+        "runs": 56,
+        "full_runs": 162,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.06
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 58.0,
+        "runs": 68,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 42.2,
+    "min_exact": 16,
+    "max_gap": 1.632,
+    "gate": true
+  },
+  {
+    "anchors": [
+      4,
+      32
+    ],
+    "margin": 15.0,
+    "policy": "1+2",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 41.1,
+        "runs": 53,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 41.1,
+        "runs": 53,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 62.3,
+        "runs": 61,
+        "full_runs": 162,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.06
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 59.3,
+        "runs": 66,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.692
+      }
+    },
+    "min_saving": 41.1,
+    "min_exact": 16,
+    "max_gap": 1.632,
+    "gate": true
+  },
+  {
+    "anchors": [
+      8,
+      32
+    ],
+    "margin": 15.0,
+    "policy": "1+2",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 41.1,
+        "runs": 53,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 41.1,
+        "runs": 53,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 61.1,
+        "runs": 63,
+        "full_runs": 162,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.06
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 58.0,
+        "runs": 68,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 41.1,
+    "min_exact": 16,
+    "max_gap": 1.632,
+    "gate": true
+  },
+  {
+    "anchors": [
+      8,
+      32
+    ],
+    "margin": 20.0,
+    "policy": "1+2",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 40.0,
+        "runs": 54,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 40.0,
+        "runs": 54,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 61.1,
+        "runs": 63,
+        "full_runs": 162,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.06
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 56.8,
+        "runs": 70,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 40.0,
+    "min_exact": 16,
+    "max_gap": 1.632,
+    "gate": true
+  },
+  {
+    "anchors": [
+      8,
+      32
+    ],
+    "margin": 25.0,
+    "policy": "1+2",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 40.0,
+        "runs": 54,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 40.0,
+        "runs": 54,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 59.9,
+        "runs": 65,
+        "full_runs": 162,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 55.6,
+        "runs": 72,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 40.0,
+    "min_exact": 16,
+    "max_gap": 1.632,
+    "gate": true
+  },
+  {
+    "anchors": [
+      4,
+      32
+    ],
+    "margin": 10.0,
+    "policy": "3",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 36.7,
+        "runs": 57,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 36.7,
+        "runs": 57,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 51.9,
+        "runs": 78,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.06
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 42.6,
+        "runs": 93,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 36.7,
+    "min_exact": 16,
+    "max_gap": 1.632,
+    "gate": true
+  },
+  {
+    "anchors": [
+      2,
+      8,
+      32
+    ],
+    "margin": 10.0,
+    "policy": "1+2",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 35.6,
+        "runs": 58,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 35.6,
+        "runs": 58,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 62.3,
+        "runs": 61,
+        "full_runs": 162,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.06
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 54.3,
+        "runs": 74,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 35.6,
+    "min_exact": 16,
+    "max_gap": 1.632,
+    "gate": true
+  },
+  {
+    "anchors": [
+      2,
+      8,
+      32
+    ],
+    "margin": 15.0,
+    "policy": "1+2",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 34.4,
+        "runs": 59,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 34.4,
+        "runs": 59,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 57.4,
+        "runs": 69,
+        "full_runs": 162,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.06
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 54.3,
+        "runs": 74,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 34.4,
+    "min_exact": 16,
+    "max_gap": 1.632,
+    "gate": true
+  },
+  {
+    "anchors": [
+      2,
+      8,
+      32
+    ],
+    "margin": 20.0,
+    "policy": "1+2",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 34.4,
+        "runs": 59,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 34.4,
+        "runs": 59,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 57.4,
+        "runs": 69,
+        "full_runs": 162,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.06
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 53.1,
+        "runs": 76,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 34.4,
+    "min_exact": 16,
+    "max_gap": 1.632,
+    "gate": true
+  },
+  {
+    "anchors": [
+      2,
+      8,
+      32
+    ],
+    "margin": 25.0,
+    "policy": "1+2",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 34.4,
+        "runs": 59,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 34.4,
+        "runs": 59,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 54.3,
+        "runs": 74,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 51.9,
+        "runs": 78,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 34.4,
+    "min_exact": 16,
+    "max_gap": 1.632,
+    "gate": true
+  },
+  {
+    "anchors": [
+      8,
+      32
+    ],
+    "margin": 10.0,
+    "policy": "3",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 30.0,
+        "runs": 63,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 30.0,
+        "runs": 63,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 50.0,
+        "runs": 81,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.06
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 44.4,
+        "runs": 90,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 30.0,
+    "min_exact": 16,
+    "max_gap": 1.632,
+    "gate": true
+  },
+  {
+    "anchors": [
+      8,
+      32
+    ],
+    "margin": 15.0,
+    "policy": "3",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 30.0,
+        "runs": 63,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 30.0,
+        "runs": 63,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 40.7,
+        "runs": 96,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.06
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 44.4,
+        "runs": 90,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 30.0,
+    "min_exact": 16,
+    "max_gap": 1.632,
+    "gate": true
+  },
+  {
+    "anchors": [
+      4,
+      24,
+      56
+    ],
+    "margin": 10.0,
+    "policy": "1+2",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 40.0,
+        "runs": 54,
+        "full_runs": 90,
+        "exact": 15,
+        "n_sizes": 18,
+        "worst_gap_pct": 2.19
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 40.0,
+        "runs": 54,
+        "full_runs": 90,
+        "exact": 15,
+        "n_sizes": 18,
+        "worst_gap_pct": 2.19
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 62.3,
+        "runs": 61,
+        "full_runs": 162,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 53.7,
+        "runs": 75,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 40.0,
+    "min_exact": 15,
+    "max_gap": 2.19,
+    "gate": true
+  },
+  {
+    "anchors": [
+      4,
+      24,
+      56
+    ],
+    "margin": 15.0,
+    "policy": "1+2",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 37.8,
+        "runs": 56,
+        "full_runs": 90,
+        "exact": 15,
+        "n_sizes": 18,
+        "worst_gap_pct": 2.19
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 37.8,
+        "runs": 56,
+        "full_runs": 90,
+        "exact": 15,
+        "n_sizes": 18,
+        "worst_gap_pct": 2.19
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 59.9,
+        "runs": 65,
+        "full_runs": 162,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 53.7,
+        "runs": 75,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 37.8,
+    "min_exact": 15,
+    "max_gap": 2.19,
+    "gate": true
+  },
+  {
+    "anchors": [
+      4,
+      24,
+      56
+    ],
+    "margin": 10.0,
+    "policy": "3",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 33.3,
+        "runs": 60,
+        "full_runs": 90,
+        "exact": 15,
+        "n_sizes": 18,
+        "worst_gap_pct": 2.19
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 33.3,
+        "runs": 60,
+        "full_runs": 90,
+        "exact": 15,
+        "n_sizes": 18,
+        "worst_gap_pct": 2.19
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 42.6,
+        "runs": 93,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 35.2,
+        "runs": 105,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 33.3,
+    "min_exact": 15,
+    "max_gap": 2.19,
+    "gate": true
+  },
+  {
+    "anchors": [
+      4,
+      24,
+      56
+    ],
+    "margin": 20.0,
+    "policy": "1+2",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 32.2,
+        "runs": 61,
+        "full_runs": 90,
+        "exact": 15,
+        "n_sizes": 18,
+        "worst_gap_pct": 2.19
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 32.2,
+        "runs": 61,
+        "full_runs": 90,
+        "exact": 15,
+        "n_sizes": 18,
+        "worst_gap_pct": 2.19
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 59.9,
+        "runs": 65,
+        "full_runs": 162,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 53.1,
+        "runs": 76,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 32.2,
+    "min_exact": 15,
+    "max_gap": 2.19,
+    "gate": true
+  },
+  {
+    "anchors": [
+      4,
+      24,
+      56
+    ],
+    "margin": 25.0,
+    "policy": "1+2",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 32.2,
+        "runs": 61,
+        "full_runs": 90,
+        "exact": 15,
+        "n_sizes": 18,
+        "worst_gap_pct": 2.19
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 32.2,
+        "runs": 61,
+        "full_runs": 90,
+        "exact": 15,
+        "n_sizes": 18,
+        "worst_gap_pct": 2.19
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 59.9,
+        "runs": 65,
+        "full_runs": 162,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 53.1,
+        "runs": 76,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 32.2,
+    "min_exact": 15,
+    "max_gap": 2.19,
+    "gate": true
+  },
+  {
+    "anchors": [
+      8,
+      24,
+      48
+    ],
+    "margin": 15.0,
+    "policy": "3",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 26.7,
+        "runs": 66,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 26.7,
+        "runs": 66,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 37.0,
+        "runs": 102,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 37.0,
+        "runs": 102,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 26.7,
+    "min_exact": 18,
+    "max_gap": 0,
+    "gate": false
+  },
+  {
+    "anchors": [
+      8,
+      32
+    ],
+    "margin": 25.0,
+    "policy": "3",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 23.3,
+        "runs": 69,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 23.3,
+        "runs": 69,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 37.0,
+        "runs": 102,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 37.0,
+        "runs": 102,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 23.3,
+    "min_exact": 18,
+    "max_gap": 0,
+    "gate": false
+  },
+  {
+    "anchors": [
+      4,
+      32
+    ],
+    "margin": 25.0,
+    "policy": "3",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 20.0,
+        "runs": 72,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 20.0,
+        "runs": 72,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 38.9,
+        "runs": 99,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 35.2,
+        "runs": 105,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 20.0,
+    "min_exact": 18,
+    "max_gap": 0,
+    "gate": false
+  },
+  {
+    "anchors": [
+      8,
+      24,
+      48
+    ],
+    "margin": 20.0,
+    "policy": "3",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 20.0,
+        "runs": 72,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 20.0,
+        "runs": 72,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 37.0,
+        "runs": 102,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 37.0,
+        "runs": 102,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 20.0,
+    "min_exact": 18,
+    "max_gap": 0,
+    "gate": false
+  },
+  {
+    "anchors": [
+      8,
+      24,
+      48
+    ],
+    "margin": 25.0,
+    "policy": "3",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 20.0,
+        "runs": 72,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 20.0,
+        "runs": 72,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 37.0,
+        "runs": 102,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 37.0,
+        "runs": 102,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 20.0,
+    "min_exact": 18,
+    "max_gap": 0,
+    "gate": false
+  },
+  {
+    "anchors": [
+      8,
+      48
+    ],
+    "margin": 15.0,
+    "policy": "3",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 26.7,
+        "runs": 66,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 26.7,
+        "runs": 66,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 46.3,
+        "runs": 87,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 44.4,
+        "runs": 90,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 26.7,
+    "min_exact": 17,
+    "max_gap": 0,
+    "gate": false
+  },
+  {
+    "anchors": [
+      8,
+      48
+    ],
+    "margin": 20.0,
+    "policy": "3",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 26.7,
+        "runs": 66,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 26.7,
+        "runs": 66,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 46.3,
+        "runs": 87,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 44.4,
+        "runs": 90,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 26.7,
+    "min_exact": 17,
+    "max_gap": 0,
+    "gate": false
+  },
+  {
+    "anchors": [
+      8,
+      48
+    ],
+    "margin": 25.0,
+    "policy": "3",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 26.7,
+        "runs": 66,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 26.7,
+        "runs": 66,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 44.4,
+        "runs": 90,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 44.4,
+        "runs": 90,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 26.7,
+    "min_exact": 17,
+    "max_gap": 0,
+    "gate": false
+  },
+  {
+    "anchors": [
+      4,
+      16,
+      48
+    ],
+    "margin": 10.0,
+    "policy": "3",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 26.7,
+        "runs": 66,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 26.7,
+        "runs": 66,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 40.7,
+        "runs": 96,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 35.2,
+        "runs": 105,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 26.7,
+    "min_exact": 17,
+    "max_gap": 0,
+    "gate": false
+  },
+  {
+    "anchors": [
+      16,
+      48
+    ],
+    "margin": 20.0,
+    "policy": "3",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 23.3,
+        "runs": 69,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 23.3,
+        "runs": 69,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 46.3,
+        "runs": 87,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 44.4,
+        "runs": 90,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 23.3,
+    "min_exact": 17,
+    "max_gap": 0,
+    "gate": false
+  },
+  {
+    "anchors": [
+      16,
+      48
+    ],
+    "margin": 25.0,
+    "policy": "3",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 23.3,
+        "runs": 69,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 23.3,
+        "runs": 69,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 44.4,
+        "runs": 90,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 44.4,
+        "runs": 90,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 23.3,
+    "min_exact": 17,
+    "max_gap": 0,
+    "gate": false
+  },
+  {
+    "anchors": [
+      4,
+      16,
+      48
+    ],
+    "margin": 15.0,
+    "policy": "3",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 20.0,
+        "runs": 72,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 20.0,
+        "runs": 72,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 35.2,
+        "runs": 105,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 35.2,
+        "runs": 105,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 20.0,
+    "min_exact": 17,
+    "max_gap": 0,
+    "gate": false
+  },
+  {
+    "anchors": [
+      4,
+      16,
+      48
+    ],
+    "margin": 20.0,
+    "policy": "3",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 10.0,
+        "runs": 81,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 10.0,
+        "runs": 81,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 35.2,
+        "runs": 105,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 33.3,
+        "runs": 108,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 10.0,
+    "min_exact": 17,
+    "max_gap": 0,
+    "gate": false
+  },
+  {
+    "anchors": [
+      4,
+      16,
+      48
+    ],
+    "margin": 25.0,
+    "policy": "3",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 10.0,
+        "runs": 81,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 10.0,
+        "runs": 81,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 33.3,
+        "runs": 108,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 33.3,
+        "runs": 108,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 10.0,
+    "min_exact": 17,
+    "max_gap": 0,
+    "gate": false
+  },
+  {
+    "anchors": [
+      8,
+      32
+    ],
+    "margin": 20.0,
+    "policy": "3",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 23.3,
+        "runs": 69,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 23.3,
+        "runs": 69,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 40.7,
+        "runs": 96,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.06
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 38.9,
+        "runs": 99,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 23.3,
+    "min_exact": 17,
+    "max_gap": 1.06,
+    "gate": false
+  },
+  {
+    "anchors": [
+      4,
+      32
+    ],
+    "margin": 20.0,
+    "policy": "3",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 20.0,
+        "runs": 72,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 20.0,
+        "runs": 72,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 42.6,
+        "runs": 93,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.06
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 35.2,
+        "runs": 105,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 20.0,
+    "min_exact": 17,
+    "max_gap": 1.06,
+    "gate": false
+  },
+  {
+    "anchors": [
+      4,
+      16,
+      48
+    ],
+    "margin": 20.0,
+    "policy": "1+2",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 27.8,
+        "runs": 65,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 27.8,
+        "runs": 65,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 59.9,
+        "runs": 65,
+        "full_runs": 162,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 55.6,
+        "runs": 72,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.584
+      }
+    },
+    "min_saving": 27.8,
+    "min_exact": 16,
+    "max_gap": 0.584,
+    "gate": false
+  },
+  {
+    "anchors": [
+      4,
+      16,
+      48
+    ],
+    "margin": 25.0,
+    "policy": "1+2",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 27.8,
+        "runs": 65,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 27.8,
+        "runs": 65,
+        "full_runs": 90,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 58.6,
+        "runs": 67,
+        "full_runs": 162,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 55.6,
+        "runs": 72,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.584
+      }
+    },
+    "min_saving": 27.8,
+    "min_exact": 16,
+    "max_gap": 0.584,
+    "gate": false
+  },
+  {
+    "anchors": [
+      4,
+      32
+    ],
+    "margin": 15.0,
+    "policy": "3",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 26.7,
+        "runs": 66,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 26.7,
+        "runs": 66,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 42.6,
+        "runs": 93,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.06
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 42.6,
+        "runs": 93,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 26.7,
+    "min_exact": 16,
+    "max_gap": 1.632,
+    "gate": false
+  },
+  {
+    "anchors": [
+      2,
+      8,
+      32
+    ],
+    "margin": 10.0,
+    "policy": "3",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 20.0,
+        "runs": 72,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 20.0,
+        "runs": 72,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 40.7,
+        "runs": 96,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.06
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 33.3,
+        "runs": 108,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 20.0,
+    "min_exact": 16,
+    "max_gap": 1.632,
+    "gate": false
+  },
+  {
+    "anchors": [
+      2,
+      8,
+      32
+    ],
+    "margin": 15.0,
+    "policy": "3",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 16.7,
+        "runs": 75,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 16.7,
+        "runs": 75,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 31.5,
+        "runs": 111,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.06
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 33.3,
+        "runs": 108,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 16.7,
+    "min_exact": 16,
+    "max_gap": 1.632,
+    "gate": false
+  },
+  {
+    "anchors": [
+      2,
+      8,
+      32
+    ],
+    "margin": 20.0,
+    "policy": "3",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 16.7,
+        "runs": 75,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 16.7,
+        "runs": 75,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 29.6,
+        "runs": 114,
+        "full_runs": 162,
+        "exact": 17,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.06
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 27.8,
+        "runs": 117,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 16.7,
+    "min_exact": 16,
+    "max_gap": 1.632,
+    "gate": false
+  },
+  {
+    "anchors": [
+      2,
+      8,
+      32
+    ],
+    "margin": 25.0,
+    "policy": "3",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 16.7,
+        "runs": 75,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 16.7,
+        "runs": 75,
+        "full_runs": 90,
+        "exact": 16,
+        "n_sizes": 18,
+        "worst_gap_pct": 1.632
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 25.9,
+        "runs": 120,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 25.9,
+        "runs": 120,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 16.7,
+    "min_exact": 16,
+    "max_gap": 1.632,
+    "gate": false
+  },
+  {
+    "anchors": [
+      4,
+      24,
+      56
+    ],
+    "margin": 15.0,
+    "policy": "3",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 23.3,
+        "runs": 69,
+        "full_runs": 90,
+        "exact": 15,
+        "n_sizes": 18,
+        "worst_gap_pct": 2.19
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 23.3,
+        "runs": 69,
+        "full_runs": 90,
+        "exact": 15,
+        "n_sizes": 18,
+        "worst_gap_pct": 2.19
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 35.2,
+        "runs": 105,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 35.2,
+        "runs": 105,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 23.3,
+    "min_exact": 15,
+    "max_gap": 2.19,
+    "gate": false
+  },
+  {
+    "anchors": [
+      4,
+      24,
+      56
+    ],
+    "margin": 20.0,
+    "policy": "3",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 16.7,
+        "runs": 75,
+        "full_runs": 90,
+        "exact": 15,
+        "n_sizes": 18,
+        "worst_gap_pct": 2.19
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 16.7,
+        "runs": 75,
+        "full_runs": 90,
+        "exact": 15,
+        "n_sizes": 18,
+        "worst_gap_pct": 2.19
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 35.2,
+        "runs": 105,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 33.3,
+        "runs": 108,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 16.7,
+    "min_exact": 15,
+    "max_gap": 2.19,
+    "gate": false
+  },
+  {
+    "anchors": [
+      4,
+      24,
+      56
+    ],
+    "margin": 25.0,
+    "policy": "3",
+    "per_dataset": {
+      "2026-08-04-1-sweep1node": {
+        "saving_pct": 16.7,
+        "runs": 75,
+        "full_runs": 90,
+        "exact": 15,
+        "n_sizes": 18,
+        "worst_gap_pct": 2.19
+      },
+      "2026-08-16-12-variance:1n": {
+        "saving_pct": 16.7,
+        "runs": 75,
+        "full_runs": 90,
+        "exact": 15,
+        "n_sizes": 18,
+        "worst_gap_pct": 2.19
+      },
+      "2026-08-16-12-variance:2n": {
+        "saving_pct": 35.2,
+        "runs": 105,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      },
+      "2026-08-16-12-variance:3n": {
+        "saving_pct": 33.3,
+        "runs": 108,
+        "full_runs": 162,
+        "exact": 18,
+        "n_sizes": 18,
+        "worst_gap_pct": 0.0
+      }
+    },
+    "min_saving": 16.7,
+    "min_exact": 15,
+    "max_gap": 2.19,
+    "gate": false
+  }
+]

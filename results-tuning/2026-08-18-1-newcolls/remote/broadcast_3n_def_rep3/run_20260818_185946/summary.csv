@@ -1,0 +1,2 @@
+timestamp,collective,num_nodes,num_gpus,num_channels,algo,proto,avg_busbw,max_busbw,status,duration_sec,rccl_version
+2026-08-18T18:59:46.619029,broadcast_perf,3,24,1,,,67.3797,256.67,success,13.271277666091919,

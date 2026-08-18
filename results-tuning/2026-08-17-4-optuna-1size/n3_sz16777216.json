@@ -1,0 +1,202 @@
+[
+  {
+    "sampler": "tpe",
+    "seed": 0,
+    "target_size": 16777216,
+    "configs_total": 54,
+    "configs_to_exact": 29,
+    "configs_to_gap5": 29,
+    "runs_to_exact": 87,
+    "runs_to_gap5": 87
+  },
+  {
+    "sampler": "tpe",
+    "seed": 1,
+    "target_size": 16777216,
+    "configs_total": 54,
+    "configs_to_exact": 31,
+    "configs_to_gap5": 31,
+    "runs_to_exact": 93,
+    "runs_to_gap5": 93
+  },
+  {
+    "sampler": "tpe",
+    "seed": 2,
+    "target_size": 16777216,
+    "configs_total": 54,
+    "configs_to_exact": 11,
+    "configs_to_gap5": 11,
+    "runs_to_exact": 33,
+    "runs_to_gap5": 33
+  },
+  {
+    "sampler": "tpe",
+    "seed": 3,
+    "target_size": 16777216,
+    "configs_total": 54,
+    "configs_to_exact": 44,
+    "configs_to_gap5": 44,
+    "runs_to_exact": 132,
+    "runs_to_gap5": 132
+  },
+  {
+    "sampler": "tpe",
+    "seed": 4,
+    "target_size": 16777216,
+    "configs_total": 54,
+    "configs_to_exact": 6,
+    "configs_to_gap5": 6,
+    "runs_to_exact": 18,
+    "runs_to_gap5": 18
+  },
+  {
+    "sampler": "tpe",
+    "seed": 5,
+    "target_size": 16777216,
+    "configs_total": 54,
+    "configs_to_exact": 17,
+    "configs_to_gap5": 17,
+    "runs_to_exact": 51,
+    "runs_to_gap5": 51
+  },
+  {
+    "sampler": "tpe",
+    "seed": 6,
+    "target_size": 16777216,
+    "configs_total": 54,
+    "configs_to_exact": 25,
+    "configs_to_gap5": 25,
+    "runs_to_exact": 75,
+    "runs_to_gap5": 75
+  },
+  {
+    "sampler": "tpe",
+    "seed": 7,
+    "target_size": 16777216,
+    "configs_total": 54,
+    "configs_to_exact": 22,
+    "configs_to_gap5": 22,
+    "runs_to_exact": 66,
+    "runs_to_gap5": 66
+  },
+  {
+    "sampler": "tpe",
+    "seed": 8,
+    "target_size": 16777216,
+    "configs_total": 54,
+    "configs_to_exact": 20,
+    "configs_to_gap5": 20,
+    "runs_to_exact": 60,
+    "runs_to_gap5": 60
+  },
+  {
+    "sampler": "tpe",
+    "seed": 9,
+    "target_size": 16777216,
+    "configs_total": 54,
+    "configs_to_exact": 13,
+    "configs_to_gap5": 13,
+    "runs_to_exact": 39,
+    "runs_to_gap5": 39
+  },
+  {
+    "sampler": "random",
+    "seed": 0,
+    "target_size": 16777216,
+    "configs_total": 54,
+    "configs_to_exact": 18,
+    "configs_to_gap5": 18,
+    "runs_to_exact": 54,
+    "runs_to_gap5": 54
+  },
+  {
+    "sampler": "random",
+    "seed": 1,
+    "target_size": 16777216,
+    "configs_total": 54,
+    "configs_to_exact": 28,
+    "configs_to_gap5": 28,
+    "runs_to_exact": 84,
+    "runs_to_gap5": 84
+  },
+  {
+    "sampler": "random",
+    "seed": 2,
+    "target_size": 16777216,
+    "configs_total": 54,
+    "configs_to_exact": 43,
+    "configs_to_gap5": 43,
+    "runs_to_exact": 129,
+    "runs_to_gap5": 129
+  },
+  {
+    "sampler": "random",
+    "seed": 3,
+    "target_size": 16777216,
+    "configs_total": 54,
+    "configs_to_exact": 30,
+    "configs_to_gap5": 30,
+    "runs_to_exact": 90,
+    "runs_to_gap5": 90
+  },
+  {
+    "sampler": "random",
+    "seed": 4,
+    "target_size": 16777216,
+    "configs_total": 54,
+    "configs_to_exact": 9,
+    "configs_to_gap5": 9,
+    "runs_to_exact": 27,
+    "runs_to_gap5": 27
+  },
+  {
+    "sampler": "random",
+    "seed": 5,
+    "target_size": 16777216,
+    "configs_total": 54,
+    "configs_to_exact": 50,
+    "configs_to_gap5": 50,
+    "runs_to_exact": 150,
+    "runs_to_gap5": 150
+  },
+  {
+    "sampler": "random",
+    "seed": 6,
+    "target_size": 16777216,
+    "configs_total": 54,
+    "configs_to_exact": 28,
+    "configs_to_gap5": 28,
+    "runs_to_exact": 84,
+    "runs_to_gap5": 84
+  },
+  {
+    "sampler": "random",
+    "seed": 7,
+    "target_size": 16777216,
+    "configs_total": 54,
+    "configs_to_exact": 25,
+    "configs_to_gap5": 25,
+    "runs_to_exact": 75,
+    "runs_to_gap5": 75
+  },
+  {
+    "sampler": "random",
+    "seed": 8,
+    "target_size": 16777216,
+    "configs_total": 54,
+    "configs_to_exact": 24,
+    "configs_to_gap5": 24,
+    "runs_to_exact": 72,
+    "runs_to_gap5": 72
+  },
+  {
+    "sampler": "random",
+    "seed": 9,
+    "target_size": 16777216,
+    "configs_total": 54,
+    "configs_to_exact": 3,
+    "configs_to_gap5": 3,
+    "runs_to_exact": 9,
+    "runs_to_gap5": 9
+  }
+]

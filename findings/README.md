@@ -17,6 +17,7 @@ directly; no server needed).
 | [03](03-logging-affects-busbw.md) | Logging shifts busbw — never compare logged against unlogged |
 | [04](04-pipeline-flow-and-ownership.md) | The sweep→config pipeline, step by step — and the median step that is not in the tool |
 | [05](05-nic-metrics-poller-disturbs-multinode.md) | A NIC-metrics poller disturbs multi-node runs every ~30s |
+| [06](06-optuna-not-viable-here.md) | Optuna (TPE) loses to the racing search, scalarized or fixed to one size |
 
 ## Open — deliberately not findings
 

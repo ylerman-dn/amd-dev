@@ -1,0 +1,214 @@
+{
+  "runs": 59,
+  "full_runs": 162,
+  "saving_pct": 63.6,
+  "configs": 27,
+  "full_configs": 54,
+  "alive_combos": [
+    [
+      "RING",
+      "LL128"
+    ],
+    [
+      "RING",
+      "SIMPLE"
+    ],
+    [
+      "TREE",
+      "LL"
+    ],
+    [
+      "TREE",
+      "LL128"
+    ],
+    [
+      "TREE",
+      "SIMPLE"
+    ]
+  ],
+  "exact": 18,
+  "n_sizes": 18,
+  "worst_gap_pct": 0.0,
+  "rows": [
+    {
+      "size": 4096,
+      "grid_cfg": "TREE/LL/2",
+      "grid_busbw": 0.2,
+      "adaptive_cfg": "TREE/LL/2",
+      "adaptive_busbw_fullmed": 0.2,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 8192,
+      "grid_cfg": "TREE/LL/4",
+      "grid_busbw": 0.39,
+      "adaptive_cfg": "TREE/LL/4",
+      "adaptive_busbw_fullmed": 0.39,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 16384,
+      "grid_cfg": "TREE/LL/8",
+      "grid_busbw": 0.78,
+      "adaptive_cfg": "TREE/LL/8",
+      "adaptive_busbw_fullmed": 0.78,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 32768,
+      "grid_cfg": "TREE/LL/40",
+      "grid_busbw": 1.51,
+      "adaptive_cfg": "TREE/LL/40",
+      "adaptive_busbw_fullmed": 1.51,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 65536,
+      "grid_cfg": "TREE/LL/48",
+      "grid_busbw": 2.83,
+      "adaptive_cfg": "TREE/LL/48",
+      "adaptive_busbw_fullmed": 2.83,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 131072,
+      "grid_cfg": "TREE/LL/40",
+      "grid_busbw": 4.96,
+      "adaptive_cfg": "TREE/LL/40",
+      "adaptive_busbw_fullmed": 4.96,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 262144,
+      "grid_cfg": "TREE/LL128/32",
+      "grid_busbw": 9.15,
+      "adaptive_cfg": "TREE/LL128/32",
+      "adaptive_busbw_fullmed": 9.15,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 524288,
+      "grid_cfg": "TREE/LL128/32",
+      "grid_busbw": 16.76,
+      "adaptive_cfg": "TREE/LL128/32",
+      "adaptive_busbw_fullmed": 16.76,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 1048576,
+      "grid_cfg": "TREE/LL128/48",
+      "grid_busbw": 30.31,
+      "adaptive_cfg": "TREE/LL128/48",
+      "adaptive_busbw_fullmed": 30.31,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 2097152,
+      "grid_cfg": "TREE/LL128/48",
+      "grid_busbw": 54.57,
+      "adaptive_cfg": "TREE/LL128/48",
+      "adaptive_busbw_fullmed": 54.57,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 4194304,
+      "grid_cfg": "TREE/LL128/48",
+      "grid_busbw": 92.8,
+      "adaptive_cfg": "TREE/LL128/48",
+      "adaptive_busbw_fullmed": 92.8,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 8388608,
+      "grid_cfg": "TREE/LL128/48",
+      "grid_busbw": 144.72,
+      "adaptive_cfg": "TREE/LL128/48",
+      "adaptive_busbw_fullmed": 144.72,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 16777216,
+      "grid_cfg": "TREE/LL128/48",
+      "grid_busbw": 195.27,
+      "adaptive_cfg": "TREE/LL128/48",
+      "adaptive_busbw_fullmed": 195.27,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 33554432,
+      "grid_cfg": "RING/LL128/40",
+      "grid_busbw": 250.89,
+      "adaptive_cfg": "RING/LL128/40",
+      "adaptive_busbw_fullmed": 250.89,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 67108864,
+      "grid_cfg": "RING/LL128/48",
+      "grid_busbw": 291.16,
+      "adaptive_cfg": "RING/LL128/48",
+      "adaptive_busbw_fullmed": 291.16,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 134217728,
+      "grid_cfg": "RING/SIMPLE/40",
+      "grid_busbw": 323.03,
+      "adaptive_cfg": "RING/SIMPLE/40",
+      "adaptive_busbw_fullmed": 323.03,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 268435456,
+      "grid_cfg": "RING/SIMPLE/40",
+      "grid_busbw": 368.14,
+      "adaptive_cfg": "RING/SIMPLE/40",
+      "adaptive_busbw_fullmed": 368.14,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 536870912,
+      "grid_cfg": "RING/SIMPLE/40",
+      "grid_busbw": 373.54,
+      "adaptive_cfg": "RING/SIMPLE/40",
+      "adaptive_busbw_fullmed": 373.54,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    }
+  ]
+}
