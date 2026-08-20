@@ -1,0 +1,202 @@
+{
+  "runs": 54,
+  "full_runs": 60,
+  "saving_pct": 10.0,
+  "configs": 18,
+  "full_configs": 20,
+  "alive_combos": [
+    [
+      "RING",
+      "LL"
+    ],
+    [
+      "RING",
+      "SIMPLE"
+    ]
+  ],
+  "exact": 18,
+  "n_sizes": 18,
+  "worst_gap_pct": 0.0,
+  "rows": [
+    {
+      "size": 4096,
+      "grid_cfg": "RING/LL/2",
+      "grid_busbw": 0.22,
+      "adaptive_cfg": "RING/LL/2",
+      "adaptive_busbw_fullmed": 0.22,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 8192,
+      "grid_cfg": "RING/LL/1",
+      "grid_busbw": 0.46,
+      "adaptive_cfg": "RING/LL/1",
+      "adaptive_busbw_fullmed": 0.46,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 16384,
+      "grid_cfg": "RING/LL/2",
+      "grid_busbw": 0.77,
+      "adaptive_cfg": "RING/LL/2",
+      "adaptive_busbw_fullmed": 0.77,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 32768,
+      "grid_cfg": "RING/LL/2",
+      "grid_busbw": 1.67,
+      "adaptive_cfg": "RING/LL/2",
+      "adaptive_busbw_fullmed": 1.67,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 65536,
+      "grid_cfg": "RING/LL/40",
+      "grid_busbw": 3.5,
+      "adaptive_cfg": "RING/LL/40",
+      "adaptive_busbw_fullmed": 3.5,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 131072,
+      "grid_cfg": "RING/LL/32",
+      "grid_busbw": 6.02,
+      "adaptive_cfg": "RING/LL/32",
+      "adaptive_busbw_fullmed": 6.02,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 262144,
+      "grid_cfg": "RING/LL/40",
+      "grid_busbw": 12.71,
+      "adaptive_cfg": "RING/LL/40",
+      "adaptive_busbw_fullmed": 12.71,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 524288,
+      "grid_cfg": "RING/LL/40",
+      "grid_busbw": 24.88,
+      "adaptive_cfg": "RING/LL/40",
+      "adaptive_busbw_fullmed": 24.88,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 1048576,
+      "grid_cfg": "RING/LL/40",
+      "grid_busbw": 36.17,
+      "adaptive_cfg": "RING/LL/40",
+      "adaptive_busbw_fullmed": 36.17,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 2097152,
+      "grid_cfg": "RING/SIMPLE/32",
+      "grid_busbw": 59.41,
+      "adaptive_cfg": "RING/SIMPLE/32",
+      "adaptive_busbw_fullmed": 59.41,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 4194304,
+      "grid_cfg": "RING/SIMPLE/32",
+      "grid_busbw": 96.46,
+      "adaptive_cfg": "RING/SIMPLE/32",
+      "adaptive_busbw_fullmed": 96.46,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 8388608,
+      "grid_cfg": "RING/SIMPLE/48",
+      "grid_busbw": 150.74,
+      "adaptive_cfg": "RING/SIMPLE/48",
+      "adaptive_busbw_fullmed": 150.74,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 16777216,
+      "grid_cfg": "RING/SIMPLE/56",
+      "grid_busbw": 221.34,
+      "adaptive_cfg": "RING/SIMPLE/56",
+      "adaptive_busbw_fullmed": 221.34,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 33554432,
+      "grid_cfg": "RING/SIMPLE/56",
+      "grid_busbw": 282.43,
+      "adaptive_cfg": "RING/SIMPLE/56",
+      "adaptive_busbw_fullmed": 282.43,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 67108864,
+      "grid_cfg": "RING/SIMPLE/56",
+      "grid_busbw": 329.85,
+      "adaptive_cfg": "RING/SIMPLE/56",
+      "adaptive_busbw_fullmed": 329.85,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 134217728,
+      "grid_cfg": "RING/SIMPLE/56",
+      "grid_busbw": 358.47,
+      "adaptive_cfg": "RING/SIMPLE/56",
+      "adaptive_busbw_fullmed": 358.47,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 268435456,
+      "grid_cfg": "RING/SIMPLE/56",
+      "grid_busbw": 363.3,
+      "adaptive_cfg": "RING/SIMPLE/56",
+      "adaptive_busbw_fullmed": 363.3,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 536870912,
+      "grid_cfg": "RING/SIMPLE/56",
+      "grid_busbw": 363.44,
+      "adaptive_cfg": "RING/SIMPLE/56",
+      "adaptive_busbw_fullmed": 363.44,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    }
+  ]
+}

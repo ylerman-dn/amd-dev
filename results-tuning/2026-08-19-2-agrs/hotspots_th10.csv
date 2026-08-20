@@ -1,0 +1,1 @@
+collective,num_nodes,num_gpus,hotspot_start_bytes,hotspot_end_bytes,hotspot_start_human,hotspot_end_human,expected_busbw,actual_busbw_min,actual_busbw_max,drop_percent_min,drop_percent_max,current_algo,current_proto,current_nchannels,data_points
