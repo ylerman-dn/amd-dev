@@ -13,6 +13,8 @@ came from. Hypotheses live in the run `SUMMARY.md` files, not here.
 | [03](03-logging-affects-busbw.md) | Logging shifts busbw — never compare logged against unlogged |
 | [04](04-pipeline-flow-and-ownership.md) | The sweep→config pipeline, step by step — and the median step that is not in the tool |
 | [06](06-optuna-not-viable-here.md) | Optuna (TPE) loses to the racing search, scalarized or fixed to one size |
+| [07](07-racing-search-replaces-grid.md) | **Racing search replaces the full grid** — same winners, fewer runs; policy anchors 1,8,24,48 |
+| [08](08-bcast-reduce-dips-and-detector.md) | broadcast/reduce default dips (1n 512K, 3n bcast 64K); dip detector triages collectives |
 
 ## Open — deliberately not findings
 
