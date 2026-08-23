@@ -1,0 +1,9 @@
+# Validated by validate_tuner_config.py: only rules that beat RCCL default
+# with P(sup) >= 0.95 over 7 repeats, gain > 2.0%,
+# and no size in range regressing more than 2.0%.
+# dropped: allgather,67108864,67108864,ring,ll128,48,2,16,-1,-1   (best gain only -0.4%)
+# dropped: allgather,134217728,134217728,ring,simple,40,2,16,-1,-1   (best gain only +0.2%)
+# dropped: allgather,268435456,536870912,ring,simple,48,2,16,-1,-1   (best gain only -0.0%)
+collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff
+allgather,8388608,16777216,ring,ll128,24,2,16,-1,-1
+allgather,33554432,33554432,ring,ll128,40,2,16,-1,-1

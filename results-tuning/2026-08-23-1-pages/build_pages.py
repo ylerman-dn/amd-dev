@@ -14,9 +14,19 @@ HERE = Path(__file__).parent
 RT = HERE.parent
 CMP = RT / "2026-08-21-1-searchcmp"
 COLLS = ["all_reduce", "broadcast", "reduce", "all_gather", "reduce_scatter"]
-AB = {  # (coll, nodes) -> bcmn-ab run dir stem with live verdicts
-    ("broadcast", 3): "broadcast_3n", ("reduce", 2): "reduce_2n",
-    ("reduce", 3): "reduce_3n",
+AB = {  # (coll, nodes) -> validated.csv with live verdicts
+    ("broadcast", 3): "2026-08-19-1-bcmn-ab/broadcast_3n.validated.csv",
+    ("reduce", 2): "2026-08-19-1-bcmn-ab/reduce_2n.validated.csv",
+    ("reduce", 3): "2026-08-19-1-bcmn-ab/reduce_3n.validated.csv",
+    # 2026-08-23 batch on {5,8}, job 20713
+    ("all_reduce", 1): "2026-08-23-2-abvalidate/all_reduce_1n_grid.validated.csv",
+    ("all_reduce", 2): "2026-08-23-2-abvalidate/all_reduce_2n_grid.validated.csv",
+    ("broadcast", 1): "2026-08-23-2-abvalidate/broadcast_1n_grid.validated.csv",
+    ("reduce", 1): "2026-08-23-2-abvalidate/reduce_1n_grid.validated.csv",
+    ("all_gather", 1): "2026-08-23-2-abvalidate/all_gather_1n_grid.validated.csv",
+    ("all_gather", 2): "2026-08-23-2-abvalidate/all_gather_2n_grid.validated.csv",
+    ("reduce_scatter", 1): "2026-08-23-2-abvalidate/reduce_scatter_1n_grid.validated.csv",
+    ("reduce_scatter", 2): "2026-08-23-2-abvalidate/reduce_scatter_2n_grid.validated.csv",
 }
 NODESETS = {
     ("all_reduce", 1): "node 7 (2026-08-04)", ("all_reduce", 2): "{5,7} (08-04)",
@@ -128,11 +138,11 @@ def winners(coll, nodes):
 
 def live_verdicts(coll, nodes):
     """size -> (verdict, text) from the 08-19 validated configs."""
-    stem = AB.get((coll, nodes))
-    if not stem:
+    path = AB.get((coll, nodes))
+    if not path:
         return {}
     kept, dropped = [], []
-    with open(RT / f"2026-08-19-1-bcmn-ab/{stem}.validated.csv") as f:
+    with open(RT / path) as f:
         for line in f:
             line = line.strip()
             m = re.match(r"# dropped: \w+,(\d+),(\d+),.*?\((.*)\)$", line)
@@ -141,11 +151,6 @@ def live_verdicts(coll, nodes):
             elif line and not line.startswith("#") and not line.startswith("collective_type"):
                 p = line.split(",")
                 kept.append((int(p[1]), int(p[2])))
-    out = {}
-    for lo, hi, why in dropped:
-        for s in range(lo, hi + 1):
-            out[("range", lo, hi)] = None
-        out[(lo, hi)] = ("dropped", why)
     return {"kept": kept, "dropped": dropped}
 
 
@@ -240,10 +245,15 @@ def build_index():
              "<a href='explanations/optuna-walkthrough.md'>optuna</a> · "
              "<a href='explanations/triage-walkthrough.md'>triage</a> · "
              "<a href='explanations/optuna-verdict.md'>optuna verdict</a></li></ul>")
-    h.append("<h2>Validation state</h2><p class=note>Live-validated: broadcast 3n, "
-             "reduce 2n, reduce 3n (2026-08-19). broadcast 2n: unmeasurable on {5,7} "
-             "small sizes, 15 attempts. Remaining 11 scales: predicted only - live A/B "
-             "queued (ab_run.py, next quiet window).</p>")
+    h.append("<h2>Validation state</h2><p class=note>Live A/B verdicts on 11 of 15 "
+             "scales: 2026-08-19 (broadcast 3n, reduce 2n/3n on {5,7}/{5,6,7}) and "
+             "2026-08-23 (all_reduce 1n/2n, broadcast 1n, reduce 1n, all_gather 1n/2n, "
+             "reduce_scatter 1n/2n on {5,8}, job 20713, via ab_run.py). all_gather 1n and "
+             "reduce_scatter 1n: NO rule survived - RCCL defaults win, no config ships "
+             "(all_gather 1n's only rule hid a -59.7% landmine). broadcast 2n: "
+             "unmeasurable - 18 preflight-failed attempts across two node pairs "
+             "({5,7} and {5,8}); intrinsic small-size noise, needs a gate decision. "
+             "Awaiting a 3-node window: all_reduce/all_gather/reduce_scatter 3n.</p>")
     (HERE / "index.html").write_text("\n".join(h))
 
 

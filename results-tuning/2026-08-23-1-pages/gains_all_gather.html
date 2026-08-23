@@ -24,12 +24,12 @@ pre{background:#f2f2f2;padding:8px;font-size:12px;overflow-x:auto;border-radius:
 <tr><td>2M</td><td>Direct/SIMPLE ch~64</td><td>94.93</td><td colspan=3 class=n>not tunable (RCCL Direct kernel below threshold)</td><td class=n>default rules</td></tr>
 <tr><td>4M</td><td>Direct/SIMPLE ch~64</td><td>152.1</td><td colspan=3 class=n>not tunable (RCCL Direct kernel below threshold)</td><td class=n>default rules</td></tr>
 <tr><td>8M</td><td>Direct/SIMPLE ch~64</td><td>200.45</td><td colspan=3 class=n>not tunable (RCCL Direct kernel below threshold)</td><td class=n>default rules</td></tr>
-<tr><td>16M</td><td>RING/SIMPLE ch~56</td><td>230.33</td><td>RING/SIMPLE/ch56</td><td>229.91</td><td class=n>-0.2%</td><td>predicted</td></tr>
-<tr><td>32M</td><td>RING/SIMPLE ch~56</td><td>284.64</td><td>RING/SIMPLE/ch56</td><td>284.24</td><td class=n>-0.1%</td><td>predicted</td></tr>
-<tr><td>64M</td><td>RING/SIMPLE ch~56</td><td>324.42</td><td>RING/SIMPLE/ch56</td><td>324.57</td><td class=n>+0.0%</td><td>predicted</td></tr>
-<tr><td>128M</td><td>RING/SIMPLE ch~56</td><td>361.83</td><td>RING/SIMPLE/ch56</td><td>362.06</td><td class=n>+0.1%</td><td>predicted</td></tr>
-<tr><td>256M</td><td>RING/SIMPLE ch~56</td><td>376.77</td><td>RING/SIMPLE/ch56</td><td>375.21</td><td class=n>-0.4%</td><td>predicted</td></tr>
-<tr><td>512M</td><td>RING/SIMPLE ch~56</td><td>383.81</td><td>RING/SIMPLE/ch56</td><td>383.28</td><td class=n>-0.1%</td><td>predicted</td></tr>
+<tr class=x><td>16M</td><td>RING/SIMPLE ch~56</td><td>230.33</td><td>RING/SIMPLE/ch56</td><td>229.91</td><td class=n>-0.2%</td><td>live A/B dropped: contains a regression of -59.7% (landmine)</td></tr>
+<tr class=x><td>32M</td><td>RING/SIMPLE ch~56</td><td>284.64</td><td>RING/SIMPLE/ch56</td><td>284.24</td><td class=n>-0.1%</td><td>live A/B dropped: contains a regression of -59.7% (landmine)</td></tr>
+<tr class=x><td>64M</td><td>RING/SIMPLE ch~56</td><td>324.42</td><td>RING/SIMPLE/ch56</td><td>324.57</td><td class=n>+0.0%</td><td>live A/B dropped: contains a regression of -59.7% (landmine)</td></tr>
+<tr class=x><td>128M</td><td>RING/SIMPLE ch~56</td><td>361.83</td><td>RING/SIMPLE/ch56</td><td>362.06</td><td class=n>+0.1%</td><td>live A/B dropped: contains a regression of -59.7% (landmine)</td></tr>
+<tr class=x><td>256M</td><td>RING/SIMPLE ch~56</td><td>376.77</td><td>RING/SIMPLE/ch56</td><td>375.21</td><td class=n>-0.4%</td><td>live A/B dropped: contains a regression of -59.7% (landmine)</td></tr>
+<tr class=x><td>512M</td><td>RING/SIMPLE ch~56</td><td>383.81</td><td>RING/SIMPLE/ch56</td><td>383.28</td><td class=n>-0.1%</td><td>live A/B dropped: contains a regression of -59.7% (landmine)</td></tr>
 </table>
 <h2>2 nodes <span class=tag>({5,7} (08-19))</span></h2>
 <table><tr><th>size</th><th>default combo</th><th>default</th><th>our config</th><th>ours busbw</th><th>gain</th><th>status</th></tr>
@@ -44,13 +44,13 @@ pre{background:#f2f2f2;padding:8px;font-size:12px;overflow-x:auto;border-radius:
 <tr><td>1M</td><td>Direct/SIMPLE ch~32</td><td>19.14</td><td colspan=3 class=n>not tunable (RCCL Direct kernel below threshold)</td><td class=n>default rules</td></tr>
 <tr><td>2M</td><td>Direct/SIMPLE ch~32</td><td>31.67</td><td colspan=3 class=n>not tunable (RCCL Direct kernel below threshold)</td><td class=n>default rules</td></tr>
 <tr><td>4M</td><td>Direct/SIMPLE ch~32</td><td>45.79</td><td colspan=3 class=n>not tunable (RCCL Direct kernel below threshold)</td><td class=n>default rules</td></tr>
-<tr><td>8M</td><td>RING/LL128 ch~32</td><td>78.43</td><td>RING/LL128/ch24</td><td>93.54</td><td class=g>+19.3%</td><td>predicted</td></tr>
-<tr><td>16M</td><td>RING/LL128 ch~40</td><td>128.83</td><td>RING/LL128/ch24</td><td>146.62</td><td class=g>+13.8%</td><td>predicted</td></tr>
-<tr><td>32M</td><td>RING/LL128 ch~48</td><td>205.45</td><td>RING/LL128/ch40</td><td>224.73</td><td class=g>+9.4%</td><td>predicted</td></tr>
-<tr><td>64M</td><td>RING/LL128 ch~48</td><td>274.44</td><td>RING/LL128/ch48</td><td>271.02</td><td class=n>-1.2%</td><td>predicted</td></tr>
-<tr><td>128M</td><td>RING/LL128 ch~48</td><td>295.73</td><td>RING/SIMPLE/ch40</td><td>305.96</td><td class=g>+3.5%</td><td>predicted</td></tr>
-<tr><td>256M</td><td>RING/SIMPLE ch~48</td><td>359.45</td><td>RING/SIMPLE/ch48</td><td>357.64</td><td class=n>-0.5%</td><td>predicted</td></tr>
-<tr><td>512M</td><td>RING/SIMPLE ch~48</td><td>366.01</td><td>RING/SIMPLE/ch48</td><td>365.9</td><td class=n>-0.0%</td><td>predicted</td></tr>
+<tr class=v><td>8M</td><td>RING/LL128 ch~32</td><td>78.43</td><td>RING/LL128/ch24</td><td>93.54</td><td class=g>+19.3%</td><td>VALIDATED win (live)</td></tr>
+<tr class=v><td>16M</td><td>RING/LL128 ch~40</td><td>128.83</td><td>RING/LL128/ch24</td><td>146.62</td><td class=g>+13.8%</td><td>VALIDATED win (live)</td></tr>
+<tr class=v><td>32M</td><td>RING/LL128 ch~48</td><td>205.45</td><td>RING/LL128/ch40</td><td>224.73</td><td class=g>+9.4%</td><td>VALIDATED win (live)</td></tr>
+<tr class=x><td>64M</td><td>RING/LL128 ch~48</td><td>274.44</td><td>RING/LL128/ch48</td><td>271.02</td><td class=n>-1.2%</td><td>live A/B dropped: best gain only -0.4%</td></tr>
+<tr class=x><td>128M</td><td>RING/LL128 ch~48</td><td>295.73</td><td>RING/SIMPLE/ch40</td><td>305.96</td><td class=g>+3.5%</td><td>live A/B dropped: best gain only +0.2%</td></tr>
+<tr class=x><td>256M</td><td>RING/SIMPLE ch~48</td><td>359.45</td><td>RING/SIMPLE/ch48</td><td>357.64</td><td class=n>-0.5%</td><td>live A/B dropped: best gain only -0.0%</td></tr>
+<tr class=x><td>512M</td><td>RING/SIMPLE ch~48</td><td>366.01</td><td>RING/SIMPLE/ch48</td><td>365.9</td><td class=n>-0.0%</td><td>live A/B dropped: best gain only -0.0%</td></tr>
 </table>
 <h2>3 nodes <span class=tag>({5,6,7} (08-19))</span></h2>
 <table><tr><th>size</th><th>default combo</th><th>default</th><th>our config</th><th>ours busbw</th><th>gain</th><th>status</th></tr>
