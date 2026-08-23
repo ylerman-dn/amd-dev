@@ -28,3 +28,12 @@ files are pointed at - small AB map update in build_pages.py)
 - fresh-set calibrate (grid truth on one node set) - tool mode not yet written
 - alltoall channel sweep (small, forced RING/SIMPLE)
 - broadcast 2n small-size gate decision (user)
+
+
+## Status update 2026-08-23 evening (autonomous)
+- DONE: live A/B of all 1n/2n scales on {5,8} (job 20713, released). 8 verdicts,
+  pages updated and committed. broadcast 2n unmeasurable on a second node pair
+  (18 attempts total) - needs a user gate decision, not more attempts.
+- REMAINING: all_reduce/all_gather/reduce_scatter 3n - need 3 healthy nodes
+  (node 4 broken). Hourly cron watches for a window and will run them.
+- Rule of engagement kept: no idle allocations; 20713 cancelled at batch end.
