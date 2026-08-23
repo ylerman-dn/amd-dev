@@ -134,6 +134,58 @@ def select_winners(median_map, tol_pct):
     return winners
 
 
+# ----------------------------------------------- optimized.csv emitter
+
+# the columns autotune/config_generator.py:_read_metrics() actually reads,
+# plus busbw_ip for traceability. Same shape as optimize_metrics.py output,
+# so generate_tuner_config.py takes it unchanged.
+OPTIMIZED_FIELDS = ["collective", "num_nodes", "num_gpus", "size_bytes",
+                    "algo", "proto", "nchannels", "busbw_ip"]
+
+
+def merged_csv_context(path):
+    """(collective, num_nodes, num_gpus) of a merged grid CSV.
+
+    The search never touches these three, so they come straight from the
+    dataset. A mixed file is refused rather than guessed at: one scale's rows
+    must not inherit another scale's node count.
+    """
+    seen = set()
+    with open(path) as f:
+        for row in csv.DictReader(f):
+            seen.add((row["collective"], int(row["num_nodes"]),
+                      int(row["num_gpus"])))
+    if len(seen) != 1:
+        raise ValueError(f"{path}: expected exactly one "
+                         f"(collective, num_nodes, num_gpus), got {sorted(seen)}")
+    return seen.pop()
+
+
+def emit_optimized_csv(winner_rows, context, path):
+    """Search winners -> the optimize_metrics.py-shaped CSV that
+    generate_tuner_config.py consumes. winner_rows: (size, "ALGO/PROTO/CH", bw).
+
+    nchannels is the REQUESTED channel count, which is the knob the search
+    turned. It is deliberately not the measured column: per CLAUDE.md that one
+    is the `-A 1` planned ceiling, not what ran.
+    """
+    collective, num_nodes, num_gpus = context
+    rows = []
+    for size, cfg, bw in sorted(winner_rows, key=lambda r: r[0]):
+        if not cfg:
+            continue  # size the search never resolved; no rule for it
+        algo, proto, ch = cfg.split("/")
+        rows.append({"collective": collective, "num_nodes": num_nodes,
+                     "num_gpus": num_gpus, "size_bytes": size,
+                     "algo": algo, "proto": proto, "nchannels": int(ch),
+                     "busbw_ip": "" if bw is None else bw})
+    with open(path, "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=OPTIMIZED_FIELDS)
+        w.writeheader()
+        w.writerows(rows)
+    return len(rows)
+
+
 # ------------------------------------------------------------------ oracles
 
 class ReplayOracle:
@@ -352,7 +404,7 @@ def compare_winners(adaptive, grid_winners, full_medians):
 def run_replay(data, combos, anchors, margin, repeat_policy, band, tol,
                rotation=0):
     grid = sorted({cfg[2] for cfg in data})
-    explore, final = (3, 3) if repeat_policy == "3" else (1, 3)
+    explore, final = (3, 3)  # single policy: every config is median-of-3
     oracle = ReplayOracle(data, rotation=rotation)
     winners, evals, stats = adaptive_search(
         oracle, combos, grid, anchors, margin, explore, final, tol, band)
@@ -599,6 +651,15 @@ def cmd_replay(args):
                      args.margin, args.repeat_policy, args.band, args.tol,
                      rotation=args.rotation)
     print(json.dumps(rep, indent=2))
+    if args.emit_optimized:
+        if args.dataset.endswith(".json"):
+            sys.exit("--emit-optimized needs a merged.csv dataset: "
+                     "variance.json carries no collective/num_nodes columns")
+        n = emit_optimized_csv(
+            [(r["size"], r["adaptive_cfg"], r["adaptive_busbw_fullmed"])
+             for r in rep["rows"]],
+            merged_csv_context(args.dataset), args.emit_optimized)
+        print(f"optimized csv: {args.emit_optimized} ({n} rows)")
     return 0
 
 
@@ -750,6 +811,17 @@ def cmd_live(args):
                       ("winners", "runs", "configs", "alive_combos",
                        "dead_combos", "failures")}, indent=2))
     print(f"report: {out}")
+    if args.emit_optimized:
+        # live has no dataset to read the context from, so it is built from the
+        # run's own parameters. ranks-per-node is cluster topology (8 on this
+        # cluster), not a measurement knob.
+        ctx = (f"{args.collective}_perf", args.nodes,
+               args.nodes * args.ranks_per_node)
+        n = emit_optimized_csv(
+            [(s, "/".join(map(str, w["cfg"])), w["busbw"])
+             for s, w in winners.items()],
+            ctx, args.emit_optimized)
+        print(f"optimized csv: {args.emit_optimized} ({n} rows)")
     return 0
 
 
@@ -823,9 +895,9 @@ def main():
     common.add_argument("--anchors", default="8,48")
     common.add_argument("--margin", type=float, default=15.0,
                         help="stage-2 domination margin %%")
-    common.add_argument("--repeat-policy", choices=["3", "1+2"], default="3")
+    common.add_argument("--repeat-policy", choices=["3"], default="3")
     common.add_argument("--band", type=float, default=3.0,
-                        help="finalist window %% beyond tol (1+2 policy)")
+                        help="finalist window %% beyond tol")
 
     ps = sub.add_parser("selftest", parents=[common])
     ps.add_argument("--dataset", required=True,
@@ -836,6 +908,9 @@ def main():
     pr.add_argument("--dataset", required=True)
     pr.add_argument("--nodes", type=int)
     pr.add_argument("--rotation", type=int, default=0)
+    pr.add_argument("--emit-optimized", default=None,
+                    help="also write the winners as an optimize_metrics.py-"
+                         "shaped CSV, ready for generate_tuner_config.py")
 
     pt = sub.add_parser("tune", parents=[common])
     pt.add_argument("--datasets", required=True,
@@ -844,7 +919,7 @@ def main():
     pt.add_argument("--anchor-sets", required=True,
                     help="space-separated comma-lists, e.g. '8,48 4,32'")
     pt.add_argument("--margins", default="10,15,20,25")
-    pt.add_argument("--repeat-policies", default="3,1+2")
+    pt.add_argument("--repeat-policies", default="3")
     pt.add_argument("--gate-saving", type=float, default=30.0)
     pt.add_argument("--gate-gap", type=float, default=5.0)
 
@@ -872,6 +947,12 @@ def main():
     pl.add_argument("--my-path", default="/opt/shared/ylerman/GPU-107/bin")
     pl.add_argument("--default-runs", type=int, default=3,
                     help="NCCL-default context runs after the search")
+    pl.add_argument("--emit-optimized", default=None,
+                    help="also write the winners as an optimize_metrics.py-"
+                         "shaped CSV, ready for generate_tuner_config.py")
+    pl.add_argument("--ranks-per-node", type=int, default=8,
+                    help="cluster topology, for the num_gpus column of "
+                         "--emit-optimized")
 
     pc = sub.add_parser("compare", parents=[common])
     pc.add_argument("--report", required=True,

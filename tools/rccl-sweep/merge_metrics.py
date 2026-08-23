@@ -253,14 +253,49 @@ def main():
         help="Only include run directories ending with this suffix (e.g., '_base')",
     )
     
+    parser.add_argument(
+        "--input",
+        type=Path,
+        default=None,
+        help="median an EXISTING merged CSV instead of scanning run directories. "
+             "Requires --median and --output. The grids in results-tuning/ are "
+             "single merged files with no run_*/ dirs left to scan, so this is "
+             "the only way to collapse them from the CLI.",
+    )
+
     args = parser.parse_args()
-    
+
+    if args.input is not None:
+        if not args.median:
+            print("Error: --input requires --median (nothing else to do)")
+            sys.exit(1)
+        if args.output is None:
+            print("Error: --input requires --output")
+            sys.exit(1)
+        if not args.input.exists():
+            print(f"Error: Input file does not exist: {args.input}")
+            sys.exit(1)
+        with open(args.input, newline="") as fh:
+            rows = list(csv.DictReader(fh))
+        if not rows:
+            print(f"Error: no rows in {args.input}")
+            sys.exit(1)
+        collapsed, fields = median_rows(rows)
+        with open(args.output, "w", newline="") as fh:
+            w = csv.DictWriter(fh, fieldnames=fields)
+            w.writeheader()
+            w.writerows(collapsed)
+        print(f"Collapsed {len(rows)} repeat rows -> {len(collapsed)} median rows "
+              f"({len(rows) / len(collapsed):.1f} repeats per configuration)")
+        print(f"Wrote {args.output}")
+        return
+
     if not args.base_path.exists():
         print(f"Error: Base path does not exist: {args.base_path}")
         sys.exit(1)
-    
+
     output_file = args.output or (args.base_path / "merged_metrics.csv")
-    
+
     merge_metrics(
         base_path=args.base_path,
         output_file=output_file,
