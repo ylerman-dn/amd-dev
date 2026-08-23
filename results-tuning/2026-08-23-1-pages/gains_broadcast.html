@@ -1,0 +1,75 @@
+<!doctype html><meta name=viewport content='width=device-width,initial-scale=1'><title>broadcast: ours vs RCCL default</title><style>body{font-family:-apple-system,system-ui,sans-serif;margin:12px;max-width:960px}
+table{border-collapse:collapse;font-size:13px;width:100%;display:block;overflow-x:auto}
+th,td{border:1px solid #ccc;padding:4px 6px;text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+tr:nth-child(even){background:#f7f7f7}
+h1{font-size:20px}h2{font-size:16px}h3{font-size:14px}
+.g{color:#0a7a0a;font-weight:600}.b{color:#b00}.n{color:#777}
+.v{background:#d7f5d7}.x{background:#fde3e3}
+.note{color:#555;font-size:13px}.tag{font-size:11px;color:#777}
+a{color:#0645ad;text-decoration:none}
+pre{background:#f2f2f2;padding:8px;font-size:12px;overflow-x:auto;border-radius:6px}</style><p><a href='index.html'>&larr; index</a></p><h1>broadcast: ours vs RCCL default</h1>
+<p class=note>gain = (our config &minus; default) / default, on busbw. <b>predicted</b> = grid data (env-var path). <b>validated</b> = live A/B through the tuner plugin. A predicted win is not deliverable until validated: the env-var path and the plugin path are proven non-equivalent.</p>
+<h2>1 node <span class=tag>(node 6 (08-18); defaults node 8 (08-17) - cross-node)</span></h2>
+<table><tr><th>size</th><th>default</th><th>our config</th><th>ours busbw</th><th>gain</th><th>status</th></tr>
+<tr><td>4K</td><td>0.34</td><td>RING/LL/ch40</td><td>0.32</td><td class=b>-5.9%</td><td>predicted</td></tr>
+<tr><td>8K</td><td>0.7</td><td>RING/LL/ch56</td><td>0.71</td><td class=n>+1.4%</td><td>predicted</td></tr>
+<tr><td>16K</td><td>1.05</td><td>RING/LL/ch16</td><td>1.1</td><td class=g>+4.8%</td><td>predicted</td></tr>
+<tr><td>32K</td><td>2.18</td><td>RING/LL/ch2</td><td>2.44</td><td class=g>+11.9%</td><td>predicted</td></tr>
+<tr><td>64K</td><td>3.95</td><td>RING/LL/ch24</td><td>4.56</td><td class=g>+15.4%</td><td>predicted</td></tr>
+<tr><td>128K</td><td>6.21</td><td>RING/LL/ch40</td><td>7.72</td><td class=g>+24.3%</td><td>predicted</td></tr>
+<tr><td>256K</td><td>13.04</td><td>RING/LL/ch40</td><td>15.01</td><td class=g>+15.1%</td><td>predicted</td></tr>
+<tr><td>512K</td><td>10.18</td><td>RING/LL/ch48</td><td>27.42</td><td class=g>+169.4%</td><td>predicted</td></tr>
+<tr><td>1M</td><td>19.46</td><td>RING/LL/ch56</td><td>41.94</td><td class=g>+115.5%</td><td>predicted</td></tr>
+<tr><td>2M</td><td>37.95</td><td>RING/LL/ch56</td><td>64.05</td><td class=g>+68.8%</td><td>predicted</td></tr>
+<tr><td>4M</td><td>66.11</td><td>RING/LL/ch56</td><td>85.89</td><td class=g>+29.9%</td><td>predicted</td></tr>
+<tr><td>8M</td><td>108.04</td><td>RING/LL/ch56</td><td>102.23</td><td class=b>-5.4%</td><td>predicted</td></tr>
+<tr><td>16M</td><td>164.71</td><td>RING/SIMPLE/ch56</td><td>130.73</td><td class=b>-20.6%</td><td>predicted</td></tr>
+<tr><td>32M</td><td>222.71</td><td>RING/SIMPLE/ch56</td><td>157.29</td><td class=b>-29.4%</td><td>predicted</td></tr>
+<tr><td>64M</td><td>250.55</td><td>RING/SIMPLE/ch56</td><td>193.33</td><td class=b>-22.8%</td><td>predicted</td></tr>
+<tr><td>128M</td><td>302.53</td><td>RING/SIMPLE/ch56</td><td>214.21</td><td class=b>-29.2%</td><td>predicted</td></tr>
+<tr><td>256M</td><td>315.87</td><td>RING/SIMPLE/ch56</td><td>241.09</td><td class=b>-23.7%</td><td>predicted</td></tr>
+<tr><td>512M</td><td>350.13</td><td>RING/SIMPLE/ch56</td><td>255.58</td><td class=b>-27.0%</td><td>predicted</td></tr>
+</table>
+<h2>2 nodes <span class=tag>({1,3} (08-18))</span></h2>
+<table><tr><th>size</th><th>default</th><th>our config</th><th>ours busbw</th><th>gain</th><th>status</th></tr>
+<tr><td>4K</td><td>0.12</td><td>RING/LL128/ch4</td><td>0.25</td><td class=g>+108.3%</td><td>predicted</td></tr>
+<tr><td>8K</td><td>0.38</td><td>RING/LL/ch1</td><td>0.44</td><td class=g>+15.8%</td><td>predicted</td></tr>
+<tr><td>16K</td><td>0.86</td><td>RING/SIMPLE/ch16</td><td>0.84</td><td class=b>-2.3%</td><td>predicted</td></tr>
+<tr><td>32K</td><td>1.08</td><td>RING/LL128/ch1</td><td>1.39</td><td class=g>+28.7%</td><td>predicted</td></tr>
+<tr><td>64K</td><td>1.38</td><td>RING/LL128/ch1</td><td>2.88</td><td class=g>+108.7%</td><td>predicted</td></tr>
+<tr><td>128K</td><td>2.64</td><td>RING/LL128/ch1</td><td>4.01</td><td class=g>+51.9%</td><td>predicted</td></tr>
+<tr><td>256K</td><td>5.13</td><td>RING/LL128/ch1</td><td>6.51</td><td class=g>+26.9%</td><td>predicted</td></tr>
+<tr><td>512K</td><td>9.6</td><td>RING/LL128/ch40</td><td>9.8</td><td class=g>+2.1%</td><td>predicted</td></tr>
+<tr><td>1M</td><td>16.89</td><td>RING/LL128/ch32</td><td>17.1</td><td class=n>+1.2%</td><td>predicted</td></tr>
+<tr><td>2M</td><td>28.95</td><td>RING/LL128/ch48</td><td>28.86</td><td class=n>-0.3%</td><td>predicted</td></tr>
+<tr><td>4M</td><td>43.75</td><td>RING/LL128/ch24</td><td>44.34</td><td class=n>+1.3%</td><td>predicted</td></tr>
+<tr><td>8M</td><td>74.92</td><td>RING/LL128/ch48</td><td>74.71</td><td class=n>-0.3%</td><td>predicted</td></tr>
+<tr><td>16M</td><td>114.24</td><td>RING/LL128/ch40</td><td>117.25</td><td class=g>+2.6%</td><td>predicted</td></tr>
+<tr><td>32M</td><td>167.68</td><td>RING/LL128/ch40</td><td>167.82</td><td class=n>+0.1%</td><td>predicted</td></tr>
+<tr><td>64M</td><td>219.15</td><td>RING/LL128/ch40</td><td>218.6</td><td class=n>-0.3%</td><td>predicted</td></tr>
+<tr><td>128M</td><td>257.55</td><td>RING/LL128/ch48</td><td>260.13</td><td class=n>+1.0%</td><td>predicted</td></tr>
+<tr><td>256M</td><td>285.6</td><td>RING/SIMPLE/ch40</td><td>286.3</td><td class=n>+0.2%</td><td>predicted</td></tr>
+<tr><td>512M</td><td>289.61</td><td>RING/SIMPLE/ch32</td><td>303.89</td><td class=g>+4.9%</td><td>predicted</td></tr>
+</table>
+<h2>3 nodes <span class=tag>({1,3,6} (08-18))</span></h2>
+<table><tr><th>size</th><th>default</th><th>our config</th><th>ours busbw</th><th>gain</th><th>status</th></tr>
+<tr class=x><td>4K</td><td>0.12</td><td>RING/LL/ch24</td><td>0.15</td><td class=g>+25.0%</td><td>live A/B dropped: best gain only +0.0%</td></tr>
+<tr class=x><td>8K</td><td>0.26</td><td>RING/LL128/ch16</td><td>0.29</td><td class=g>+11.5%</td><td>live A/B dropped: contains a regression of -3.6% (landmine)</td></tr>
+<tr class=x><td>16K</td><td>0.48</td><td>RING/LL128/ch24</td><td>0.54</td><td class=g>+12.5%</td><td>live A/B dropped: P(sup) only 0.86, not reproducible</td></tr>
+<tr class=v><td>32K</td><td>0.88</td><td>RING/LL128/ch1</td><td>1.04</td><td class=g>+18.2%</td><td>VALIDATED win (live)</td></tr>
+<tr class=v><td>64K</td><td>0.7</td><td>RING/LL128/ch1</td><td>1.88</td><td class=g>+168.6%</td><td>VALIDATED win (live)</td></tr>
+<tr class=v><td>128K</td><td>1.23</td><td>RING/LL128/ch1</td><td>3</td><td class=g>+143.9%</td><td>VALIDATED win (live)</td></tr>
+<tr class=v><td>256K</td><td>2.25</td><td>RING/LL128/ch1</td><td>4.62</td><td class=g>+105.3%</td><td>VALIDATED win (live)</td></tr>
+<tr class=v><td>512K</td><td>4.79</td><td>RING/LL128/ch1</td><td>6.63</td><td class=g>+38.4%</td><td>VALIDATED win (live)</td></tr>
+<tr class=x><td>1M</td><td>8.4</td><td>RING/LL128/ch32</td><td>9.64</td><td class=g>+14.8%</td><td>live A/B dropped: contains a regression of -5.8% (landmine)</td></tr>
+<tr class=x><td>2M</td><td>15.97</td><td>RING/LL128/ch32</td><td>17.08</td><td class=g>+7.0%</td><td>live A/B dropped: contains a regression of -5.8% (landmine)</td></tr>
+<tr class=x><td>4M</td><td>25.61</td><td>RING/LL128/ch32</td><td>28.46</td><td class=g>+11.1%</td><td>live A/B dropped: contains a regression of -5.8% (landmine)</td></tr>
+<tr class=x><td>8M</td><td>43.41</td><td>RING/LL128/ch32</td><td>49.84</td><td class=g>+14.8%</td><td>live A/B dropped: contains a regression of -5.8% (landmine)</td></tr>
+<tr class=x><td>16M</td><td>74.58</td><td>RING/LL128/ch32</td><td>80.63</td><td class=g>+8.1%</td><td>live A/B dropped: contains a regression of -5.8% (landmine)</td></tr>
+<tr class=x><td>32M</td><td>121.63</td><td>RING/LL128/ch40</td><td>122.19</td><td class=n>+0.5%</td><td>live A/B dropped: best gain only -0.6%</td></tr>
+<tr class=v><td>64M</td><td>170.58</td><td>RING/LL128/ch48</td><td>172.23</td><td class=n>+1.0%</td><td>VALIDATED win (live)</td></tr>
+<tr class=v><td>128M</td><td>217.15</td><td>RING/LL128/ch48</td><td>214.7</td><td class=n>-1.1%</td><td>VALIDATED win (live)</td></tr>
+<tr class=v><td>256M</td><td>252.19</td><td>RING/LL128/ch48</td><td>250.37</td><td class=n>-0.7%</td><td>VALIDATED win (live)</td></tr>
+<tr class=v><td>512M</td><td>256.75</td><td>RING/LL128/ch48</td><td>270.99</td><td class=g>+5.5%</td><td>VALIDATED win (live)</td></tr>
+</table>

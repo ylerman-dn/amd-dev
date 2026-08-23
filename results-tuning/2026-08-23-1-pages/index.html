@@ -1,0 +1,27 @@
+<!doctype html><meta name=viewport content='width=device-width,initial-scale=1'><title>GPU-107 tuning</title><style>body{font-family:-apple-system,system-ui,sans-serif;margin:12px;max-width:960px}
+table{border-collapse:collapse;font-size:13px;width:100%;display:block;overflow-x:auto}
+th,td{border:1px solid #ccc;padding:4px 6px;text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+tr:nth-child(even){background:#f7f7f7}
+h1{font-size:20px}h2{font-size:16px}h3{font-size:14px}
+.g{color:#0a7a0a;font-weight:600}.b{color:#b00}.n{color:#777}
+.v{background:#d7f5d7}.x{background:#fde3e3}
+.note{color:#555;font-size:13px}.tag{font-size:11px;color:#777}
+a{color:#0645ad;text-decoration:none}
+pre{background:#f2f2f2;padding:8px;font-size:12px;overflow-x:auto;border-radius:6px}</style>
+<h1>GPU-107 RCCL tuning — status &amp; results</h1>
+<h2>The flow</h2><pre>book nodes (human)
+  -> adaptive search, all sizes      adaptive_search.py live
+  -> config emitted                  --emit-optimized -> generate_tuner_config.py
+  -> A/B validate vs default         validate_tuner_config.py (plugin path, psup)
+  -> gains pages                     this site</pre>
+<p class=note>grid = calibration only (truth-maker, rare). optuna/random = evaluation baselines, not the flow. triage = parked (possible monitor later).</p>
+<h2>Gains vs RCCL default (per collective)</h2><ul>
+<li><a href='gains_all_reduce.html'>all_reduce</a></li>
+<li><a href='gains_broadcast.html'>broadcast</a></li>
+<li><a href='gains_reduce.html'>reduce</a></li>
+<li><a href='gains_all_gather.html'>all_gather</a></li>
+<li><a href='gains_reduce_scatter.html'>reduce_scatter</a></li>
+<li>alltoall — no config: RCCL forces RING/SIMPLE at source; channel sweep pending (live batch)</li></ul>
+<h2>Method evaluation</h2><ul><li><a href='methods.html'>grid vs adaptive vs optuna vs random vs triage</a> — 15 grids, offline replay</li><li><a href='configs.html'>the 15 per-scale configs + validation status</a></li><li><a href='drafts/new-facts.md'>10 new verified facts (draft)</a></li><li><a href='explanations/adaptive-walkthrough.md'>how adaptive works</a> · <a href='explanations/optuna-walkthrough.md'>optuna</a> · <a href='explanations/triage-walkthrough.md'>triage</a> · <a href='explanations/optuna-verdict.md'>optuna verdict</a></li></ul>
+<h2>Validation state</h2><p class=note>Live-validated: broadcast 3n, reduce 2n, reduce 3n (2026-08-19). broadcast 2n: unmeasurable on {5,7} small sizes, 15 attempts. Remaining 11 scales: predicted only - live A/B queued (ab_run.py, next quiet window).</p>
