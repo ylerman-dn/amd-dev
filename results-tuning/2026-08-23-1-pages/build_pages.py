@@ -66,6 +66,56 @@ def default_curve(coll, nodes):
     return {s: statistics.median(v) for s, v in out.items()}
 
 
+def default_combo(coll, nodes):
+    """size -> 'ALGO/PROTO (ch~N)' as RCCL chose by default. algo/proto are
+    -A-verified; the channel count is the -A planned ceiling (finding 01), so
+    it is shown with a tilde. 'mixed' when repeats disagreed on algo/proto."""
+    rows = []
+    if coll == "all_reduce":
+        with open(RT / f"2026-08-04-{ {1:1,2:4,3:6}[nodes] }-sweep{nodes}node/merged.csv".replace(" ", "")) as f:
+            for row in csv.DictReader(f):
+                if (row.get("requested_algo") or "").strip():
+                    continue
+                rows.append((int(row["size_bytes"]), row["algo"], row["proto"],
+                             row["nchannels"]))
+    else:
+        if coll in ("broadcast", "reduce"):
+            if nodes == 1:  # hotspot-mn remote metrics, node 8 (cross-node)
+                tag = {"broadcast": "b1", "reduce": "r1"}[coll]
+                srcs = sorted((RT / "2026-08-17-4-hotspot-mn/remote").glob(
+                    f"{tag}_r*/run_*/metrics.csv"))
+            else:
+                srcs = [RT / f"2026-08-18-1-newcolls/{coll}_{nodes}n_def_raw.txt"]
+        else:
+            srcs = [RT / f"2026-08-19-2-agrs/{coll}_{nodes}n_def_raw.txt"]
+        import io
+        for src in srcs:
+            text = src.read_text()
+            for chunk in text.split("== ")[0:] if src.suffix == ".txt" else [text]:
+                body = chunk[chunk.find("collective,"):] if "collective," in chunk else ""
+                if not body:
+                    continue
+                for row in csv.DictReader(io.StringIO(body)):
+                    try:
+                        if row["collective"] != f"{coll}_perf" or                            int(row["num_nodes"]) != nodes or                            (row.get("requested_algo") or "").strip():
+                            continue
+                        rows.append((int(row["size_bytes"]), row["algo"],
+                                     row["proto"], row["nchannels"]))
+                    except (KeyError, ValueError, TypeError):
+                        continue
+    out = {}
+    for size in {r[0] for r in rows}:
+        combos = [(a, p) for s2, a, p, c in rows if s2 == size]
+        chs = [c for s2, a, p, c in rows if s2 == size]
+        top = max(set(combos), key=combos.count)
+        label = f"{top[0]}/{top[1]}"
+        if len(set(combos)) > 1:
+            label += " (mixed)"
+        ch = max(set(chs), key=chs.count)
+        out[size] = f"{label} ch~{ch}"
+    return out
+
+
 def winners(coll, nodes):
     out = {}
     with open(CMP / f"{coll}_{nodes}n_optimized.csv") as f:
@@ -121,16 +171,19 @@ def page_head(title):
 def build_gains(coll):
     h = [page_head(f"{coll}: ours vs RCCL default")]
     h.append("<p class=note>gain = (our config &minus; default) / default, on busbw. "
+             "'default combo' = what RCCL itself chose (algo/proto verified via -A 1; "
+             "ch~ is the planned ceiling, not the verified actual - finding 01). "
              "<b>predicted</b> = grid data (env-var path). <b>validated</b> = live A/B "
              "through the tuner plugin. A predicted win is not deliverable until validated: "
              "the env-var path and the plugin path are proven non-equivalent.</p>")
     for nodes in (1, 2, 3):
         d, w = default_curve(coll, nodes), winners(coll, nodes)
+        dc = default_combo(coll, nodes)
         lv = live_verdicts(coll, nodes)
         h.append(f"<h2>{nodes} node{'s' if nodes > 1 else ''} "
                  f"<span class=tag>({NODESETS[(coll, nodes)]})</span></h2>")
-        h.append("<table><tr><th>size</th><th>default</th><th>our config</th>"
-                 "<th>ours busbw</th><th>gain</th><th>status</th></tr>")
+        h.append("<table><tr><th>size</th><th>default combo</th><th>default</th>"
+                 "<th>our config</th><th>ours busbw</th><th>gain</th><th>status</th></tr>")
         for s in sorted(d):
             dv = d[s]
             if s in w and w[s]["bw"] is not None:
@@ -145,11 +198,12 @@ def build_gains(coll):
                     for lo, hi, why in lv["dropped"]:
                         if lo <= s <= hi:
                             status, rowcls = f"live A/B dropped: {why}", " class=x"
-                h.append(f"<tr{rowcls}><td>{size_h(s)}</td><td>{dv:g}</td><td>{cfg}</td>"
+                h.append(f"<tr{rowcls}><td>{size_h(s)}</td>"
+                         f"<td>{dc.get(s, '?')}</td><td>{dv:g}</td><td>{cfg}</td>"
                          f"<td>{bw:g}</td><td class={cls}>{gain:+.1f}%</td>"
                          f"<td>{html.escape(status)}</td></tr>")
             else:
-                h.append(f"<tr><td>{size_h(s)}</td><td>{dv:g}</td>"
+                h.append(f"<tr><td>{size_h(s)}</td><td>{dc.get(s, '?')}</td><td>{dv:g}</td>"
                          f"<td colspan=3 class=n>not tunable (RCCL Direct kernel below "
                          f"threshold)</td><td class=n>default rules</td></tr>")
         h.append("</table>")
