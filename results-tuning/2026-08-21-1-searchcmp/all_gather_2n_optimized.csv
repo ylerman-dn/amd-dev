@@ -1,0 +1,8 @@
+collective,num_nodes,num_gpus,size_bytes,count,data_type,redop,time_oop_us,algbw_oop,busbw_oop,errors_oop,time_ip_us,algbw_ip,busbw_ip,errors_ip,algo,proto,nchannels,requested_algo,requested_proto,requested_nchannels,substituted,measured_algo_raw,nchannels_source,n_repeats,spread_pct
+all_gather_perf,2,16,8388608,131072,float,none,85.21,98.44,92.29,0,84.08,99.77,93.54,0,RING,LL128,24,RING,LL128,24,0,RING,A_flag_ceiling,3,2.08467
+all_gather_perf,2,16,16777216,262144,float,none,108.59,154.49,144.84,0,107.28,156.39,146.62,0,RING,LL128,24,RING,LL128,24,0,RING,A_flag_ceiling,3,1.50048
+all_gather_perf,2,16,33554432,524288,float,none,139.45,240.63,225.59,0,139.98,239.71,224.73,0,RING,LL128,40,RING,LL128,40,0,RING,A_flag_ceiling,3,2.80336
+all_gather_perf,2,16,67108864,1048576,float,none,233.19,287.79,269.8,0,232.14,289.09,271.02,0,RING,LL128,48,RING,LL128,48,0,RING,A_flag_ceiling,3,4.78931
+all_gather_perf,2,16,134217728,2097152,float,none,411.1,326.48,306.08,0,411.26,326.36,305.96,0,RING,SIMPLE,40,RING,SIMPLE,40,0,RING,A_flag_ceiling,3,0.362793
+all_gather_perf,2,16,268435456,4194304,float,none,708.07,379.11,355.42,0,703.66,381.48,357.64,0,RING,SIMPLE,48,RING,SIMPLE,48,0,RING,A_flag_ceiling,3,0.25165
+all_gather_perf,2,16,536870912,8388608,float,none,1386.13,387.32,363.11,0,1375.55,390.29,365.9,0,RING,SIMPLE,48,RING,SIMPLE,48,0,RING,A_flag_ceiling,3,0.12845

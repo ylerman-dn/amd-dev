@@ -1,0 +1,752 @@
+{
+  "all_gather_1n": {
+    "grid_csv": "/home/dn/ylerman/tasks/GPU-107/amd-dev-optuna/results-tuning/2026-08-19-2-agrs/all_gather_1n_merged.csv",
+    "grid": {
+      "runs": 60,
+      "configs": 20,
+      "sizes": 6
+    },
+    "adaptive": {
+      "runs": 30,
+      "exact": 6,
+      "n_sizes": 6,
+      "worst_gap_pct": 0.0,
+      "saving_pct": 50.0,
+      "conf_identical_to_grid": true
+    },
+    "tpe": {
+      "seeds": 10,
+      "found_exact": 10,
+      "runs_to_exact_median": 24.0,
+      "runs_to_exact_min": 3,
+      "runs_to_exact_max": 45
+    },
+    "random": {
+      "seeds": 10,
+      "found_exact": 10,
+      "runs_to_exact_median": 18.0,
+      "runs_to_exact_min": 3,
+      "runs_to_exact_max": 60
+    },
+    "triage": {
+      "default_curve_sizes": 18,
+      "flagged": [],
+      "flagged_tunable": [],
+      "runs": 3,
+      "missed_headroom_pct": {
+        "67108864": 0.0,
+        "134217728": 0.1
+      },
+      "worst_missed_pct": 0.1
+    }
+  },
+  "all_gather_2n": {
+    "grid_csv": "/home/dn/ylerman/tasks/GPU-107/amd-dev-optuna/results-tuning/2026-08-19-2-agrs/all_gather_2n_merged.csv",
+    "grid": {
+      "runs": 81,
+      "configs": 27,
+      "sizes": 7
+    },
+    "adaptive": {
+      "runs": 51,
+      "exact": 7,
+      "n_sizes": 7,
+      "worst_gap_pct": 0.0,
+      "saving_pct": 37.0,
+      "conf_identical_to_grid": true
+    },
+    "tpe": {
+      "seeds": 10,
+      "found_exact": 9,
+      "runs_to_exact_median": 51,
+      "runs_to_exact_min": 39,
+      "runs_to_exact_max": 63
+    },
+    "random": {
+      "seeds": 10,
+      "found_exact": 10,
+      "runs_to_exact_median": 64.5,
+      "runs_to_exact_min": 48,
+      "runs_to_exact_max": 81
+    },
+    "triage": {
+      "default_curve_sizes": 18,
+      "flagged": [],
+      "flagged_tunable": [],
+      "runs": 3,
+      "missed_headroom_pct": {
+        "8388608": 16.2,
+        "16777216": 12.1,
+        "33554432": 8.6,
+        "134217728": 3.3
+      },
+      "worst_missed_pct": 16.2
+    }
+  },
+  "all_gather_3n": {
+    "grid_csv": "/home/dn/ylerman/tasks/GPU-107/amd-dev-optuna/results-tuning/2026-08-19-2-agrs/all_gather_3n_merged.csv",
+    "grid": {
+      "runs": 81,
+      "configs": 27,
+      "sizes": 7
+    },
+    "adaptive": {
+      "runs": 51,
+      "exact": 7,
+      "n_sizes": 7,
+      "worst_gap_pct": 0.0,
+      "saving_pct": 37.0,
+      "conf_identical_to_grid": true
+    },
+    "tpe": {
+      "seeds": 10,
+      "found_exact": 10,
+      "runs_to_exact_median": 54.0,
+      "runs_to_exact_min": 45,
+      "runs_to_exact_max": 72
+    },
+    "random": {
+      "seeds": 10,
+      "found_exact": 10,
+      "runs_to_exact_median": 63.0,
+      "runs_to_exact_min": 51,
+      "runs_to_exact_max": 81
+    },
+    "triage": {
+      "default_curve_sizes": 18,
+      "flagged": [],
+      "flagged_tunable": [],
+      "runs": 3,
+      "missed_headroom_pct": {
+        "8388480": 29.3,
+        "16776960": 23.3,
+        "33554304": 17.1,
+        "134217600": 10.4
+      },
+      "worst_missed_pct": 29.3
+    }
+  },
+  "all_reduce_1n": {
+    "grid_csv": "/home/dn/ylerman/tasks/GPU-107/amd-dev-optuna/results-tuning/2026-08-04-1-sweep1node/merged.csv",
+    "grid": {
+      "runs": 90,
+      "configs": 30,
+      "sizes": 18
+    },
+    "adaptive": {
+      "runs": 78,
+      "exact": 18,
+      "n_sizes": 18,
+      "worst_gap_pct": 0.0,
+      "saving_pct": 13.3,
+      "conf_identical_to_grid": true
+    },
+    "tpe": {
+      "seeds": 10,
+      "found_exact": 3,
+      "runs_to_exact_median": 84,
+      "runs_to_exact_min": 69,
+      "runs_to_exact_max": 87
+    },
+    "random": {
+      "seeds": 10,
+      "found_exact": 10,
+      "runs_to_exact_median": 87.0,
+      "runs_to_exact_min": 63,
+      "runs_to_exact_max": 90
+    },
+    "triage": {
+      "default_curve_sizes": 18,
+      "flagged": [],
+      "flagged_tunable": [],
+      "runs": 3,
+      "missed_headroom_pct": {
+        "4096": 15.8,
+        "8192": 23.9,
+        "16384": 36.5,
+        "32768": 38.4,
+        "65536": 38.5,
+        "131072": 31.7,
+        "262144": 30.1,
+        "524288": 40.1,
+        "1048576": 15.7,
+        "2097152": 0.6,
+        "4194304": 0.1,
+        "8388608": 0.0,
+        "16777216": 0.2,
+        "33554432": 0.2
+      },
+      "worst_missed_pct": 40.1
+    }
+  },
+  "all_reduce_2n": {
+    "grid_csv": "/home/dn/ylerman/tasks/GPU-107/amd-dev-optuna/results-tuning/2026-08-04-4-sweep2node/merged.csv",
+    "grid": {
+      "runs": 162,
+      "configs": 54,
+      "sizes": 18
+    },
+    "adaptive": {
+      "runs": 120,
+      "exact": 18,
+      "n_sizes": 18,
+      "worst_gap_pct": 0.0,
+      "saving_pct": 25.9,
+      "conf_identical_to_grid": false
+    },
+    "tpe": {
+      "seeds": 10,
+      "found_exact": 7,
+      "runs_to_exact_median": 135,
+      "runs_to_exact_min": 129,
+      "runs_to_exact_max": 153
+    },
+    "random": {
+      "seeds": 10,
+      "found_exact": 10,
+      "runs_to_exact_median": 150.0,
+      "runs_to_exact_min": 126,
+      "runs_to_exact_max": 162
+    },
+    "triage": {
+      "default_curve_sizes": 18,
+      "flagged": [],
+      "flagged_tunable": [],
+      "runs": 3,
+      "missed_headroom_pct": {
+        "65536": 1.1,
+        "131072": 1.6,
+        "262144": 7.3,
+        "1048576": 0.7,
+        "2097152": 0.4,
+        "8388608": 0.1,
+        "16777216": 0.9,
+        "33554432": 10.2,
+        "134217728": 0.8
+      },
+      "worst_missed_pct": 10.2
+    }
+  },
+  "all_reduce_3n": {
+    "grid_csv": "/home/dn/ylerman/tasks/GPU-107/amd-dev-optuna/results-tuning/2026-08-04-6-sweep3node/merged.csv",
+    "grid": {
+      "runs": 162,
+      "configs": 54,
+      "sizes": 18
+    },
+    "adaptive": {
+      "runs": 120,
+      "exact": 18,
+      "n_sizes": 18,
+      "worst_gap_pct": 0.0,
+      "saving_pct": 25.9,
+      "conf_identical_to_grid": true
+    },
+    "tpe": {
+      "seeds": 10,
+      "found_exact": 4,
+      "runs_to_exact_median": 135.0,
+      "runs_to_exact_min": 132,
+      "runs_to_exact_max": 147
+    },
+    "random": {
+      "seeds": 10,
+      "found_exact": 10,
+      "runs_to_exact_median": 154.5,
+      "runs_to_exact_min": 114,
+      "runs_to_exact_max": 162
+    },
+    "triage": {
+      "default_curve_sizes": 18,
+      "flagged": [],
+      "flagged_tunable": [],
+      "runs": 3,
+      "missed_headroom_pct": {
+        "65536": 2.5,
+        "131072": 4.8,
+        "262144": 11.1,
+        "524288": 0.4,
+        "2097152": 0.5,
+        "4194304": 0.5,
+        "16777216": 0.2,
+        "33554432": 8.6,
+        "134217728": 9.8,
+        "268435456": 14.1,
+        "536870912": 0.0
+      },
+      "worst_missed_pct": 14.1
+    }
+  },
+  "broadcast_1n": {
+    "grid_csv": "/home/dn/ylerman/tasks/GPU-107/amd-dev-optuna/results-tuning/2026-08-18-1-newcolls/broadcast_1n_merged.csv",
+    "grid": {
+      "runs": 60,
+      "configs": 20,
+      "sizes": 18
+    },
+    "adaptive": {
+      "runs": 60,
+      "exact": 18,
+      "n_sizes": 18,
+      "worst_gap_pct": 0.0,
+      "saving_pct": 0.0,
+      "conf_identical_to_grid": true
+    },
+    "tpe": {
+      "seeds": 10,
+      "found_exact": 10,
+      "runs_to_exact_median": 45.0,
+      "runs_to_exact_min": 33,
+      "runs_to_exact_max": 60
+    },
+    "random": {
+      "seeds": 10,
+      "found_exact": 10,
+      "runs_to_exact_median": 60.0,
+      "runs_to_exact_min": 51,
+      "runs_to_exact_max": 60
+    },
+    "triage": {
+      "default_curve_sizes": 18,
+      "flagged": [
+        524288
+      ],
+      "flagged_tunable": [
+        524288
+      ],
+      "runs": 33,
+      "missed_headroom_pct": {
+        "8192": 1.4,
+        "16384": 4.5,
+        "32768": 10.7,
+        "65536": 13.4,
+        "131072": 19.6,
+        "262144": 13.1,
+        "1048576": 53.6,
+        "2097152": 40.7,
+        "4194304": 23.0
+      },
+      "worst_missed_pct": 53.6
+    }
+  },
+  "broadcast_2n": {
+    "grid_csv": "/home/dn/ylerman/tasks/GPU-107/amd-dev-optuna/results-tuning/2026-08-18-1-newcolls/broadcast_2n_merged.csv",
+    "grid": {
+      "runs": 81,
+      "configs": 27,
+      "sizes": 18
+    },
+    "adaptive": {
+      "runs": 78,
+      "exact": 18,
+      "n_sizes": 18,
+      "worst_gap_pct": 0.0,
+      "saving_pct": 3.7,
+      "conf_identical_to_grid": true
+    },
+    "tpe": {
+      "seeds": 10,
+      "found_exact": 6,
+      "runs_to_exact_median": 72.0,
+      "runs_to_exact_min": 48,
+      "runs_to_exact_max": 78
+    },
+    "random": {
+      "seeds": 10,
+      "found_exact": 10,
+      "runs_to_exact_median": 76.5,
+      "runs_to_exact_min": 63,
+      "runs_to_exact_max": 81
+    },
+    "triage": {
+      "default_curve_sizes": 18,
+      "flagged": [],
+      "flagged_tunable": [],
+      "runs": 3,
+      "missed_headroom_pct": {
+        "4096": 52.0,
+        "8192": 13.6,
+        "32768": 22.3,
+        "65536": 52.1,
+        "131072": 34.2,
+        "262144": 21.2,
+        "524288": 2.0,
+        "1048576": 1.2,
+        "4194304": 1.3,
+        "16777216": 2.6,
+        "33554432": 0.1,
+        "134217728": 1.0,
+        "268435456": 0.2,
+        "536870912": 4.7
+      },
+      "worst_missed_pct": 52.1
+    }
+  },
+  "broadcast_3n": {
+    "grid_csv": "/home/dn/ylerman/tasks/GPU-107/amd-dev-optuna/results-tuning/2026-08-18-1-newcolls/broadcast_3n_merged.csv",
+    "grid": {
+      "runs": 81,
+      "configs": 27,
+      "sizes": 18
+    },
+    "adaptive": {
+      "runs": 72,
+      "exact": 18,
+      "n_sizes": 18,
+      "worst_gap_pct": 0.0,
+      "saving_pct": 11.1,
+      "conf_identical_to_grid": true
+    },
+    "tpe": {
+      "seeds": 10,
+      "found_exact": 8,
+      "runs_to_exact_median": 61.5,
+      "runs_to_exact_min": 48,
+      "runs_to_exact_max": 75
+    },
+    "random": {
+      "seeds": 10,
+      "found_exact": 10,
+      "runs_to_exact_median": 70.5,
+      "runs_to_exact_min": 54,
+      "runs_to_exact_max": 81
+    },
+    "triage": {
+      "default_curve_sizes": 18,
+      "flagged": [
+        65536
+      ],
+      "flagged_tunable": [
+        65536
+      ],
+      "runs": 42,
+      "missed_headroom_pct": {
+        "4096": 20.0,
+        "8192": 10.3,
+        "16384": 11.1,
+        "32768": 15.4,
+        "131072": 59.0,
+        "262144": 51.3,
+        "524288": 27.8,
+        "1048576": 12.9,
+        "2097152": 6.5,
+        "4194304": 10.0,
+        "8388608": 12.9,
+        "16777216": 7.5,
+        "33554432": 0.5,
+        "67108864": 1.0,
+        "536870912": 5.3
+      },
+      "worst_missed_pct": 59.0
+    }
+  },
+  "reduce_1n": {
+    "grid_csv": "/home/dn/ylerman/tasks/GPU-107/amd-dev-optuna/results-tuning/2026-08-18-1-newcolls/reduce_1n_merged.csv",
+    "grid": {
+      "runs": 60,
+      "configs": 20,
+      "sizes": 18
+    },
+    "adaptive": {
+      "runs": 54,
+      "exact": 17,
+      "n_sizes": 18,
+      "worst_gap_pct": 1.449,
+      "saving_pct": 10.0,
+      "conf_identical_to_grid": false
+    },
+    "tpe": {
+      "seeds": 10,
+      "found_exact": 7,
+      "runs_to_exact_median": 54,
+      "runs_to_exact_min": 48,
+      "runs_to_exact_max": 57
+    },
+    "random": {
+      "seeds": 10,
+      "found_exact": 10,
+      "runs_to_exact_median": 58.5,
+      "runs_to_exact_min": 51,
+      "runs_to_exact_max": 60
+    },
+    "triage": {
+      "default_curve_sizes": 18,
+      "flagged": [
+        524288
+      ],
+      "flagged_tunable": [
+        524288
+      ],
+      "runs": 33,
+      "missed_headroom_pct": {
+        "8192": 2.9,
+        "16384": 6.3,
+        "32768": 2.3,
+        "65536": 16.1,
+        "131072": 26.6,
+        "262144": 13.9,
+        "1048576": 54.5,
+        "2097152": 38.7,
+        "4194304": 20.4
+      },
+      "worst_missed_pct": 54.5
+    }
+  },
+  "reduce_2n": {
+    "grid_csv": "/home/dn/ylerman/tasks/GPU-107/amd-dev-optuna/results-tuning/2026-08-18-1-newcolls/reduce_2n_merged.csv",
+    "grid": {
+      "runs": 81,
+      "configs": 27,
+      "sizes": 18
+    },
+    "adaptive": {
+      "runs": 69,
+      "exact": 18,
+      "n_sizes": 18,
+      "worst_gap_pct": 0.0,
+      "saving_pct": 14.8,
+      "conf_identical_to_grid": true
+    },
+    "tpe": {
+      "seeds": 10,
+      "found_exact": 9,
+      "runs_to_exact_median": 66,
+      "runs_to_exact_min": 48,
+      "runs_to_exact_max": 81
+    },
+    "random": {
+      "seeds": 10,
+      "found_exact": 10,
+      "runs_to_exact_median": 75.0,
+      "runs_to_exact_min": 54,
+      "runs_to_exact_max": 81
+    },
+    "triage": {
+      "default_curve_sizes": 18,
+      "flagged": [],
+      "flagged_tunable": [],
+      "runs": 3,
+      "missed_headroom_pct": {
+        "8192": 1.9,
+        "16384": 11.3,
+        "32768": 24.2,
+        "65536": 53.6,
+        "131072": 58.3,
+        "262144": 28.4,
+        "2097152": 4.3,
+        "4194304": 0.3,
+        "16777216": 0.6,
+        "33554432": 0.1,
+        "134217728": 0.2,
+        "268435456": 5.0,
+        "536870912": 2.7
+      },
+      "worst_missed_pct": 58.3
+    }
+  },
+  "reduce_3n": {
+    "grid_csv": "/home/dn/ylerman/tasks/GPU-107/amd-dev-optuna/results-tuning/2026-08-18-1-newcolls/reduce_3n_merged.csv",
+    "grid": {
+      "runs": 81,
+      "configs": 27,
+      "sizes": 18
+    },
+    "adaptive": {
+      "runs": 75,
+      "exact": 18,
+      "n_sizes": 18,
+      "worst_gap_pct": 0.0,
+      "saving_pct": 7.4,
+      "conf_identical_to_grid": true
+    },
+    "tpe": {
+      "seeds": 10,
+      "found_exact": 10,
+      "runs_to_exact_median": 63.0,
+      "runs_to_exact_min": 45,
+      "runs_to_exact_max": 81
+    },
+    "random": {
+      "seeds": 10,
+      "found_exact": 10,
+      "runs_to_exact_median": 64.5,
+      "runs_to_exact_min": 54,
+      "runs_to_exact_max": 81
+    },
+    "triage": {
+      "default_curve_sizes": 18,
+      "flagged": [],
+      "flagged_tunable": [],
+      "runs": 3,
+      "missed_headroom_pct": {
+        "8192": 3.7,
+        "16384": 2.0,
+        "32768": 8.5,
+        "65536": 20.2,
+        "131072": 45.4,
+        "262144": 43.3,
+        "524288": 18.8,
+        "1048576": 6.8,
+        "4194304": 3.5,
+        "8388608": 4.6,
+        "16777216": 0.2,
+        "33554432": 0.5,
+        "134217728": 0.0,
+        "536870912": 5.9
+      },
+      "worst_missed_pct": 45.4
+    }
+  },
+  "reduce_scatter_1n": {
+    "grid_csv": "/home/dn/ylerman/tasks/GPU-107/amd-dev-optuna/results-tuning/2026-08-19-2-agrs/reduce_scatter_1n_merged.csv",
+    "grid": {
+      "runs": 60,
+      "configs": 20,
+      "sizes": 18
+    },
+    "adaptive": {
+      "runs": 54,
+      "exact": 18,
+      "n_sizes": 18,
+      "worst_gap_pct": 0.0,
+      "saving_pct": 10.0,
+      "conf_identical_to_grid": true
+    },
+    "tpe": {
+      "seeds": 10,
+      "found_exact": 6,
+      "runs_to_exact_median": 57.0,
+      "runs_to_exact_min": 54,
+      "runs_to_exact_max": 60
+    },
+    "random": {
+      "seeds": 10,
+      "found_exact": 10,
+      "runs_to_exact_median": 60.0,
+      "runs_to_exact_min": 39,
+      "runs_to_exact_max": 60
+    },
+    "triage": {
+      "default_curve_sizes": 18,
+      "flagged": [],
+      "flagged_tunable": [],
+      "runs": 3,
+      "missed_headroom_pct": {
+        "8192": 2.2,
+        "32768": 1.8,
+        "65536": 6.6,
+        "131072": 2.7,
+        "262144": 2.8,
+        "1048576": 0.3,
+        "2097152": 1.4,
+        "4194304": 2.1,
+        "8388608": 1.6,
+        "134217728": 0.0
+      },
+      "worst_missed_pct": 6.6
+    }
+  },
+  "reduce_scatter_2n": {
+    "grid_csv": "/home/dn/ylerman/tasks/GPU-107/amd-dev-optuna/results-tuning/2026-08-19-2-agrs/reduce_scatter_2n_merged.csv",
+    "grid": {
+      "runs": 81,
+      "configs": 27,
+      "sizes": 18
+    },
+    "adaptive": {
+      "runs": 72,
+      "exact": 18,
+      "n_sizes": 18,
+      "worst_gap_pct": 0.0,
+      "saving_pct": 11.1,
+      "conf_identical_to_grid": false
+    },
+    "tpe": {
+      "seeds": 10,
+      "found_exact": 6,
+      "runs_to_exact_median": 75.0,
+      "runs_to_exact_min": 60,
+      "runs_to_exact_max": 75
+    },
+    "random": {
+      "seeds": 10,
+      "found_exact": 10,
+      "runs_to_exact_median": 76.5,
+      "runs_to_exact_min": 63,
+      "runs_to_exact_max": 81
+    },
+    "triage": {
+      "default_curve_sizes": 18,
+      "flagged": [],
+      "flagged_tunable": [],
+      "runs": 3,
+      "missed_headroom_pct": {
+        "16384": 2.7,
+        "32768": 4.1,
+        "65536": 8.4,
+        "131072": 2.8,
+        "262144": 0.8,
+        "524288": 0.6,
+        "1048576": 4.3,
+        "2097152": 1.1,
+        "4194304": 22.0,
+        "8388608": 24.9,
+        "33554432": 4.4,
+        "134217728": 4.4
+      },
+      "worst_missed_pct": 24.9
+    }
+  },
+  "reduce_scatter_3n": {
+    "grid_csv": "/home/dn/ylerman/tasks/GPU-107/amd-dev-optuna/results-tuning/2026-08-19-2-agrs/reduce_scatter_3n_merged.csv",
+    "grid": {
+      "runs": 81,
+      "configs": 27,
+      "sizes": 18
+    },
+    "adaptive": {
+      "runs": 69,
+      "exact": 18,
+      "n_sizes": 18,
+      "worst_gap_pct": 0.0,
+      "saving_pct": 14.8,
+      "conf_identical_to_grid": true
+    },
+    "tpe": {
+      "seeds": 10,
+      "found_exact": 5,
+      "runs_to_exact_median": 72,
+      "runs_to_exact_min": 66,
+      "runs_to_exact_max": 75
+    },
+    "random": {
+      "seeds": 10,
+      "found_exact": 10,
+      "runs_to_exact_median": 76.5,
+      "runs_to_exact_min": 69,
+      "runs_to_exact_max": 81
+    },
+    "triage": {
+      "default_curve_sizes": 18,
+      "flagged": [],
+      "flagged_tunable": [],
+      "runs": 3,
+      "missed_headroom_pct": {
+        "65280": 2.6,
+        "130944": 17.1,
+        "261888": 16.3,
+        "524160": 13.9,
+        "1048320": 22.1,
+        "2097024": 33.7,
+        "4194048": 27.8,
+        "8388480": 28.4,
+        "16776960": 1.8,
+        "33554304": 11.1,
+        "67108608": 3.7,
+        "134217600": 7.2,
+        "536870784": 0.1
+      },
+      "worst_missed_pct": 33.7
+    }
+  }
+}
