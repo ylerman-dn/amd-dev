@@ -54,7 +54,7 @@ def main():
                     help="nodes inside the allocation, comma separated; scales "
                          "use a prefix of this list (pin them for the session)")
     ap.add_argument("--my-path", default="/opt/shared/ylerman/GPU-107/bin")
-    ap.add_argument("--plugin", default="librccl-tunerv4-dn.so")
+    ap.add_argument("--plugin", default="/opt/shared/ylerman/GPU-107/ab-tuner-test/librccl-tunerv4-dn.so")
     ap.add_argument("--repeats", type=int, default=7)
     ap.add_argument("--retries", type=int, default=3,
                     help="max attempts per conf on exit 2/3")
