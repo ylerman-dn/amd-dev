@@ -36,7 +36,7 @@ from pathlib import Path
 
 TOOL = Path(__file__).resolve().parent
 REPO = TOOL.parent.parent
-RESULTS = REPO / "results-tuning"
+RESULTS = REPO / "results-tuning"  # override with --results-root
 SLURM_HOST = "amd-mi355x-1"
 SHARED = "/opt/shared/ylerman/GPU-107"
 REMOTE_TOOL = f"{SHARED}/rccl-sweep-optuna"
@@ -293,6 +293,11 @@ def runlog_append(text):
 # -------------------------------------------------------------- subcommands
 
 def cmd_run(args):
+    global RESULTS
+    if args.results_root:
+        RESULTS = Path(args.results_root)
+        if not RESULTS.is_dir():
+            sys.exit(f"--results-root {RESULTS} does not exist")
     c = Cmd(args.dry_run)
     colls = args.collectives.split(",")
     scales = [int(s) for s in args.scales.split(",")]
@@ -341,7 +346,7 @@ def cmd_run(args):
             f"{args.collectives} --scales {args.scales} --repeats "
             f"{args.repeats}` (policy: tol {POLICY['tol']}, anchors "
             f"{POLICY['anchors']}, margin {POLICY['margin']}, median-of-3) | "
-            f"sweep_config.yaml env | `{outdir.relative_to(REPO)}` (remote "
+            f"sweep_config.yaml env | `results-tuning/{outdir.name}` (remote "
             f"`{remote_base}`) | see per-scale validate.log + "
             f".validated.csv |\n")
         log(f"done in {dur}s; results in {outdir}")
@@ -384,6 +389,10 @@ def main():
                     help="override node pick, e.g. 5,8 (still blacklisted-checked)")
     pr.add_argument("--dry-run", action="store_true",
                     help="print every command; touch nothing")
+    pr.add_argument("--results-root", default=None,
+                    help="results-tuning dir to write into (default: this "
+                         "repo's; pass the main worktree's when the tool "
+                         "branch differs from the results branch)")
     sub.add_parser("status", help="allocations + remote tool processes")
     sub.add_parser("report", help="rebuild the results site")
     args = ap.parse_args()
