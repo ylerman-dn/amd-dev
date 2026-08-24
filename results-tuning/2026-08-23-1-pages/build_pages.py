@@ -27,6 +27,10 @@ AB = {  # (coll, nodes) -> validated.csv with live verdicts
     ("all_gather", 2): "2026-08-23-2-abvalidate/all_gather_2n_grid.validated.csv",
     ("reduce_scatter", 1): "2026-08-23-2-abvalidate/reduce_scatter_1n_grid.validated.csv",
     ("reduce_scatter", 2): "2026-08-23-2-abvalidate/reduce_scatter_2n_grid.validated.csv",
+    # 2026-08-24 batch on {3,5,8}, job 20718
+    ("all_reduce", 3): "2026-08-24-1-abvalidate3n/all_reduce_3n_grid.validated.csv",
+    ("all_gather", 3): "2026-08-24-1-abvalidate3n/all_gather_3n_grid.validated.csv",
+    ("reduce_scatter", 3): "2026-08-24-1-abvalidate3n/reduce_scatter_3n_grid.validated.csv",
 }
 NODESETS = {
     ("all_reduce", 1): "node 7 (2026-08-04)", ("all_reduce", 2): "{5,7} (08-04)",
@@ -253,7 +257,8 @@ def build_index():
              "(all_gather 1n's only rule hid a -59.7% landmine). broadcast 2n: "
              "unmeasurable - 18 preflight-failed attempts across two node pairs "
              "({5,7} and {5,8}); intrinsic small-size noise, needs a gate decision. "
-             "Awaiting a 3-node window: all_reduce/all_gather/reduce_scatter 3n.</p>")
+             "2026-08-24: all_reduce/all_gather/reduce_scatter 3n validated on {3,5,8} "
+             "(job 20718) - every scale except broadcast 2n now has a live verdict.</p>")
     (HERE / "index.html").write_text("\n".join(h))
 
 
