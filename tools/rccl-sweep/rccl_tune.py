@@ -314,6 +314,17 @@ def phase_ab(c, confs, jobid, nodes, repeats, remote_base, outdir,
              f"scp -o BatchMode=yes {SLURM_HOST}:/tmp/rt_ab.tgz {outdir}/ && "
              f"cd {outdir} && tar xzf rt_ab.tgz && rm rt_ab.tgz"],
             check=False)
+    stats = list(outdir.glob("**/per_size_stats.csv"))
+    for st in stats:
+        with open(st) as f:
+            hdr = f.readline()
+        if "def_exec" not in hdr:
+            raise RuntimeError(f"{st}: no exec-truth columns - channel values "
+                               f"would fall back to the -A 1 plan; the remote "
+                               f"tool copy is stale, re-run sync")
+    if stats:
+        log(f"exec truth verified from debug logs in {len(stats)} stats files "
+            f"(channels sourced from channel{{Lo..Hi}}, not -A 1)")
     for v in outdir.glob("*.validated.csv"):
         n_rules, n_merged = merge_validated(
             v, outdir / (v.name.split(".")[0] + ".final.conf"))
