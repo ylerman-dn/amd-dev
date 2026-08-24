@@ -16,7 +16,7 @@ details{margin:8px 0}summary{cursor:pointer;color:#6ea8ff;font-size:13px}</style
 <h1>rccl-tune pilot — all_reduce, adaptive end-to-end</h1>
 <p class=note>One command: <code>rccl-tune run --collectives all_reduce --scales 1,2 --repeats 9</code>. Nodes {5,8}, 2026-08-24, jobs 20723+20725. book &rarr; adaptive search &rarr; config &rarr; plugin A/B (9 repeats/arm) &rarr; verdicts.</p>
 <h2>all reduce_1n</h2>
-<p class=note>search: <b>72 runs</b> vs full grid 81 (<b>&minus;11%</b>), 24 configs measured, 23 min search. A/B: <b class=g>7 rules kept</b>, <b class=b>5 dropped</b>.</p>
+<p class=note>search: <b>72 runs</b> vs full grid 81 (<b>&minus;11%</b>), 24 configs measured, 23 min search. A/B: <b class=g>9 rules kept</b>, <b class=b>9 dropped</b>.</p>
 <h3>Config: before A/B &rarr; what ships</h3>
 <p class=note>green = survived the A/B; struck red = the A/B killed it (reason inline). Sizes with no rule keep RCCL's default.</p>
 <pre><span class=n>collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff</span>
@@ -24,154 +24,180 @@ details{margin:8px 0}summary{cursor:pointer;color:#6ea8ff;font-size:13px}</style
 <span class=keep>allreduce,8192,8192,tree,ll,4,1,8,-1,-1</span>  <span class=why>&larr; kept</span>
 <span class=keep>allreduce,16384,16384,tree,ll,40,1,8,-1,-1</span>  <span class=why>&larr; kept</span>
 <span class=keep>allreduce,32768,32768,tree,ll,16,1,8,-1,-1</span>  <span class=why>&larr; kept</span>
-<span class=keep>allreduce,65536,131072,tree,ll,32,1,8,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=keep>allreduce,65536,65536,tree,ll,32,1,8,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=keep>allreduce,131072,131072,tree,ll,32,1,8,-1,-1</span>  <span class=why>&larr; kept</span>
 <span class=keep>allreduce,262144,262144,ring,ll,32,1,8,-1,-1</span>  <span class=why>&larr; kept</span>
-<span class=keep>allreduce,524288,1048576,ring,ll,48,1,8,-1,-1</span>  <span class=why>&larr; kept</span>
-<span class=drop>allreduce,2097152,2097152,ring,simple,48,1,8,-1,-1</span>  <span class=why>&larr; no gain (+0.2%)</span>
-<span class=drop>allreduce,4194304,4194304,ring,simple,40,1,8,-1,-1</span>  <span class=why>&larr; no gain (-1.8%)</span>
-<span class=drop>allreduce,8388608,16777216,ring,simple,48,1,8,-1,-1</span>  <span class=why>&larr; landmine -7.1%</span>
-<span class=drop>allreduce,33554432,33554432,ring,simple,40,1,8,-1,-1</span>  <span class=why>&larr; landmine -6.8%</span>
-<span class=drop>allreduce,67108864,536870912,ring,simple,48,1,8,-1,-1</span>  <span class=why>&larr; landmine -65.8%</span></pre>
+<span class=keep>allreduce,524288,524288,ring,ll,48,1,8,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=keep>allreduce,1048576,1048576,ring,ll,48,1,8,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=drop>allreduce,2097152,2097152,ring,simple,48,1,8,-1,-1</span>  <span class=why>&larr; no gain (-0.3%)</span>
+<span class=drop>allreduce,4194304,4194304,ring,simple,40,1,8,-1,-1</span>  <span class=why>&larr; no gain (-1.9%)</span>
+<span class=drop>allreduce,8388608,8388608,ring,simple,48,1,8,-1,-1</span>  <span class=why>&larr; no gain (-1.0%)</span>
+<span class=drop>allreduce,16777216,16777216,ring,simple,48,1,8,-1,-1</span>  <span class=why>&larr; landmine -7.4%</span>
+<span class=drop>allreduce,33554432,33554432,ring,simple,40,1,8,-1,-1</span>  <span class=why>&larr; landmine -6.9%</span>
+<span class=drop>allreduce,67108864,67108864,ring,simple,48,1,8,-1,-1</span>  <span class=why>&larr; landmine -63.5%</span>
+<span class=drop>allreduce,134217728,134217728,ring,simple,48,1,8,-1,-1</span>  <span class=why>&larr; landmine -64.4%</span>
+<span class=drop>allreduce,268435456,268435456,ring,simple,48,1,8,-1,-1</span>  <span class=why>&larr; landmine -65.5%</span>
+<span class=drop>allreduce,536870912,536870912,ring,simple,48,1,8,-1,-1</span>  <span class=why>&larr; landmine -65.8%</span></pre>
+<h3>Final shipped config (survivors, merged)</h3><pre class=keep>collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff
+allreduce,4096,4096,tree,ll,16,1,8,-1,-1
+allreduce,8192,8192,tree,ll,4,1,8,-1,-1
+allreduce,16384,16384,tree,ll,40,1,8,-1,-1
+allreduce,32768,32768,tree,ll,16,1,8,-1,-1
+allreduce,65536,131072,tree,ll,32,1,8,-1,-1
+allreduce,262144,262144,ring,ll,32,1,8,-1,-1
+allreduce,524288,1048576,ring,ll,48,1,8,-1,-1</pre>
 <h3>Per size</h3>
 <table><tr><th>size</th><th>RCCL default combo</th><th>our config</th><th>default med</th><th>ours med</th><th>gain</th><th>P(sup)</th><th>verdict</th></tr>
 <tr class=v><td>4K</td><td>TREE/LL</td><td>TREE/LL/16</td><td>0.32</td><td>0.36</td><td class=g>+12.5%</td><td>1.0</td><td class=wrap>KEPT</td></tr>
-<tr class=v><td>8K</td><td>TREE/LL</td><td>TREE/LL/4</td><td>0.55</td><td>0.7</td><td class=g>+27.3%</td><td>1.0</td><td class=wrap>KEPT</td></tr>
-<tr class=v><td>16K</td><td>TREE/LL</td><td>TREE/LL/40</td><td>0.86</td><td>1.24</td><td class=g>+44.2%</td><td>1.0</td><td class=wrap>KEPT</td></tr>
-<tr class=v><td>32K</td><td>TREE/LL</td><td>TREE/LL/16</td><td>1.69</td><td>2.65</td><td class=g>+56.8%</td><td>1.0</td><td class=wrap>KEPT</td></tr>
-<tr class=v><td>64K</td><td>TREE/LL</td><td>TREE/LL/32</td><td>3.22</td><td>5.23</td><td class=g>+62.4%</td><td>0.8889</td><td class=wrap>KEPT</td></tr>
-<tr class=v><td>128K</td><td>TREE/LL</td><td>TREE/LL/32</td><td>6.28</td><td>8.79</td><td class=g>+40.0%</td><td>1.0</td><td class=wrap>KEPT</td></tr>
-<tr class=v><td>256K</td><td>TREE/LL</td><td>RING/LL/32</td><td>12.54</td><td>17.81</td><td class=g>+42.0%</td><td>1.0</td><td class=wrap>KEPT</td></tr>
-<tr class=v><td>512K</td><td>RING/SIMPLE</td><td>RING/LL/48</td><td>21.18</td><td>34.9</td><td class=g>+64.8%</td><td>1.0</td><td class=wrap>KEPT</td></tr>
-<tr class=v><td>1M</td><td>RING/SIMPLE</td><td>RING/LL/48</td><td>41.46</td><td>48.63</td><td class=g>+17.3%</td><td>1.0</td><td class=wrap>KEPT</td></tr>
-<tr class=x><td>2M</td><td>RING/SIMPLE</td><td>RING/SIMPLE/48</td><td>79.12</td><td>79.31</td><td class=n>+0.2%</td><td>0.5617</td><td class=wrap>dropped: no gain (+0.2%)</td></tr>
-<tr class=x><td>4M</td><td>RING/SIMPLE</td><td>RING/SIMPLE/40</td><td>128.07</td><td>125.82</td><td class=n>-1.8%</td><td>0.0864</td><td class=wrap>dropped: no gain (-1.8%)</td></tr>
-<tr class=x><td>8M</td><td>RING/SIMPLE</td><td>RING/SIMPLE/48</td><td>197.46</td><td>195.43</td><td class=n>-1.0%</td><td>0.0988</td><td class=wrap>dropped: landmine -7.1%</td></tr>
-<tr class=x><td>16M</td><td>RING/SIMPLE</td><td>RING/SIMPLE/48</td><td>268.26</td><td>249.23</td><td class=b>-7.1%</td><td>0.0</td><td class=wrap>dropped: landmine -7.1%</td></tr>
-<tr class=x><td>32M</td><td>RING/SIMPLE</td><td>RING/SIMPLE/40</td><td>317.71</td><td>296.11</td><td class=b>-6.8%</td><td>0.0</td><td class=wrap>dropped: landmine -6.8%</td></tr>
-<tr class=x><td>64M</td><td>RING/SIMPLE</td><td>RING/SIMPLE/48</td><td>355.32</td><td>130.02</td><td class=b>-63.4%</td><td>0.0</td><td class=wrap>dropped: landmine -65.8%</td></tr>
-<tr class=x><td>128M</td><td>RING/SIMPLE</td><td>RING/SIMPLE/48</td><td>379.44</td><td>134.83</td><td class=b>-64.5%</td><td>0.0</td><td class=wrap>dropped: landmine -65.8%</td></tr>
-<tr class=x><td>256M</td><td>RING/SIMPLE</td><td>RING/SIMPLE/48</td><td>390.88</td><td>134.84</td><td class=b>-65.5%</td><td>0.0</td><td class=wrap>dropped: landmine -65.8%</td></tr>
-<tr class=x><td>512M</td><td>RING/SIMPLE</td><td>RING/SIMPLE/48</td><td>397.21</td><td>135.94</td><td class=b>-65.8%</td><td>0.0</td><td class=wrap>dropped: landmine -65.8%</td></tr>
+<tr class=v><td>8K</td><td>TREE/LL</td><td>TREE/LL/4</td><td>0.55</td><td>0.68</td><td class=g>+23.6%</td><td>1.0</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>16K</td><td>TREE/LL</td><td>TREE/LL/40</td><td>0.87</td><td>1.24</td><td class=g>+42.5%</td><td>1.0</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>32K</td><td>TREE/LL</td><td>TREE/LL/16</td><td>1.7</td><td>2.66</td><td class=g>+56.5%</td><td>1.0</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>64K</td><td>TREE/LL</td><td>TREE/LL/32</td><td>3.23</td><td>5.24</td><td class=g>+62.2%</td><td>1.0</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>128K</td><td>TREE/LL</td><td>TREE/LL/32</td><td>6.33</td><td>8.87</td><td class=g>+40.1%</td><td>1.0</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>256K</td><td>TREE/LL</td><td>RING/LL/32</td><td>12.58</td><td>17.73</td><td class=g>+40.9%</td><td>1.0</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>512K</td><td>RING/SIMPLE</td><td>RING/LL/48</td><td>21.07</td><td>35.03</td><td class=g>+66.3%</td><td>1.0</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>1M</td><td>RING/SIMPLE</td><td>RING/LL/48</td><td>41.51</td><td>48.62</td><td class=g>+17.1%</td><td>1.0</td><td class=wrap>KEPT</td></tr>
+<tr class=x><td>2M</td><td>RING/SIMPLE</td><td>RING/SIMPLE/48</td><td>79.22</td><td>78.98</td><td class=n>-0.3%</td><td>0.2654</td><td class=wrap>dropped: no gain (-0.3%)</td></tr>
+<tr class=x><td>4M</td><td>RING/SIMPLE</td><td>RING/SIMPLE/40</td><td>128.22</td><td>125.84</td><td class=n>-1.9%</td><td>0.0</td><td class=wrap>dropped: no gain (-1.9%)</td></tr>
+<tr class=x><td>8M</td><td>RING/SIMPLE</td><td>RING/SIMPLE/48</td><td>197.4</td><td>195.34</td><td class=n>-1.0%</td><td>0.0</td><td class=wrap>dropped: no gain (-1.0%)</td></tr>
+<tr class=x><td>16M</td><td>RING/SIMPLE</td><td>RING/SIMPLE/48</td><td>268.35</td><td>248.61</td><td class=b>-7.4%</td><td>0.0</td><td class=wrap>dropped: landmine -7.4%</td></tr>
+<tr class=x><td>32M</td><td>RING/SIMPLE</td><td>RING/SIMPLE/40</td><td>317.39</td><td>295.61</td><td class=b>-6.9%</td><td>0.0</td><td class=wrap>dropped: landmine -6.9%</td></tr>
+<tr class=x><td>64M</td><td>RING/SIMPLE</td><td>RING/SIMPLE/48</td><td>355.95</td><td>130.08</td><td class=b>-63.5%</td><td>0.0</td><td class=wrap>dropped: landmine -63.5%</td></tr>
+<tr class=x><td>128M</td><td>RING/SIMPLE</td><td>RING/SIMPLE/48</td><td>379.27</td><td>134.84</td><td class=b>-64.4%</td><td>0.0</td><td class=wrap>dropped: landmine -64.4%</td></tr>
+<tr class=x><td>256M</td><td>RING/SIMPLE</td><td>RING/SIMPLE/48</td><td>390.56</td><td>134.91</td><td class=b>-65.5%</td><td>0.0</td><td class=wrap>dropped: landmine -65.5%</td></tr>
+<tr class=x><td>512M</td><td>RING/SIMPLE</td><td>RING/SIMPLE/48</td><td>397.03</td><td>135.9</td><td class=b>-65.8%</td><td>0.0</td><td class=wrap>dropped: landmine -65.8%</td></tr>
 </table>
 <details><summary>raw A/B runs (9 per arm, busbw per size)</summary><table><tr><th>size</th><th>arm</th><th>r1</th><th>r2</th><th>r3</th><th>r4</th><th>r5</th><th>r6</th><th>r7</th><th>r8</th><th>r9</th><th>median</th></tr>
-<tr><td>4K</td><td>default</td><td>0.32</td><td>0.33</td><td>0.32</td><td>0.32</td><td>0.32</td><td>0.32</td><td>0.32</td><td>0.32</td><td>0.31</td><td><b>0.32</b></td></tr>
-<tr><td>4K</td><td>config</td><td>0.36</td><td>0.36</td><td>0.35</td><td>0.34</td><td>0.36</td><td>0.35</td><td>0.35</td><td>0.37</td><td>0.37</td><td><b>0.36</b></td></tr>
-<tr><td>8K</td><td>default</td><td>0.56</td><td>0.55</td><td>0.55</td><td>0.54</td><td>0.56</td><td>0.55</td><td>0.56</td><td>0.55</td><td>0.55</td><td><b>0.55</b></td></tr>
-<tr><td>8K</td><td>config</td><td>0.7</td><td>0.7</td><td>0.69</td><td>0.68</td><td>0.71</td><td>0.68</td><td>0.68</td><td>0.7</td><td>0.7</td><td><b>0.7</b></td></tr>
-<tr><td>16K</td><td>default</td><td>0.87</td><td>0.86</td><td>0.87</td><td>0.85</td><td>0.86</td><td>0.85</td><td>0.87</td><td>0.87</td><td>0.86</td><td><b>0.86</b></td></tr>
-<tr><td>16K</td><td>config</td><td>1.29</td><td>1.2</td><td>1.2</td><td>1.2</td><td>1.24</td><td>1.22</td><td>1.26</td><td>1.26</td><td>1.26</td><td><b>1.24</b></td></tr>
-<tr><td>32K</td><td>default</td><td>1.71</td><td>1.69</td><td>1.7</td><td>1.67</td><td>1.71</td><td>1.68</td><td>1.69</td><td>1.67</td><td>1.67</td><td><b>1.69</b></td></tr>
-<tr><td>32K</td><td>config</td><td>2.65</td><td>2.69</td><td>2.5</td><td>2.6</td><td>2.69</td><td>2.61</td><td>2.65</td><td>2.68</td><td>2.66</td><td><b>2.65</b></td></tr>
-<tr><td>64K</td><td>default</td><td>3.26</td><td>3.2</td><td>3.23</td><td>3.22</td><td>3.2</td><td>3.2</td><td>3.25</td><td>3.19</td><td>3.27</td><td><b>3.22</b></td></tr>
-<tr><td>64K</td><td>config</td><td>5.19</td><td>5.24</td><td>5.27</td><td>5.25</td><td>1.06</td><td>5.18</td><td>5.28</td><td>5.23</td><td>5.21</td><td><b>5.23</b></td></tr>
-<tr><td>128K</td><td>default</td><td>6.34</td><td>6.32</td><td>6.28</td><td>6.26</td><td>6.17</td><td>6.24</td><td>6.3</td><td>6.27</td><td>6.37</td><td><b>6.28</b></td></tr>
-<tr><td>128K</td><td>config</td><td>8.79</td><td>8.89</td><td>8.57</td><td>8.7</td><td>8.96</td><td>8.73</td><td>8.77</td><td>9.07</td><td>9.13</td><td><b>8.79</b></td></tr>
-<tr><td>256K</td><td>default</td><td>12.6</td><td>12.43</td><td>12.54</td><td>12.49</td><td>12.46</td><td>12.54</td><td>12.53</td><td>12.56</td><td>12.59</td><td><b>12.54</b></td></tr>
-<tr><td>256K</td><td>config</td><td>17.64</td><td>17.85</td><td>17.64</td><td>17.77</td><td>17.85</td><td>17.73</td><td>17.94</td><td>17.81</td><td>17.85</td><td><b>17.81</b></td></tr>
-<tr><td>512K</td><td>default</td><td>21.26</td><td>21.04</td><td>21.26</td><td>21.25</td><td>20.42</td><td>21.18</td><td>21.26</td><td>21.07</td><td>21.1</td><td><b>21.18</b></td></tr>
-<tr><td>512K</td><td>config</td><td>34.71</td><td>35.09</td><td>34.9</td><td>34.88</td><td>34.68</td><td>34.74</td><td>35.0</td><td>34.99</td><td>34.95</td><td><b>34.9</b></td></tr>
-<tr><td>1M</td><td>default</td><td>41.56</td><td>41.44</td><td>41.67</td><td>41.42</td><td>39.95</td><td>41.52</td><td>41.46</td><td>41.45</td><td>41.71</td><td><b>41.46</b></td></tr>
-<tr><td>1M</td><td>config</td><td>47.88</td><td>48.74</td><td>48.43</td><td>48.66</td><td>48.63</td><td>48.51</td><td>48.71</td><td>48.92</td><td>48.38</td><td><b>48.63</b></td></tr>
-<tr><td>2M</td><td>default</td><td>79.29</td><td>79.41</td><td>78.55</td><td>79.35</td><td>76.93</td><td>79.11</td><td>79.12</td><td>78.46</td><td>79.58</td><td><b>79.12</b></td></tr>
-<tr><td>2M</td><td>config</td><td>78.78</td><td>79.35</td><td>79.31</td><td>78.49</td><td>79.15</td><td>79.35</td><td>79.35</td><td>79.39</td><td>78.88</td><td><b>79.31</b></td></tr>
-<tr><td>4M</td><td>default</td><td>128.31</td><td>128.52</td><td>127.93</td><td>128.07</td><td>124.58</td><td>128.3</td><td>128.06</td><td>128.02</td><td>128.39</td><td><b>128.07</b></td></tr>
-<tr><td>4M</td><td>config</td><td>125.49</td><td>118.94</td><td>125.96</td><td>125.64</td><td>124.24</td><td>125.82</td><td>126.25</td><td>126.32</td><td>125.86</td><td><b>125.82</b></td></tr>
-<tr><td>8M</td><td>default</td><td>197.91</td><td>197.06</td><td>197.59</td><td>197.79</td><td>193.74</td><td>196.73</td><td>197.21</td><td>197.77</td><td>197.46</td><td><b>197.46</b></td></tr>
-<tr><td>8M</td><td>config</td><td>195.41</td><td>195.21</td><td>196.38</td><td>104.88</td><td>194.8</td><td>195.43</td><td>195.96</td><td>195.83</td><td>195.59</td><td><b>195.43</b></td></tr>
-<tr><td>16M</td><td>default</td><td>269.1</td><td>268.18</td><td>268.46</td><td>268.67</td><td>267.86</td><td>267.74</td><td>268.35</td><td>267.34</td><td>268.26</td><td><b>268.26</b></td></tr>
-<tr><td>16M</td><td>config</td><td>249.45</td><td>249.21</td><td>249.83</td><td>249.02</td><td>248.62</td><td>249.23</td><td>249.75</td><td>249.67</td><td>249.23</td><td><b>249.23</b></td></tr>
-<tr><td>32M</td><td>default</td><td>317.71</td><td>317.81</td><td>317.93</td><td>318.14</td><td>317.42</td><td>317.25</td><td>317.4</td><td>317.8</td><td>317.24</td><td><b>317.71</b></td></tr>
-<tr><td>32M</td><td>config</td><td>295.8</td><td>296.39</td><td>296.24</td><td>295.64</td><td>296.11</td><td>296.11</td><td>296.41</td><td>296.78</td><td>296.11</td><td><b>296.11</b></td></tr>
-<tr><td>64M</td><td>default</td><td>354.93</td><td>356.65</td><td>354.95</td><td>355.65</td><td>355.35</td><td>354.74</td><td>354.89</td><td>355.47</td><td>355.32</td><td><b>355.32</b></td></tr>
-<tr><td>64M</td><td>config</td><td>129.99</td><td>129.84</td><td>130.07</td><td>130.21</td><td>129.71</td><td>130.02</td><td>130.04</td><td>129.7</td><td>130.12</td><td><b>130.02</b></td></tr>
-<tr><td>128M</td><td>default</td><td>378.55</td><td>379.72</td><td>380.23</td><td>379.8</td><td>379.44</td><td>378.81</td><td>379.27</td><td>378.89</td><td>379.64</td><td><b>379.44</b></td></tr>
-<tr><td>128M</td><td>config</td><td>134.8</td><td>134.53</td><td>134.86</td><td>135.06</td><td>134.83</td><td>134.71</td><td>134.68</td><td>134.88</td><td>134.85</td><td><b>134.83</b></td></tr>
-<tr><td>256M</td><td>default</td><td>391.01</td><td>391.34</td><td>390.88</td><td>391.14</td><td>391.1</td><td>390.35</td><td>390.49</td><td>390.24</td><td>390.75</td><td><b>390.88</b></td></tr>
-<tr><td>256M</td><td>config</td><td>135.05</td><td>134.32</td><td>134.9</td><td>135.05</td><td>134.77</td><td>134.69</td><td>134.83</td><td>134.84</td><td>135.03</td><td><b>134.84</b></td></tr>
-<tr><td>512M</td><td>default</td><td>396.9</td><td>397.22</td><td>396.94</td><td>397.21</td><td>396.24</td><td>397.29</td><td>396.83</td><td>397.39</td><td>397.31</td><td><b>397.21</b></td></tr>
-<tr><td>512M</td><td>config</td><td>136.01</td><td>135.77</td><td>135.96</td><td>136.17</td><td>135.94</td><td>135.69</td><td>135.91</td><td>135.8</td><td>136.09</td><td><b>135.94</b></td></tr>
+<tr><td>4K</td><td>default</td><td>0.32</td><td>0.32</td><td>0.31</td><td>0.32</td><td>0.31</td><td>0.31</td><td>0.32</td><td>0.32</td><td>0.31</td><td><b>0.32</b></td></tr>
+<tr><td>4K</td><td>config</td><td>0.36</td><td>0.35</td><td>0.36</td><td>0.36</td><td>0.36</td><td>0.35</td><td>0.35</td><td>0.36</td><td>0.36</td><td><b>0.36</b></td></tr>
+<tr><td>8K</td><td>default</td><td>0.56</td><td>0.55</td><td>0.55</td><td>0.57</td><td>0.55</td><td>0.54</td><td>0.55</td><td>0.56</td><td>0.55</td><td><b>0.55</b></td></tr>
+<tr><td>8K</td><td>config</td><td>0.68</td><td>0.68</td><td>0.69</td><td>0.69</td><td>0.68</td><td>0.68</td><td>0.7</td><td>0.69</td><td>0.68</td><td><b>0.68</b></td></tr>
+<tr><td>16K</td><td>default</td><td>0.87</td><td>0.87</td><td>0.86</td><td>0.87</td><td>0.88</td><td>0.86</td><td>0.88</td><td>0.88</td><td>0.87</td><td><b>0.87</b></td></tr>
+<tr><td>16K</td><td>config</td><td>1.24</td><td>1.23</td><td>1.25</td><td>1.18</td><td>1.27</td><td>1.21</td><td>1.26</td><td>1.26</td><td>1.22</td><td><b>1.24</b></td></tr>
+<tr><td>32K</td><td>default</td><td>1.71</td><td>1.7</td><td>1.7</td><td>1.68</td><td>1.7</td><td>1.7</td><td>1.7</td><td>1.68</td><td>1.67</td><td><b>1.7</b></td></tr>
+<tr><td>32K</td><td>config</td><td>2.59</td><td>2.69</td><td>2.7</td><td>2.66</td><td>2.64</td><td>2.66</td><td>2.64</td><td>2.68</td><td>2.65</td><td><b>2.66</b></td></tr>
+<tr><td>64K</td><td>default</td><td>3.23</td><td>3.27</td><td>3.23</td><td>3.23</td><td>3.25</td><td>3.2</td><td>3.26</td><td>3.23</td><td>3.23</td><td><b>3.23</b></td></tr>
+<tr><td>64K</td><td>config</td><td>5.24</td><td>5.29</td><td>5.31</td><td>5.26</td><td>5.24</td><td>5.22</td><td>5.25</td><td>5.18</td><td>5.24</td><td><b>5.24</b></td></tr>
+<tr><td>128K</td><td>default</td><td>6.36</td><td>6.31</td><td>6.29</td><td>6.33</td><td>6.36</td><td>6.18</td><td>6.33</td><td>6.35</td><td>6.27</td><td><b>6.33</b></td></tr>
+<tr><td>128K</td><td>config</td><td>8.67</td><td>8.76</td><td>8.87</td><td>8.94</td><td>8.91</td><td>9.19</td><td>8.59</td><td>8.65</td><td>9.16</td><td><b>8.87</b></td></tr>
+<tr><td>256K</td><td>default</td><td>12.54</td><td>12.68</td><td>12.48</td><td>12.58</td><td>12.65</td><td>12.52</td><td>12.65</td><td>12.59</td><td>12.52</td><td><b>12.58</b></td></tr>
+<tr><td>256K</td><td>config</td><td>17.84</td><td>17.69</td><td>17.95</td><td>17.88</td><td>17.65</td><td>17.72</td><td>17.83</td><td>17.73</td><td>17.57</td><td><b>17.73</b></td></tr>
+<tr><td>512K</td><td>default</td><td>21.24</td><td>21.22</td><td>21.05</td><td>21.32</td><td>21.04</td><td>21.05</td><td>21.07</td><td>21.0</td><td>21.28</td><td><b>21.07</b></td></tr>
+<tr><td>512K</td><td>config</td><td>35.07</td><td>34.53</td><td>35.05</td><td>35.03</td><td>35.14</td><td>34.47</td><td>35.08</td><td>34.78</td><td>34.69</td><td><b>35.03</b></td></tr>
+<tr><td>1M</td><td>default</td><td>41.23</td><td>41.59</td><td>41.56</td><td>41.71</td><td>41.91</td><td>41.44</td><td>41.46</td><td>41.39</td><td>41.51</td><td><b>41.51</b></td></tr>
+<tr><td>1M</td><td>config</td><td>48.29</td><td>48.62</td><td>48.76</td><td>48.58</td><td>48.73</td><td>48.61</td><td>49.07</td><td>48.73</td><td>48.29</td><td><b>48.62</b></td></tr>
+<tr><td>2M</td><td>default</td><td>79.16</td><td>79.3</td><td>79.22</td><td>79.7</td><td>79.5</td><td>79.14</td><td>79.22</td><td>78.98</td><td>79.53</td><td><b>79.22</b></td></tr>
+<tr><td>2M</td><td>config</td><td>79.36</td><td>78.98</td><td>78.63</td><td>79.33</td><td>79.63</td><td>78.91</td><td>79.12</td><td>78.97</td><td>76.7</td><td><b>78.98</b></td></tr>
+<tr><td>4M</td><td>default</td><td>127.43</td><td>128.42</td><td>127.57</td><td>128.22</td><td>128.24</td><td>127.14</td><td>128.13</td><td>128.37</td><td>128.36</td><td><b>128.22</b></td></tr>
+<tr><td>4M</td><td>config</td><td>125.76</td><td>125.33</td><td>125.84</td><td>125.91</td><td>125.93</td><td>125.36</td><td>125.97</td><td>125.97</td><td>121.13</td><td><b>125.84</b></td></tr>
+<tr><td>8M</td><td>default</td><td>197.4</td><td>197.62</td><td>196.97</td><td>197.91</td><td>197.29</td><td>196.89</td><td>197.41</td><td>197.26</td><td>197.43</td><td><b>197.4</b></td></tr>
+<tr><td>8M</td><td>config</td><td>195.49</td><td>194.67</td><td>194.88</td><td>195.93</td><td>195.34</td><td>194.57</td><td>195.91</td><td>196.11</td><td>189.33</td><td><b>195.34</b></td></tr>
+<tr><td>16M</td><td>default</td><td>268.42</td><td>268.35</td><td>267.86</td><td>268.4</td><td>267.81</td><td>267.24</td><td>267.47</td><td>268.42</td><td>268.48</td><td><b>268.35</b></td></tr>
+<tr><td>16M</td><td>config</td><td>248.82</td><td>248.66</td><td>248.24</td><td>248.85</td><td>248.41</td><td>248.37</td><td>248.61</td><td>248.69</td><td>244.97</td><td><b>248.61</b></td></tr>
+<tr><td>32M</td><td>default</td><td>317.65</td><td>317.22</td><td>317.48</td><td>317.59</td><td>317.22</td><td>317.39</td><td>317.07</td><td>317.05</td><td>317.71</td><td><b>317.39</b></td></tr>
+<tr><td>32M</td><td>config</td><td>296.57</td><td>295.34</td><td>296.82</td><td>296.5</td><td>295.9</td><td>295.41</td><td>295.1</td><td>295.61</td><td>288.77</td><td><b>295.61</b></td></tr>
+<tr><td>64M</td><td>default</td><td>354.95</td><td>354.67</td><td>355.99</td><td>356.35</td><td>356.09</td><td>354.59</td><td>355.95</td><td>356.06</td><td>354.08</td><td><b>355.95</b></td></tr>
+<tr><td>64M</td><td>config</td><td>129.89</td><td>129.85</td><td>130.12</td><td>129.81</td><td>130.08</td><td>130.17</td><td>130.18</td><td>129.86</td><td>130.1</td><td><b>130.08</b></td></tr>
+<tr><td>128M</td><td>default</td><td>378.51</td><td>378.05</td><td>379.27</td><td>379.67</td><td>378.83</td><td>379.41</td><td>379.44</td><td>378.98</td><td>379.83</td><td><b>379.27</b></td></tr>
+<tr><td>128M</td><td>config</td><td>134.82</td><td>134.84</td><td>134.99</td><td>134.65</td><td>135.0</td><td>134.94</td><td>134.53</td><td>135.05</td><td>134.83</td><td><b>134.84</b></td></tr>
+<tr><td>256M</td><td>default</td><td>390.93</td><td>390.56</td><td>390.36</td><td>381.24</td><td>390.29</td><td>390.8</td><td>390.95</td><td>390.82</td><td>389.7</td><td><b>390.56</b></td></tr>
+<tr><td>256M</td><td>config</td><td>134.91</td><td>134.59</td><td>134.91</td><td>134.98</td><td>134.96</td><td>134.76</td><td>134.87</td><td>134.86</td><td>135.11</td><td><b>134.91</b></td></tr>
+<tr><td>512M</td><td>default</td><td>397.69</td><td>397.14</td><td>396.92</td><td>396.67</td><td>397.07</td><td>397.19</td><td>397.03</td><td>396.83</td><td>396.87</td><td><b>397.03</b></td></tr>
+<tr><td>512M</td><td>config</td><td>135.85</td><td>135.66</td><td>136.09</td><td>135.71</td><td>135.94</td><td>135.9</td><td>135.84</td><td>135.95</td><td>136.02</td><td><b>135.9</b></td></tr>
 </table></details>
 <h2>all reduce_2n</h2>
-<p class=note>search: <b>117 runs</b> vs full grid 162 (<b>&minus;28%</b>), 39 configs measured, 36 min search. A/B: <b class=g>3 rules kept</b>, <b class=b>10 dropped</b>.</p>
+<p class=note>search: <b>117 runs</b> vs full grid 162 (<b>&minus;28%</b>), 39 configs measured, 36 min search. A/B: <b class=g>2 rules kept</b>, <b class=b>16 dropped</b>.</p>
 <h3>Config: before A/B &rarr; what ships</h3>
 <p class=note>green = survived the A/B; struck red = the A/B killed it (reason inline). Sizes with no rule keep RCCL's default.</p>
 <pre><span class=n>collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff</span>
 <span class=drop>allreduce,4096,4096,tree,ll,2,2,16,-1,-1</span>  <span class=why>&larr; no gain (+0.0%)</span>
 <span class=drop>allreduce,8192,8192,tree,ll,4,2,16,-1,-1</span>  <span class=why>&larr; no gain (+0.0%)</span>
-<span class=drop>allreduce,16384,16384,tree,ll,32,2,16,-1,-1</span>  <span class=why>&larr; no gain (+0.0%)</span>
-<span class=drop>allreduce,32768,32768,tree,ll,16,2,16,-1,-1</span>  <span class=why>&larr; no gain (-0.7%)</span>
+<span class=drop>allreduce,16384,16384,tree,ll,32,2,16,-1,-1</span>  <span class=why>&larr; no gain (+1.4%)</span>
+<span class=drop>allreduce,32768,32768,tree,ll,16,2,16,-1,-1</span>  <span class=why>&larr; no gain (+0.0%)</span>
 <span class=drop>allreduce,65536,65536,tree,ll,40,2,16,-1,-1</span>  <span class=why>&larr; no gain (-0.4%)</span>
-<span class=drop>allreduce,131072,131072,tree,ll,32,2,16,-1,-1</span>  <span class=why>&larr; no gain (+1.3%)</span>
-<span class=keep>allreduce,262144,262144,tree,ll128,40,2,16,-1,-1</span>  <span class=why>&larr; kept</span>
-<span class=drop>allreduce,524288,524288,tree,ll128,32,2,16,-1,-1</span>  <span class=why>&larr; no gain (-0.5%)</span>
-<span class=drop>allreduce,1048576,16777216,tree,ll128,48,2,16,-1,-1</span>  <span class=why>&larr; no gain (+0.3%)</span>
+<span class=drop>allreduce,131072,131072,tree,ll,32,2,16,-1,-1</span>  <span class=why>&larr; no gain (-0.4%)</span>
+<span class=drop>allreduce,262144,262144,tree,ll128,40,2,16,-1,-1</span>  <span class=why>&larr; not reproducible (P 0.89)</span>
+<span class=drop>allreduce,524288,524288,tree,ll128,32,2,16,-1,-1</span>  <span class=why>&larr; no gain (-0.8%)</span>
+<span class=drop>allreduce,1048576,1048576,tree,ll128,48,2,16,-1,-1</span>  <span class=why>&larr; no gain (-0.7%)</span>
+<span class=drop>allreduce,2097152,2097152,tree,ll128,48,2,16,-1,-1</span>  <span class=why>&larr; no gain (-0.6%)</span>
+<span class=drop>allreduce,4194304,4194304,tree,ll128,48,2,16,-1,-1</span>  <span class=why>&larr; no gain (-0.6%)</span>
+<span class=drop>allreduce,8388608,8388608,tree,ll128,48,2,16,-1,-1</span>  <span class=why>&larr; no gain (-0.6%)</span>
+<span class=drop>allreduce,16777216,16777216,tree,ll128,48,2,16,-1,-1</span>  <span class=why>&larr; no gain (+0.0%)</span>
 <span class=keep>allreduce,33554432,33554432,ring,ll128,40,2,16,-1,-1</span>  <span class=why>&larr; kept</span>
-<span class=drop>allreduce,67108864,67108864,ring,ll128,48,2,16,-1,-1</span>  <span class=why>&larr; no gain (-0.1%)</span>
+<span class=drop>allreduce,67108864,67108864,ring,ll128,48,2,16,-1,-1</span>  <span class=why>&larr; no gain (+0.5%)</span>
 <span class=keep>allreduce,134217728,134217728,ring,simple,40,2,16,-1,-1</span>  <span class=why>&larr; kept</span>
-<span class=drop>allreduce,268435456,536870912,ring,simple,48,2,16,-1,-1</span>  <span class=why>&larr; no gain (+0.0%)</span></pre>
+<span class=drop>allreduce,268435456,268435456,ring,simple,48,2,16,-1,-1</span>  <span class=why>&larr; no gain (-0.0%)</span>
+<span class=drop>allreduce,536870912,536870912,ring,simple,48,2,16,-1,-1</span>  <span class=why>&larr; no gain (+0.0%)</span></pre>
+<h3>Final shipped config (survivors, merged)</h3><pre class=keep>collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff
+allreduce,33554432,33554432,ring,ll128,40,2,16,-1,-1
+allreduce,134217728,134217728,ring,simple,40,2,16,-1,-1</pre>
 <h3>Per size</h3>
 <table><tr><th>size</th><th>RCCL default combo</th><th>our config</th><th>default med</th><th>ours med</th><th>gain</th><th>P(sup)</th><th>verdict</th></tr>
-<tr class=x><td>4K</td><td>TREE/LL</td><td>TREE/LL/2</td><td>0.18</td><td>0.18</td><td class=n>+0.0%</td><td>0.4321</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
-<tr class=x><td>8K</td><td>TREE/LL</td><td>TREE/LL/4</td><td>0.35</td><td>0.35</td><td class=n>+0.0%</td><td>0.6235</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
-<tr class=x><td>16K</td><td>TREE/LL</td><td>TREE/LL/32</td><td>0.69</td><td>0.69</td><td class=n>+0.0%</td><td>0.4198</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
-<tr class=x><td>32K</td><td>TREE/LL</td><td>TREE/LL/16</td><td>1.35</td><td>1.34</td><td class=n>-0.7%</td><td>0.2778</td><td class=wrap>dropped: no gain (-0.7%)</td></tr>
-<tr class=x><td>64K</td><td>TREE/LL</td><td>TREE/LL/40</td><td>2.54</td><td>2.53</td><td class=n>-0.4%</td><td>0.3086</td><td class=wrap>dropped: no gain (-0.4%)</td></tr>
-<tr class=x><td>128K</td><td>TREE/LL</td><td>TREE/LL/32</td><td>4.47</td><td>4.53</td><td class=n>+1.3%</td><td>0.6173</td><td class=wrap>dropped: no gain (+1.3%)</td></tr>
-<tr class=v><td>256K</td><td>TREE/LL</td><td>TREE/LL128/40</td><td>7.83</td><td>8.42</td><td class=g>+7.5%</td><td>1.0</td><td class=wrap>KEPT</td></tr>
-<tr class=x><td>512K</td><td>TREE/LL128</td><td>TREE/LL128/32</td><td>15.57</td><td>15.49</td><td class=n>-0.5%</td><td>0.2654</td><td class=wrap>dropped: no gain (-0.5%)</td></tr>
-<tr class=x><td>1M</td><td>TREE/LL128</td><td>TREE/LL128/48</td><td>28.3</td><td>28.23</td><td class=n>-0.2%</td><td>0.3457</td><td class=wrap>dropped: no gain (+0.3%)</td></tr>
-<tr class=x><td>2M</td><td>TREE/LL128</td><td>TREE/LL128/48</td><td>51.08</td><td>51.24</td><td class=n>+0.3%</td><td>0.5802</td><td class=wrap>dropped: no gain (+0.3%)</td></tr>
-<tr class=x><td>4M</td><td>TREE/LL128</td><td>TREE/LL128/48</td><td>88.23</td><td>88.07</td><td class=n>-0.2%</td><td>0.4074</td><td class=wrap>dropped: no gain (+0.3%)</td></tr>
-<tr class=x><td>8M</td><td>TREE/LL128</td><td>TREE/LL128/48</td><td>139.78</td><td>139.48</td><td class=n>-0.2%</td><td>0.3086</td><td class=wrap>dropped: no gain (+0.3%)</td></tr>
-<tr class=x><td>16M</td><td>TREE/LL128</td><td>TREE/LL128/48</td><td>192.56</td><td>192.62</td><td class=n>+0.0%</td><td>0.5556</td><td class=wrap>dropped: no gain (+0.3%)</td></tr>
-<tr class=v><td>32M</td><td>TREE/LL128</td><td>RING/LL128/40</td><td>222.34</td><td>239.66</td><td class=g>+7.8%</td><td>1.0</td><td class=wrap>KEPT</td></tr>
-<tr class=x><td>64M</td><td>RING/LL128</td><td>RING/LL128/48</td><td>289.92</td><td>289.49</td><td class=n>-0.1%</td><td>0.3272</td><td class=wrap>dropped: no gain (-0.1%)</td></tr>
-<tr class=v><td>128M</td><td>RING/SIMPLE</td><td>RING/SIMPLE/40</td><td>299.69</td><td>309.12</td><td class=g>+3.1%</td><td>1.0</td><td class=wrap>KEPT</td></tr>
-<tr class=x><td>256M</td><td>RING/SIMPLE</td><td>RING/SIMPLE/48</td><td>368.41</td><td>368.25</td><td class=n>-0.0%</td><td>0.4198</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
-<tr class=x><td>512M</td><td>RING/SIMPLE</td><td>RING/SIMPLE/48</td><td>374.49</td><td>374.57</td><td class=n>+0.0%</td><td>0.5062</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
+<tr class=x><td>4K</td><td>TREE/LL</td><td>TREE/LL/2</td><td>0.18</td><td>0.18</td><td class=n>+0.0%</td><td>0.5556</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
+<tr class=x><td>8K</td><td>TREE/LL</td><td>TREE/LL/4</td><td>0.35</td><td>0.35</td><td class=n>+0.0%</td><td>0.5432</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
+<tr class=x><td>16K</td><td>TREE/LL</td><td>TREE/LL/32</td><td>0.69</td><td>0.7</td><td class=n>+1.4%</td><td>0.679</td><td class=wrap>dropped: no gain (+1.4%)</td></tr>
+<tr class=x><td>32K</td><td>TREE/LL</td><td>TREE/LL/16</td><td>1.34</td><td>1.34</td><td class=n>+0.0%</td><td>0.6914</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
+<tr class=x><td>64K</td><td>TREE/LL</td><td>TREE/LL/40</td><td>2.53</td><td>2.52</td><td class=n>-0.4%</td><td>0.321</td><td class=wrap>dropped: no gain (-0.4%)</td></tr>
+<tr class=x><td>128K</td><td>TREE/LL</td><td>TREE/LL/32</td><td>4.53</td><td>4.51</td><td class=n>-0.4%</td><td>0.4506</td><td class=wrap>dropped: no gain (-0.4%)</td></tr>
+<tr class=x><td>256K</td><td>TREE/LL</td><td>TREE/LL128/40</td><td>7.92</td><td>8.39</td><td class=g>+5.9%</td><td>0.8889</td><td class=wrap>dropped: not reproducible (P 0.89)</td></tr>
+<tr class=x><td>512K</td><td>TREE/LL128</td><td>TREE/LL128/32</td><td>15.53</td><td>15.41</td><td class=n>-0.8%</td><td>0.1605</td><td class=wrap>dropped: no gain (-0.8%)</td></tr>
+<tr class=x><td>1M</td><td>TREE/LL128</td><td>TREE/LL128/48</td><td>28.43</td><td>28.24</td><td class=n>-0.7%</td><td>0.1173</td><td class=wrap>dropped: no gain (-0.7%)</td></tr>
+<tr class=x><td>2M</td><td>TREE/LL128</td><td>TREE/LL128/48</td><td>51.4</td><td>51.11</td><td class=n>-0.6%</td><td>0.4012</td><td class=wrap>dropped: no gain (-0.6%)</td></tr>
+<tr class=x><td>4M</td><td>TREE/LL128</td><td>TREE/LL128/48</td><td>88.48</td><td>87.95</td><td class=n>-0.6%</td><td>0.2901</td><td class=wrap>dropped: no gain (-0.6%)</td></tr>
+<tr class=x><td>8M</td><td>TREE/LL128</td><td>TREE/LL128/48</td><td>139.6</td><td>138.75</td><td class=n>-0.6%</td><td>0.4568</td><td class=wrap>dropped: no gain (-0.6%)</td></tr>
+<tr class=x><td>16M</td><td>TREE/LL128</td><td>TREE/LL128/48</td><td>192.73</td><td>192.76</td><td class=n>+0.0%</td><td>0.5062</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
+<tr class=v><td>32M</td><td>TREE/LL128</td><td>RING/LL128/40</td><td>223.52</td><td>239.6</td><td class=g>+7.2%</td><td>1.0</td><td class=wrap>KEPT</td></tr>
+<tr class=x><td>64M</td><td>RING/LL128</td><td>RING/LL128/48</td><td>288.46</td><td>289.87</td><td class=n>+0.5%</td><td>0.6173</td><td class=wrap>dropped: no gain (+0.5%)</td></tr>
+<tr class=v><td>128M</td><td>RING/SIMPLE</td><td>RING/SIMPLE/40</td><td>300.98</td><td>308.11</td><td class=g>+2.4%</td><td>1.0</td><td class=wrap>KEPT</td></tr>
+<tr class=x><td>256M</td><td>RING/SIMPLE</td><td>RING/SIMPLE/48</td><td>368.66</td><td>368.62</td><td class=n>-0.0%</td><td>0.4568</td><td class=wrap>dropped: no gain (-0.0%)</td></tr>
+<tr class=x><td>512M</td><td>RING/SIMPLE</td><td>RING/SIMPLE/48</td><td>374.59</td><td>374.63</td><td class=n>+0.0%</td><td>0.3827</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
 </table>
 <details><summary>raw A/B runs (9 per arm, busbw per size)</summary><table><tr><th>size</th><th>arm</th><th>r1</th><th>r2</th><th>r3</th><th>r4</th><th>r5</th><th>r6</th><th>r7</th><th>r8</th><th>r9</th><th>median</th></tr>
-<tr><td>4K</td><td>default</td><td>0.18</td><td>0.18</td><td>0.18</td><td>0.17</td><td>0.17</td><td>0.18</td><td>0.18</td><td>0.18</td><td>0.18</td><td><b>0.18</b></td></tr>
-<tr><td>4K</td><td>config</td><td>0.18</td><td>0.18</td><td>0.17</td><td>0.18</td><td>0.18</td><td>0.18</td><td>0.18</td><td>0.16</td><td>0.17</td><td><b>0.18</b></td></tr>
-<tr><td>8K</td><td>default</td><td>0.34</td><td>0.35</td><td>0.35</td><td>0.33</td><td>0.35</td><td>0.35</td><td>0.32</td><td>0.35</td><td>0.35</td><td><b>0.35</b></td></tr>
-<tr><td>8K</td><td>config</td><td>0.35</td><td>0.35</td><td>0.35</td><td>0.35</td><td>0.35</td><td>0.35</td><td>0.34</td><td>0.35</td><td>0.35</td><td><b>0.35</b></td></tr>
-<tr><td>16K</td><td>default</td><td>0.69</td><td>0.69</td><td>0.7</td><td>0.3</td><td>0.7</td><td>0.69</td><td>0.69</td><td>0.7</td><td>0.64</td><td><b>0.69</b></td></tr>
-<tr><td>16K</td><td>config</td><td>0.69</td><td>0.69</td><td>0.7</td><td>0.67</td><td>0.7</td><td>0.68</td><td>0.68</td><td>0.6</td><td>0.69</td><td><b>0.69</b></td></tr>
-<tr><td>32K</td><td>default</td><td>1.34</td><td>1.34</td><td>1.32</td><td>1.35</td><td>1.36</td><td>1.35</td><td>1.35</td><td>1.36</td><td>1.36</td><td><b>1.35</b></td></tr>
-<tr><td>32K</td><td>config</td><td>1.34</td><td>1.34</td><td>1.34</td><td>1.35</td><td>1.28</td><td>1.33</td><td>1.34</td><td>1.35</td><td>1.35</td><td><b>1.34</b></td></tr>
-<tr><td>64K</td><td>default</td><td>2.56</td><td>2.53</td><td>2.55</td><td>2.54</td><td>2.52</td><td>2.52</td><td>2.54</td><td>2.52</td><td>2.57</td><td><b>2.54</b></td></tr>
-<tr><td>64K</td><td>config</td><td>2.54</td><td>2.53</td><td>2.53</td><td>2.51</td><td>2.55</td><td>2.52</td><td>2.54</td><td>2.24</td><td>0.0</td><td><b>2.53</b></td></tr>
-<tr><td>128K</td><td>default</td><td>4.47</td><td>4.52</td><td>4.52</td><td>4.53</td><td>4.54</td><td>4.4</td><td>4.47</td><td>4.47</td><td>4.22</td><td><b>4.47</b></td></tr>
-<tr><td>128K</td><td>config</td><td>4.55</td><td>4.54</td><td>4.48</td><td>4.54</td><td>4.29</td><td>4.43</td><td>4.53</td><td>4.54</td><td>0.01</td><td><b>4.53</b></td></tr>
-<tr><td>256K</td><td>default</td><td>7.92</td><td>7.77</td><td>7.98</td><td>7.89</td><td>7.82</td><td>7.83</td><td>7.83</td><td>7.94</td><td>7.39</td><td><b>7.83</b></td></tr>
-<tr><td>256K</td><td>config</td><td>8.42</td><td>8.44</td><td>8.44</td><td>8.44</td><td>8.38</td><td>8.33</td><td>8.33</td><td>8.4</td><td>8.47</td><td><b>8.42</b></td></tr>
-<tr><td>512K</td><td>default</td><td>15.48</td><td>15.61</td><td>15.57</td><td>15.54</td><td>15.49</td><td>15.66</td><td>15.44</td><td>15.65</td><td>15.63</td><td><b>15.57</b></td></tr>
-<tr><td>512K</td><td>config</td><td>15.5</td><td>15.4</td><td>15.43</td><td>15.5</td><td>15.49</td><td>15.36</td><td>15.44</td><td>15.54</td><td>15.68</td><td><b>15.49</b></td></tr>
-<tr><td>1M</td><td>default</td><td>27.98</td><td>28.25</td><td>28.41</td><td>28.41</td><td>28.18</td><td>28.33</td><td>28.0</td><td>28.47</td><td>28.3</td><td><b>28.3</b></td></tr>
-<tr><td>1M</td><td>config</td><td>28.38</td><td>28.23</td><td>28.16</td><td>27.99</td><td>27.01</td><td>28.29</td><td>28.05</td><td>28.29</td><td>28.36</td><td><b>28.23</b></td></tr>
-<tr><td>2M</td><td>default</td><td>51.02</td><td>50.87</td><td>51.74</td><td>50.7</td><td>51.27</td><td>51.09</td><td>50.95</td><td>51.18</td><td>51.08</td><td><b>51.08</b></td></tr>
-<tr><td>2M</td><td>config</td><td>50.74</td><td>51.19</td><td>51.31</td><td>49.92</td><td>49.28</td><td>51.24</td><td>51.5</td><td>51.29</td><td>51.45</td><td><b>51.24</b></td></tr>
-<tr><td>4M</td><td>default</td><td>88.75</td><td>89.0</td><td>86.9</td><td>88.23</td><td>88.4</td><td>87.99</td><td>88.17</td><td>87.98</td><td>88.29</td><td><b>88.23</b></td></tr>
-<tr><td>4M</td><td>config</td><td>88.05</td><td>87.78</td><td>87.95</td><td>88.6</td><td>88.33</td><td>86.34</td><td>89.19</td><td>88.16</td><td>88.07</td><td><b>88.07</b></td></tr>
-<tr><td>8M</td><td>default</td><td>136.84</td><td>141.01</td><td>139.55</td><td>139.05</td><td>139.83</td><td>140.76</td><td>139.78</td><td>0.43</td><td>140.46</td><td><b>139.78</b></td></tr>
-<tr><td>8M</td><td>config</td><td>139.49</td><td>138.61</td><td>139.53</td><td>138.98</td><td>139.65</td><td>138.51</td><td>139.59</td><td>138.7</td><td>139.48</td><td><b>139.48</b></td></tr>
-<tr><td>16M</td><td>default</td><td>190.51</td><td>192.9</td><td>193.54</td><td>192.91</td><td>190.09</td><td>192.56</td><td>192.5</td><td>0.73</td><td>192.73</td><td><b>192.56</b></td></tr>
-<tr><td>16M</td><td>config</td><td>179.43</td><td>193.32</td><td>193.28</td><td>192.23</td><td>193.01</td><td>189.25</td><td>192.62</td><td>191.77</td><td>193.24</td><td><b>192.62</b></td></tr>
-<tr><td>32M</td><td>default</td><td>220.1</td><td>175.7</td><td>223.26</td><td>219.87</td><td>223.34</td><td>224.89</td><td>218.76</td><td>222.34</td><td>222.63</td><td><b>222.34</b></td></tr>
-<tr><td>32M</td><td>config</td><td>239.6</td><td>237.21</td><td>240.67</td><td>241.13</td><td>243.91</td><td>234.48</td><td>234.06</td><td>239.66</td><td>244.14</td><td><b>239.66</b></td></tr>
-<tr><td>64M</td><td>default</td><td>289.84</td><td>290.4</td><td>289.86</td><td>290.13</td><td>289.2</td><td>283.26</td><td>290.64</td><td>289.92</td><td>290.06</td><td><b>289.92</b></td></tr>
-<tr><td>64M</td><td>config</td><td>291.16</td><td>289.89</td><td>288.58</td><td>288.87</td><td>289.95</td><td>289.49</td><td>289.23</td><td>283.18</td><td>289.84</td><td><b>289.49</b></td></tr>
-<tr><td>128M</td><td>default</td><td>299.69</td><td>297.89</td><td>299.22</td><td>300.21</td><td>299.69</td><td>300.86</td><td>300.33</td><td>298.76</td><td>301.91</td><td><b>299.69</b></td></tr>
-<tr><td>128M</td><td>config</td><td>310.08</td><td>308.58</td><td>310.27</td><td>309.85</td><td>309.12</td><td>305.47</td><td>305.16</td><td>305.23</td><td>309.37</td><td><b>309.12</b></td></tr>
-<tr><td>256M</td><td>default</td><td>368.41</td><td>367.02</td><td>368.89</td><td>367.77</td><td>369.02</td><td>367.38</td><td>369.08</td><td>368.73</td><td>367.6</td><td><b>368.41</b></td></tr>
-<tr><td>256M</td><td>config</td><td>368.65</td><td>368.25</td><td>8.74</td><td>368.17</td><td>367.33</td><td>366.64</td><td>369.14</td><td>368.8</td><td>368.59</td><td><b>368.25</b></td></tr>
-<tr><td>512M</td><td>default</td><td>374.49</td><td>374.09</td><td>374.87</td><td>375.0</td><td>374.98</td><td>374.01</td><td>374.99</td><td>373.86</td><td>374.03</td><td><b>374.49</b></td></tr>
-<tr><td>512M</td><td>config</td><td>374.09</td><td>374.57</td><td>375.0</td><td>374.84</td><td>374.0</td><td>374.36</td><td>374.22</td><td>374.65</td><td>374.66</td><td><b>374.57</b></td></tr>
+<tr><td>4K</td><td>default</td><td>0.18</td><td>0.18</td><td>0.17</td><td>0.17</td><td>0.18</td><td>0.18</td><td>0.18</td><td>0.18</td><td>0.17</td><td><b>0.18</b></td></tr>
+<tr><td>4K</td><td>config</td><td>0.18</td><td>0.18</td><td>0.18</td><td>0.18</td><td>0.18</td><td>0.17</td><td>0.18</td><td>0.17</td><td>0.18</td><td><b>0.18</b></td></tr>
+<tr><td>8K</td><td>default</td><td>0.34</td><td>0.35</td><td>0.35</td><td>0.35</td><td>0.35</td><td>0.35</td><td>0.35</td><td>0.35</td><td>0.35</td><td><b>0.35</b></td></tr>
+<tr><td>8K</td><td>config</td><td>0.35</td><td>0.35</td><td>0.35</td><td>0.35</td><td>0.35</td><td>0.35</td><td>0.33</td><td>0.36</td><td>0.35</td><td><b>0.35</b></td></tr>
+<tr><td>16K</td><td>default</td><td>0.69</td><td>0.7</td><td>0.69</td><td>0.7</td><td>0.69</td><td>0.69</td><td>0.69</td><td>0.69</td><td>0.69</td><td><b>0.69</b></td></tr>
+<tr><td>16K</td><td>config</td><td>0.7</td><td>0.7</td><td>0.64</td><td>0.69</td><td>0.7</td><td>0.7</td><td>0.7</td><td>0.69</td><td>0.7</td><td><b>0.7</b></td></tr>
+<tr><td>32K</td><td>default</td><td>1.33</td><td>1.34</td><td>1.34</td><td>1.34</td><td>1.33</td><td>1.33</td><td>1.34</td><td>1.33</td><td>1.35</td><td><b>1.34</b></td></tr>
+<tr><td>32K</td><td>config</td><td>1.34</td><td>1.34</td><td>1.24</td><td>1.34</td><td>1.36</td><td>1.34</td><td>1.35</td><td>1.34</td><td>1.35</td><td><b>1.34</b></td></tr>
+<tr><td>64K</td><td>default</td><td>2.56</td><td>2.53</td><td>2.55</td><td>2.51</td><td>2.51</td><td>2.53</td><td>2.56</td><td>2.56</td><td>2.5</td><td><b>2.53</b></td></tr>
+<tr><td>64K</td><td>config</td><td>2.56</td><td>2.42</td><td>2.55</td><td>2.52</td><td>2.47</td><td>2.52</td><td>2.51</td><td>2.44</td><td>2.54</td><td><b>2.52</b></td></tr>
+<tr><td>128K</td><td>default</td><td>4.47</td><td>4.54</td><td>4.53</td><td>4.55</td><td>4.49</td><td>4.5</td><td>4.53</td><td>4.49</td><td>4.54</td><td><b>4.53</b></td></tr>
+<tr><td>128K</td><td>config</td><td>4.51</td><td>4.52</td><td>4.54</td><td>4.53</td><td>4.52</td><td>4.49</td><td>4.5</td><td>4.5</td><td>4.5</td><td><b>4.51</b></td></tr>
+<tr><td>256K</td><td>default</td><td>7.89</td><td>7.95</td><td>7.88</td><td>7.95</td><td>7.95</td><td>7.68</td><td>7.92</td><td>7.72</td><td>7.93</td><td><b>7.92</b></td></tr>
+<tr><td>256K</td><td>config</td><td>8.46</td><td>8.12</td><td>8.38</td><td>8.43</td><td>8.39</td><td>8.39</td><td>8.38</td><td>7.61</td><td>8.39</td><td><b>8.39</b></td></tr>
+<tr><td>512K</td><td>default</td><td>15.49</td><td>15.26</td><td>15.54</td><td>15.43</td><td>15.52</td><td>15.56</td><td>15.53</td><td>15.65</td><td>15.53</td><td><b>15.53</b></td></tr>
+<tr><td>512K</td><td>config</td><td>15.33</td><td>15.17</td><td>15.46</td><td>15.39</td><td>15.51</td><td>15.41</td><td>15.38</td><td>15.48</td><td>15.45</td><td><b>15.41</b></td></tr>
+<tr><td>1M</td><td>default</td><td>28.22</td><td>28.55</td><td>28.48</td><td>28.39</td><td>28.46</td><td>28.55</td><td>28.39</td><td>28.28</td><td>28.43</td><td><b>28.43</b></td></tr>
+<tr><td>1M</td><td>config</td><td>28.42</td><td>28.06</td><td>28.11</td><td>28.27</td><td>28.24</td><td>28.15</td><td>28.36</td><td>28.28</td><td>28.05</td><td><b>28.24</b></td></tr>
+<tr><td>2M</td><td>default</td><td>51.54</td><td>51.73</td><td>51.4</td><td>28.63</td><td>50.35</td><td>51.56</td><td>51.2</td><td>51.88</td><td>51.12</td><td><b>51.4</b></td></tr>
+<tr><td>2M</td><td>config</td><td>50.98</td><td>51.75</td><td>51.07</td><td>50.8</td><td>50.41</td><td>51.41</td><td>51.27</td><td>51.54</td><td>51.11</td><td><b>51.11</b></td></tr>
+<tr><td>4M</td><td>default</td><td>88.48</td><td>88.73</td><td>87.81</td><td>83.01</td><td>88.99</td><td>88.31</td><td>88.76</td><td>87.87</td><td>88.66</td><td><b>88.48</b></td></tr>
+<tr><td>4M</td><td>config</td><td>87.12</td><td>88.13</td><td>87.95</td><td>88.71</td><td>85.59</td><td>87.87</td><td>88.24</td><td>88.26</td><td>87.26</td><td><b>87.95</b></td></tr>
+<tr><td>8M</td><td>default</td><td>137.75</td><td>140.71</td><td>139.6</td><td>139.82</td><td>132.7</td><td>128.18</td><td>140.32</td><td>140.76</td><td>135.9</td><td><b>139.6</b></td></tr>
+<tr><td>8M</td><td>config</td><td>139.56</td><td>139.56</td><td>138.55</td><td>138.75</td><td>139.92</td><td>138.71</td><td>137.34</td><td>138.58</td><td>138.87</td><td><b>138.75</b></td></tr>
+<tr><td>16M</td><td>default</td><td>192.58</td><td>179.32</td><td>193.52</td><td>190.14</td><td>192.73</td><td>193.34</td><td>193.24</td><td>193.58</td><td>192.22</td><td><b>192.73</b></td></tr>
+<tr><td>16M</td><td>config</td><td>191.96</td><td>191.43</td><td>193.38</td><td>192.53</td><td>193.85</td><td>193.3</td><td>192.76</td><td>191.52</td><td>192.84</td><td><b>192.76</b></td></tr>
+<tr><td>32M</td><td>default</td><td>223.78</td><td>222.85</td><td>223.71</td><td>222.28</td><td>223.52</td><td>224.39</td><td>223.18</td><td>222.67</td><td>224.33</td><td><b>223.52</b></td></tr>
+<tr><td>32M</td><td>config</td><td>239.6</td><td>238.5</td><td>232.93</td><td>241.84</td><td>240.59</td><td>242.0</td><td>244.08</td><td>232.22</td><td>238.59</td><td><b>239.6</b></td></tr>
+<tr><td>64M</td><td>default</td><td>290.15</td><td>283.0</td><td>290.28</td><td>282.37</td><td>290.26</td><td>288.46</td><td>283.6</td><td>284.34</td><td>290.35</td><td><b>288.46</b></td></tr>
+<tr><td>64M</td><td>config</td><td>288.97</td><td>283.82</td><td>290.06</td><td>291.31</td><td>289.43</td><td>289.87</td><td>291.36</td><td>283.74</td><td>290.25</td><td><b>289.87</b></td></tr>
+<tr><td>128M</td><td>default</td><td>297.52</td><td>300.3</td><td>300.98</td><td>299.81</td><td>302.89</td><td>302.66</td><td>300.46</td><td>302.32</td><td>303.08</td><td><b>300.98</b></td></tr>
+<tr><td>128M</td><td>config</td><td>306.97</td><td>308.11</td><td>307.8</td><td>308.88</td><td>308.45</td><td>308.62</td><td>309.4</td><td>307.5</td><td>307.08</td><td><b>308.11</b></td></tr>
+<tr><td>256M</td><td>default</td><td>368.45</td><td>368.28</td><td>368.89</td><td>368.66</td><td>368.69</td><td>369.09</td><td>369.08</td><td>368.4</td><td>367.01</td><td><b>368.66</b></td></tr>
+<tr><td>256M</td><td>config</td><td>368.62</td><td>368.77</td><td>366.41</td><td>368.95</td><td>366.56</td><td>368.49</td><td>369.12</td><td>368.72</td><td>368.21</td><td><b>368.62</b></td></tr>
+<tr><td>512M</td><td>default</td><td>374.45</td><td>374.59</td><td>374.83</td><td>374.58</td><td>374.51</td><td>374.84</td><td>375.11</td><td>375.3</td><td>374.35</td><td><b>374.59</b></td></tr>
+<tr><td>512M</td><td>config</td><td>374.72</td><td>374.76</td><td>374.5</td><td>368.44</td><td>374.75</td><td>374.39</td><td>374.63</td><td>374.74</td><td>374.52</td><td><b>374.63</b></td></tr>
 </table></details>
 <h2>Attempt history</h2>
 <pre>pilot 1: failed fast - node 5 python lacks tabulate; empty config emitted silently.
          fixed: exec-node env probe + hard-fail on zero winners.
 pilot 2: 1n search 72 runs, 2n search 117 runs, 1n A/B verdict first try.
          2n A/B: 6 preflight refusals across the day (single-run collapses
-         at 1M-256M, exporter signature), verdict on attempt 7 overall.</pre>
+         at 1M-256M, exporter signature), verdict on attempt 7 overall.
+redo   : per-size rules (verdict granularity = measurement granularity).
+         1n: 9/18 sizes kept, all P(sup)=1.00 - incl 64K alone at 1.00.
+         2n: 2/18 kept (32M +7.2%, 128M +2.4%); yesterday's 262K win did
+         not reproduce today and correctly did not ship.</pre>
 <p class=note><a href='../2026-08-23-1-pages/index.html'>main results site</a></p>

@@ -46,7 +46,7 @@ def short_why(why):
 
 def rules(tag):
     kept, dropped = [], []
-    for line in open(PILOT / f"{tag}.validated.csv"):
+    for line in open(PILOT / f"{tag}_persize.validated.csv"):
         line = line.strip()
         m = re.match(r"# dropped: (\w+,(\d+),(\d+),.*?)\s+\((.*)\)$", line)
         if m:
@@ -87,7 +87,7 @@ def conf_block(tag, kept, dropped):
     """The search's config with the A/B fate of every rule colored in."""
     kept_raw = {k[0] for k in kept}
     lines = []
-    for line in open(PILOT / f"{tag}.conf"):
+    for line in open(PILOT / f"{tag}_persize.conf"):
         line = line.rstrip()
         if line.startswith("collective_type"):
             lines.append(f"<span class=n>{html.escape(line)}</span>")
@@ -106,8 +106,8 @@ def conf_block(tag, kept, dropped):
 
 
 SCALES = [
-    ("all_reduce_1n", 1, "ab_out/allreduce_1n/per_size_stats.csv", 81),
-    ("all_reduce_2n", 2, "ab_out2/allreduce_2n_retry4/per_size_stats.csv", 162),
+    ("all_reduce_1n", 1, "ab_out3/allreduce_1n/per_size_stats.csv", 81),
+    ("all_reduce_2n", 2, "ab_out3/allreduce_2n_retry2/per_size_stats.csv", 162),
 ]
 
 h = [f"<!doctype html><meta name=viewport content='width=device-width,"
@@ -136,6 +136,9 @@ for tag, nodes, statfile, grid_runs in SCALES:
              "killed it (reason inline). Sizes with no rule keep RCCL's "
              "default.</p>")
     h.append(conf_block(tag, kept, dropped))
+    final = (PILOT / f"{tag}.final.conf").read_text().strip()
+    h.append("<h3>Final shipped config (survivors, merged)</h3>"
+             f"<pre class=keep>{html.escape(final)}</pre>")
 
     h.append("<h3>Per size</h3>")
     h.append("<table><tr><th>size</th><th>RCCL default combo</th>"
@@ -182,7 +185,11 @@ h.append("<pre>pilot 1: failed fast - node 5 python lacks tabulate; empty config
          "         fixed: exec-node env probe + hard-fail on zero winners.\n"
          "pilot 2: 1n search 72 runs, 2n search 117 runs, 1n A/B verdict first try.\n"
          "         2n A/B: 6 preflight refusals across the day (single-run collapses\n"
-         "         at 1M-256M, exporter signature), verdict on attempt 7 overall.</pre>")
+         "         at 1M-256M, exporter signature), verdict on attempt 7 overall.\n"
+         "redo   : per-size rules (verdict granularity = measurement granularity).\n"
+         "         1n: 9/18 sizes kept, all P(sup)=1.00 - incl 64K alone at 1.00.\n"
+         "         2n: 2/18 kept (32M +7.2%, 128M +2.4%); yesterday's 262K win did\n"
+         "         not reproduce today and correctly did not ship.</pre>")
 h.append("<p class=note><a href='../2026-08-23-1-pages/index.html'>main results site</a></p>")
 (HERE / "pilot.html").write_text("\n".join(h))
 print("wrote pilot.html")
