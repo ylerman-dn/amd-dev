@@ -722,7 +722,13 @@ def cmd_baseline(args):
 
 
 def cmd_live(args):
-    combos = COMBOS_1N if args.nodes == 1 else COMBOS_MN
+    if args.collective == "all_reduce":
+        combos = COMBOS_1N if args.nodes == 1 else COMBOS_MN
+    else:
+        # RING is the only requestable algo for the other collectives
+        # (findings/drafts: tuning.cc:653-656); LL128 is dead at 1 node
+        combos = [("RING", "LL"), ("RING", "SIMPLE")] if args.nodes == 1 \
+            else [("RING", "LL"), ("RING", "LL128"), ("RING", "SIMPLE")]
     grid = [int(x) for x in args.grid.split(",")]
     anchors = [int(x) for x in args.anchors.split(",")]
     explore, final = (3, 3) if args.repeat_policy == "3" else (1, 3)
