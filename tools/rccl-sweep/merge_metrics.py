@@ -164,6 +164,7 @@ def merge_metrics(
     metrics_filename: str = "metrics.csv",
     dir_suffix: str | None = None,
     median: bool = False,
+    exec_from_logs: bool = False,
 ) -> int:
     """
     Merge all metrics files from run directories.
@@ -195,8 +196,15 @@ def merge_metrics(
     with open(output_file, 'w', newline='') as outfile:
         writer = None
         
+        EXEC_COLS = ["exec_algo", "exec_proto", "exec_nchannels",
+                     "report_mismatch"]
         for run_name, metrics_path in metrics_files:
             try:
+                # executed truth for this run, from its own NCCL debug logs
+                truth = {}
+                if exec_from_logs:
+                    dbg = list(metrics_path.parent.rglob("*dbg*.log*"))
+                    truth = parse_exec_log(dbg)
                 with open(metrics_path, 'r', newline='') as infile:
                     reader = csv.reader(infile)
                     file_header = next(reader)
@@ -207,12 +215,16 @@ def merge_metrics(
                             header = ['run_id'] + file_header
                         else:
                             header = file_header
+                        if exec_from_logs:
+                            header = header + EXEC_COLS
                         writer = csv.writer(outfile)
                         writer.writerow(header)
                         header_written = True
                     else:
                         # Verify headers match
                         expected_header = header[1:] if add_run_column else header
+                        if exec_from_logs:
+                            expected_header = expected_header[:-len(EXEC_COLS)]
                         if file_header != expected_header:
                             print(f"  Warning: Header mismatch in {metrics_path}")
                             print(f"    Expected: {expected_header}")
@@ -220,7 +232,23 @@ def merge_metrics(
                     
                     # Write data rows
                     row_count = 0
+                    i_size = file_header.index("size_bytes")
+                    i_algo = file_header.index("algo") if "algo" in file_header else None
+                    i_proto = file_header.index("proto") if "proto" in file_header else None
                     for row in reader:
+                        if exec_from_logs:
+                            t = truth.get(int(row[i_size])) if row[i_size] else None
+                            if t:
+                                # mismatch = the -A 1 report disagrees with the
+                                # executed algo/proto (side-kernel tripwire)
+                                mism = ""
+                                if i_algo is not None and (
+                                        row[i_algo].upper() != t[0].upper()
+                                        or row[i_proto].upper() != t[1].upper()):
+                                    mism = "yes"
+                                row = row + [t[0], t[1], str(t[2]), mism]
+                            else:
+                                row = row + ["", "", "", ""]
                         if add_run_column:
                             writer.writerow([run_name] + row)
                         else:
@@ -290,6 +318,14 @@ def main():
              "per size, and computes its tolerance window from that inflated best.",
     )
     parser.add_argument(
+        "--exec-from-logs",
+        action="store_true",
+        help="read each run's NCCL debug logs and add exec_algo/exec_proto/"
+             "exec_nchannels + report_mismatch columns - the executed truth. "
+             "The -A 1 channel column is a pre-launch plan (finding 01); "
+             "these columns record what actually ran.",
+    )
+    parser.add_argument(
         "--dir-suffix",
         type=str,
         default=None,
@@ -346,6 +382,7 @@ def main():
         metrics_filename=args.metrics_filename,
         dir_suffix=args.dir_suffix,
         median=args.median,
+        exec_from_logs=args.exec_from_logs,
     )
 
 
