@@ -14,23 +14,23 @@ HERE = Path(__file__).parent
 RT = HERE.parent
 CMP = RT / "2026-08-21-1-searchcmp"
 COLLS = ["all_reduce", "broadcast", "reduce", "all_gather", "reduce_scatter"]
-AB = {  # (coll, nodes) -> validated.csv with live verdicts
-    ("broadcast", 3): "2026-08-19-1-bcmn-ab/broadcast_3n.validated.csv",
+AB = {  # (coll, nodes) -> validated.csv with live verdicts (freshest wins)
+    # 2026-08-24 stage2: adaptive-sourced, per-size verdicts, on {1,3,8}
+    ("all_reduce", 1): "2026-08-24-1-stage2/all_reduce_1n.validated.csv",
+    ("all_reduce", 2): "2026-08-24-1-stage2/all_reduce_2n.validated.csv",
+    ("all_reduce", 3): "2026-08-24-1-stage2/all_reduce_3n.validated.csv",
+    ("broadcast", 1): "2026-08-24-1-stage2/broadcast_1n.validated.csv",
+    ("broadcast", 3): "2026-08-24-1-stage2/broadcast_3n.validated.csv",
+    ("reduce_scatter", 1): "2026-08-24-1-stage2/reduce_scatter_1n.validated.csv",
+    ("reduce_scatter", 2): "2026-08-24-1-stage2/reduce_scatter_2n.validated.csv",
+    ("reduce_scatter", 3): "2026-08-24-1-stage2/reduce_scatter_3n.validated.csv",
+    # earlier verdicts still authoritative for these:
+    ("reduce", 1): "2026-08-23-2-abvalidate/reduce_1n_grid.validated.csv",
     ("reduce", 2): "2026-08-19-1-bcmn-ab/reduce_2n.validated.csv",
     ("reduce", 3): "2026-08-19-1-bcmn-ab/reduce_3n.validated.csv",
-    # 2026-08-23 batch on {5,8}, job 20713
-    ("all_reduce", 1): "2026-08-23-2-abvalidate/all_reduce_1n_grid.validated.csv",
-    ("all_reduce", 2): "2026-08-23-2-abvalidate/all_reduce_2n_grid.validated.csv",
-    ("broadcast", 1): "2026-08-23-2-abvalidate/broadcast_1n_grid.validated.csv",
-    ("reduce", 1): "2026-08-23-2-abvalidate/reduce_1n_grid.validated.csv",
     ("all_gather", 1): "2026-08-23-2-abvalidate/all_gather_1n_grid.validated.csv",
     ("all_gather", 2): "2026-08-23-2-abvalidate/all_gather_2n_grid.validated.csv",
-    ("reduce_scatter", 1): "2026-08-23-2-abvalidate/reduce_scatter_1n_grid.validated.csv",
-    ("reduce_scatter", 2): "2026-08-23-2-abvalidate/reduce_scatter_2n_grid.validated.csv",
-    # 2026-08-24 batch on {3,5,8}, job 20718
-    ("all_reduce", 3): "2026-08-24-1-abvalidate3n/all_reduce_3n_grid.validated.csv",
     ("all_gather", 3): "2026-08-24-1-abvalidate3n/all_gather_3n_grid.validated.csv",
-    ("reduce_scatter", 3): "2026-08-24-1-abvalidate3n/reduce_scatter_3n_grid.validated.csv",
 }
 NODESETS = {
     ("all_reduce", 1): "node 7 (2026-08-04)", ("all_reduce", 2): "{5,7} (08-04)",
