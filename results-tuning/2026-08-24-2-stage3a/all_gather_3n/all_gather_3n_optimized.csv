@@ -1,0 +1,8 @@
+collective,num_nodes,num_gpus,size_bytes,algo,proto,nchannels,busbw_ip
+all_gather_perf,3,24,8388480,RING,LL128,16,71.28
+all_gather_perf,3,24,16776960,RING,LL128,24,115.35
+all_gather_perf,3,24,33554304,RING,LL128,32,181.99
+all_gather_perf,3,24,67108608,RING,LL128,48,251.07
+all_gather_perf,3,24,134217600,RING,LL128,40,262.49
+all_gather_perf,3,24,268435200,RING,SIMPLE,48,334.85
+all_gather_perf,3,24,536870784,RING,SIMPLE,48,366.02

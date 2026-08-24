@@ -25,12 +25,12 @@ AB = {  # (coll, nodes) -> validated.csv with live verdicts (freshest wins)
     ("reduce_scatter", 2): "2026-08-24-1-stage2/reduce_scatter_2n.validated.csv",
     ("reduce_scatter", 3): "2026-08-24-1-stage2/reduce_scatter_3n.validated.csv",
     # earlier verdicts still authoritative for these:
-    ("reduce", 1): "2026-08-23-2-abvalidate/reduce_1n_grid.validated.csv",
-    ("reduce", 2): "2026-08-19-1-bcmn-ab/reduce_2n.validated.csv",
-    ("reduce", 3): "2026-08-19-1-bcmn-ab/reduce_3n.validated.csv",
-    ("all_gather", 1): "2026-08-23-2-abvalidate/all_gather_1n_grid.validated.csv",
-    ("all_gather", 2): "2026-08-23-2-abvalidate/all_gather_2n_grid.validated.csv",
-    ("all_gather", 3): "2026-08-24-1-abvalidate3n/all_gather_3n_grid.validated.csv",
+    ("reduce", 1): "2026-08-24-2-stage3a/reduce_1n.validated.csv",
+    ("reduce", 2): "2026-08-24-2-stage3a/reduce_2n.validated.csv",
+    ("reduce", 3): "2026-08-24-2-stage3a/reduce_3n.validated.csv",
+    ("all_gather", 1): "2026-08-24-2-stage3a/all_gather_1n.validated.csv",
+    ("all_gather", 2): "2026-08-24-2-stage3a/all_gather_2n.validated.csv",
+    ("all_gather", 3): "2026-08-24-2-stage3a/all_gather_3n.validated.csv",
 }
 NODESETS = {
     ("all_reduce", 1): "node 7 (2026-08-04)", ("all_reduce", 2): "{5,7} (08-04)",
