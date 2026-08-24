@@ -798,6 +798,9 @@ def cmd_live(args):
                              "busbw": w["busbw"]}
                     for s, w in winners.items()},
         "runs": oracle.runs, "configs": stats["configs"],
+        "full_runs": len(combos) * len(grid) * 3,
+        "saving_pct": round((1 - oracle.runs /
+                             (len(combos) * len(grid) * 3)) * 100, 1),
         "default_runs": len(default_bw),
         "search_wall_s": round(search_wall_s, 1),
         "alive_combos": stats["alive_combos"],
