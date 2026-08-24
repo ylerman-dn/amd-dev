@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
 """rccl-tune: one command for the full tuning loop on the AMD MI355X cluster.
 
     rccl_tune.py run --collectives all_reduce --scales 1,2 --name pilot [--dry-run]
