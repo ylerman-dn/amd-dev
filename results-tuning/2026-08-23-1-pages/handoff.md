@@ -49,3 +49,24 @@ files are pointed at - small AB map update in build_pages.py)
   {5,4}, default all_reduce x3) would settle whether it can serve as the
   third node. User decision.
 - Safety-net cron deleted; nothing holds any allocation.
+
+## Preflight-noise investigation results (2026-08-24, subagent, read-only)
+- 10 of 11 preflight failures = a SINGLE run dipped while the other two agreed
+  within 1-5%; the dips temporally overlap the amd-nic-metrics-exporter's 30s
+  scrape windows (10-11s busy each; timestamps correlated on node 5). The
+  exporter also hits 1-NODE runs via host-CPU contention (~155% avg CPU) - so
+  finding 05's "multi-node only" scope note is too narrow and needs a fix.
+- The preflight design amplifies: 3 single runs, any 1 of 18 sizes >25% fails
+  the attempt. Measured single-run dip rate 8-17% -> predicted 23-42% attempt
+  failure, matching the observed 25-50%.
+- broadcast 2n is genuinely different: 8K blew the limit in 14/14 attempts
+  with all-3-runs scatter - chronic instability at 4-32K, not the exporter.
+- USER DECISIONS needed (measurement parameters - not implemented):
+  1. Preflight fix - recommended option C: when exactly one run is the outlier
+     at every blown size, run a 4th; pass on 2-run consensus. Alternative B:
+     5 runs, trim min+max. Option A (best-2-of-3) is unsafe - would pass the
+     chronic broadcast 2n scatter.
+  2. broadcast 2n gate: judge spread only over rule-covered sizes (>=32K), or
+     accept it as unmeasurable.
+  3. node 5 has a crash-looping node-exporter.service (324,491 restarts, port
+     conflict) - report to cluster admin.
