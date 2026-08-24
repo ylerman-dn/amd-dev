@@ -13,3 +13,9 @@ Kept during the autonomous overnight runs. Normal prose, one bullet per item.
   preflight-fails. Searches were unaffected (all 9 fetched). Recovered: orphan
   killed, garbage wiped, A/B relaunched on allocation 20730. Tool fixed
   (short launch timeout + process-check verification, commit on gpu107-cli).
+- 2026-08-24 19:54Z: stage3a crashed in its first search - the live oracle
+  treated any substituted size as fatal for the config, but all_gather 1n has
+  12 of 18 sizes force-substituted (Direct kernel), so every config died and
+  the zero-winners guard stopped the run (allocation released cleanly - the
+  new guards worked). Fixed: substituted sizes are dropped per size, matching
+  the grid loader. Relaunched.
