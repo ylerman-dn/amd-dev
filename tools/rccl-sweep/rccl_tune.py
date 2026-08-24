@@ -240,7 +240,9 @@ def results_dir(name):
 def phase_search(c, coll, scale, nodes, outdir, remote_base, exec_node):
     """Adaptive live search -> emitted optimized csv -> tuner conf."""
     tag = f"{coll}_{scale}n"
-    remote_out = f"{remote_base}/{tag}"
+    # unique per attempt: a reused remote dir leaves stale run_* dirs whose
+    # metrics get concatenated into the parse (stage3a incident, 2026-08-24)
+    remote_out = f"{remote_base}/{tag}-{int(time.time())}"
     servers = write_servers_file(c, nodes[:scale], remote_out)
     local_out = outdir / tag
     opt_csv = local_out / f"{tag}_optimized.csv"

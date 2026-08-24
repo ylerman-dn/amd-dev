@@ -581,6 +581,8 @@ class LiveOracle:
         result = {}
         subst = 0
         for row in csv.DictReader(metrics.stdout.splitlines()):
+            if not row.get("size_bytes", "").isdigit():
+                continue  # repeated header from concatenated metrics files
             # grid semantics: a substituted SIZE is dropped, the honoured
             # sizes stay. all_gather 1n substitutes 12 of 18 sizes (Direct
             # kernel) and the old all-or-nothing rule killed every config,
@@ -790,7 +792,8 @@ def cmd_live(args):
             f.write(f"{rid} cfg=default rc={p.returncode} out={out}\n")
         if p.returncode == 0 and m.returncode == 0:
             default_bw.append({int(r["size_bytes"]): float(r["busbw_ip"])
-                               for r in csv.DictReader(m.stdout.splitlines())})
+                               for r in csv.DictReader(m.stdout.splitlines())
+                               if r.get("size_bytes", "").isdigit()})
 
     report = {
         "policy": {"anchors": anchors, "margin": args.margin,
