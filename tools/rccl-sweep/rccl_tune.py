@@ -43,7 +43,7 @@ REMOTE_TOOL = f"{SHARED}/rccl-sweep-optuna"
 PLUGIN = f"{SHARED}/ab-tuner-test/librccl-tunerv4-dn.so"
 MY_PATH = f"{SHARED}/bin"
 
-FORBIDDEN_NODES = {2, 9}          # orchestrator / no ssh key
+FORBIDDEN_NODES = {2}             # orchestrator; 9 un-blacklisted 2026-08-24 (ssh verified)
 BROKEN_NODES = {4}                # fabric fault 2026-08-18; edit when repaired
 NODE_PREFERENCE = [5, 8, 3, 7, 6, 1]
 
