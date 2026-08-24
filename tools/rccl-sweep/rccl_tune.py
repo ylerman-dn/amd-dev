@@ -283,11 +283,26 @@ def phase_ab(c, confs, jobid, nodes, repeats, remote_base, outdir,
     nodelist = ",".join(f"amd-mi355x-{n}" for n in nodes)
     conf_args = " ".join(f"{remote_confs}/{Path(cf).name}" for cf in confs)
     ab_log = f"{remote_base}/ab_run.log"
-    c.remote(f"cd {SHARED} && setsid nohup python3 {REMOTE_TOOL}/ab_run.py "
-             f"--jobid {jobid} --nodelist {nodelist} --repeats {repeats} "
-             f"--retries {ab_retries} "
-             f"--outdir {remote_base}/ab_out {conf_args} "
-             f"> {ab_log} 2>&1 < /dev/null & echo started")
+    # the launch ssh can hang even though the remote process detaches fine
+    # (observed 2026-08-24: 600s TimeoutExpired killed the whole run and the
+    # finally-release orphaned a live ab_run against a dead allocation).
+    # Short client-side timeout, no check - then verify the launch by the log.
+    try:
+        c.remote(f"cd {SHARED} && setsid nohup python3 {REMOTE_TOOL}/ab_run.py "
+                 f"--jobid {jobid} --nodelist {nodelist} --repeats {repeats} "
+                 f"--retries {ab_retries} "
+                 f"--outdir {remote_base}/ab_out {conf_args} "
+                 f"> {ab_log} 2>&1 < /dev/null & echo started",
+                 timeout=30, check=False)
+    except subprocess.TimeoutExpired:
+        pass
+    if not c.dry:
+        time.sleep(5)
+        p = c.remote(f"pgrep -c -f 'ab_run.py --jobid {jobid}'", check=False,
+                     quiet=True)
+        if p.stdout.strip() in ("", "0"):
+            raise RuntimeError("A/B batch failed to start - see " + ab_log)
+        log("A/B batch confirmed running")
     if c.dry:
         log("dry-run: would poll the A/B log until its summary appears")
         return
