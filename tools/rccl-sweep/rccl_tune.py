@@ -272,7 +272,8 @@ def phase_search(c, coll, scale, nodes, outdir, remote_base, exec_node):
     return conf
 
 
-def phase_ab(c, confs, jobid, nodes, repeats, remote_base, outdir):
+def phase_ab(c, confs, jobid, nodes, repeats, remote_base, outdir,
+             ab_retries=3):
     """Run the A/B batch remotely via ab_run.py and wait for its summary."""
     remote_confs = f"{remote_base}/confs"
     c.remote(f"mkdir -p {remote_confs}")
@@ -284,6 +285,7 @@ def phase_ab(c, confs, jobid, nodes, repeats, remote_base, outdir):
     ab_log = f"{remote_base}/ab_run.log"
     c.remote(f"cd {SHARED} && setsid nohup python3 {REMOTE_TOOL}/ab_run.py "
              f"--jobid {jobid} --nodelist {nodelist} --repeats {repeats} "
+             f"--retries {ab_retries} "
              f"--outdir {remote_base}/ab_out {conf_args} "
              f"> {ab_log} 2>&1 < /dev/null & echo started")
     if c.dry:
@@ -400,7 +402,8 @@ def cmd_run(args):
             confs.append(phase_search(c, coll, scale, nodes, outdir,
                                       remote_base, exec_node))
         log(f"=== A/B: {len(confs)} confs, {args.repeats} repeats ===")
-        phase_ab(c, confs, jobid, nodes, args.repeats, remote_base, outdir)
+        phase_ab(c, confs, jobid, nodes, args.repeats, remote_base, outdir,
+                 args.ab_retries)
     finally:
         release(c, jobid)
     dur = int(time.time() - t0)
@@ -450,6 +453,9 @@ def main():
                     help="short results-dir suffix (default: tune)")
     pr.add_argument("--repeats", type=int, default=9,
                     help="A/B repeats per arm (user-approved default 9)")
+    pr.add_argument("--ab-retries", type=int, default=4,
+                    help="A/B attempts per conf before giving up (preflight "
+                         "refusals and noisy runs both consume attempts)")
     pr.add_argument("--nodes", default=None,
                     help="override node pick, e.g. 5,8 (still blacklisted-checked)")
     pr.add_argument("--dry-run", action="store_true",
