@@ -130,6 +130,26 @@ def default_combo(coll, nodes):
     return out
 
 
+def live_spread(coll, nodes):
+    """size -> 'def lo-hi / cfg lo-hi' from per_size_stats.csv (new A/B runs
+    only; older validated dirs predate the sidecar)."""
+    path = AB.get((coll, nodes))
+    if not path:
+        return {}
+    import glob as _g
+    base = (RT / path).parent
+    out = {}
+    for f in _g.glob(str(base / "**" / "per_size_stats.csv"), recursive=True):
+        with open(f) as fh:
+            for row in csv.DictReader(fh):
+                if int(row["nodes"]) != nodes:
+                    continue
+                out[int(row["size_bytes"])] = (
+                    f"{row['def_min']}-{row['def_max']} / "
+                    f"{row['cfg_min']}-{row['cfg_max']}")
+    return out
+
+
 def winners(coll, nodes):
     out = {}
     with open(CMP / f"{coll}_{nodes}n_optimized.csv") as f:
@@ -158,17 +178,18 @@ def live_verdicts(coll, nodes):
     return {"kept": kept, "dropped": dropped}
 
 
-CSS = """body{font-family:-apple-system,system-ui,sans-serif;margin:12px;max-width:960px}
+CSS = """body{font-family:-apple-system,system-ui,sans-serif;margin:12px;max-width:960px;
+background:#14161a;color:#d8dbe0}
 table{border-collapse:collapse;font-size:13px;width:100%;display:block;overflow-x:auto}
-th,td{border:1px solid #ccc;padding:4px 6px;text-align:right;white-space:nowrap}
+th,td{border:1px solid #34383f;padding:4px 6px;text-align:right;white-space:nowrap}
 th:first-child,td:first-child{text-align:left}
-tr:nth-child(even){background:#f7f7f7}
-h1{font-size:20px}h2{font-size:16px}h3{font-size:14px}
-.g{color:#0a7a0a;font-weight:600}.b{color:#b00}.n{color:#777}
-.v{background:#d7f5d7}.x{background:#fde3e3}
-.note{color:#555;font-size:13px}.tag{font-size:11px;color:#777}
-a{color:#0645ad;text-decoration:none}
-pre{background:#f2f2f2;padding:8px;font-size:12px;overflow-x:auto;border-radius:6px}"""
+tr:nth-child(even){background:#1b1e24}
+h1{font-size:20px;color:#f0f2f5}h2{font-size:16px;color:#e6e9ee}h3{font-size:14px;color:#e6e9ee}
+.g{color:#4ec96a;font-weight:600}.b{color:#ff6b6b}.n{color:#8a8f98}
+.v{background:#173321}.x{background:#331a1a}
+.note{color:#9aa0a8;font-size:13px}.tag{font-size:11px;color:#8a8f98}
+a{color:#6ea8ff;text-decoration:none}
+pre{background:#1b1e24;padding:8px;font-size:12px;overflow-x:auto;border-radius:6px;color:#d8dbe0}"""
 
 
 def page_head(title):
@@ -188,11 +209,13 @@ def build_gains(coll):
     for nodes in (1, 2, 3):
         d, w = default_curve(coll, nodes), winners(coll, nodes)
         dc = default_combo(coll, nodes)
+        sp = live_spread(coll, nodes)
         lv = live_verdicts(coll, nodes)
         h.append(f"<h2>{nodes} node{'s' if nodes > 1 else ''} "
                  f"<span class=tag>({NODESETS[(coll, nodes)]})</span></h2>")
         h.append("<table><tr><th>size</th><th>default combo</th><th>default</th>"
-                 "<th>our config</th><th>ours busbw</th><th>gain</th><th>status</th></tr>")
+                 "<th>our config</th><th>ours busbw</th><th>gain</th>"
+                 "<th>A/B spread (def / cfg)</th><th>status</th></tr>")
         for s in sorted(d):
             dv = d[s]
             if s in w and w[s]["bw"] is not None:
@@ -210,10 +233,11 @@ def build_gains(coll):
                 h.append(f"<tr{rowcls}><td>{size_h(s)}</td>"
                          f"<td>{dc.get(s, '?')}</td><td>{dv:g}</td><td>{cfg}</td>"
                          f"<td>{bw:g}</td><td class={cls}>{gain:+.1f}%</td>"
+                         f"<td class=n>{sp.get(s, '')}</td>"
                          f"<td>{html.escape(status)}</td></tr>")
             else:
                 h.append(f"<tr><td>{size_h(s)}</td><td>{dc.get(s, '?')}</td><td>{dv:g}</td>"
-                         f"<td colspan=3 class=n>not tunable (RCCL Direct kernel below "
+                         f"<td colspan=4 class=n>not tunable (RCCL Direct kernel below "
                          f"threshold)</td><td class=n>default rules</td></tr>")
         h.append("</table>")
     if coll == "all_gather":

@@ -1,14 +1,15 @@
-<!doctype html><meta name=viewport content='width=device-width,initial-scale=1'><title>GPU-107 tuning</title><style>body{font-family:-apple-system,system-ui,sans-serif;margin:12px;max-width:960px}
+<!doctype html><meta name=viewport content='width=device-width,initial-scale=1'><title>GPU-107 tuning</title><style>body{font-family:-apple-system,system-ui,sans-serif;margin:12px;max-width:960px;
+background:#14161a;color:#d8dbe0}
 table{border-collapse:collapse;font-size:13px;width:100%;display:block;overflow-x:auto}
-th,td{border:1px solid #ccc;padding:4px 6px;text-align:right;white-space:nowrap}
+th,td{border:1px solid #34383f;padding:4px 6px;text-align:right;white-space:nowrap}
 th:first-child,td:first-child{text-align:left}
-tr:nth-child(even){background:#f7f7f7}
-h1{font-size:20px}h2{font-size:16px}h3{font-size:14px}
-.g{color:#0a7a0a;font-weight:600}.b{color:#b00}.n{color:#777}
-.v{background:#d7f5d7}.x{background:#fde3e3}
-.note{color:#555;font-size:13px}.tag{font-size:11px;color:#777}
-a{color:#0645ad;text-decoration:none}
-pre{background:#f2f2f2;padding:8px;font-size:12px;overflow-x:auto;border-radius:6px}</style>
+tr:nth-child(even){background:#1b1e24}
+h1{font-size:20px;color:#f0f2f5}h2{font-size:16px;color:#e6e9ee}h3{font-size:14px;color:#e6e9ee}
+.g{color:#4ec96a;font-weight:600}.b{color:#ff6b6b}.n{color:#8a8f98}
+.v{background:#173321}.x{background:#331a1a}
+.note{color:#9aa0a8;font-size:13px}.tag{font-size:11px;color:#8a8f98}
+a{color:#6ea8ff;text-decoration:none}
+pre{background:#1b1e24;padding:8px;font-size:12px;overflow-x:auto;border-radius:6px;color:#d8dbe0}</style>
 <h1>GPU-107 RCCL tuning — status &amp; results</h1>
 <h2>The flow</h2><pre>book nodes (human)
   -> adaptive search, all sizes      adaptive_search.py live
