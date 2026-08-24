@@ -565,12 +565,25 @@ def main():
     # everything the verdicts are computed from, per size: both arms' raw run
     # values, medians, min/max and P(sup). Presentation (spread, CI) is built
     # downstream from this file; the verdict logic below is unchanged.
+    # executed truth per arm, from the runs' own NCCL_DEBUG logs
+    # (merge_metrics.parse_exec_log; the -A 1 channel column is a plan, not
+    # what ran - finding 01)
+    import glob as _glob2
+    from merge_metrics import parse_exec_log
+    exec_truth = {}
+    for nodes in scales:
+        for variant in ("default", "config"):
+            paths = _glob2.glob(os.path.join(
+                args.logdir, f"{nodes}n_{variant}_r*_dbg_*.log"))
+            exec_truth[(nodes, variant)] = parse_exec_log(paths)
+
     stats_path = os.path.join(args.logdir, "per_size_stats.csv")
     with open(stats_path, "w", newline="") as fh:
         w = csv.writer(fh)
         w.writerow(["nodes", "size_bytes", "def_median", "cfg_median",
                     "gain_pct", "psup", "def_min", "def_max", "cfg_min",
-                    "cfg_max", "n_def", "n_cfg", "def_runs", "cfg_runs"])
+                    "cfg_max", "n_def", "n_cfg", "def_runs", "cfg_runs",
+                    "def_exec", "cfg_exec", "cfg_applied_ch", "ch_trimmed"])
         for nodes in scales:
             base = measured[nodes]["default"]
             cand = measured[nodes]["config"]
@@ -579,6 +592,13 @@ def main():
                 if not a or not b:
                     continue
                 dm = statistics.median(b)
+                de = exec_truth.get((nodes, "default"), {}).get(s2)
+                ce = exec_truth.get((nodes, "config"), {}).get(s2)
+                d_lbl = f"{de[0]}/{de[1]}/{de[2]}" if de else ""
+                c_lbl = f"{ce[0]}/{ce[1]}/{ce[2]}" if ce else ""
+                app = ce[3] if ce else None
+                trimmed = ("yes" if ce and app is not None and app != ce[2]
+                           else "")
                 w.writerow([nodes, s2, round(dm, 4),
                             round(statistics.median(a), 4),
                             round((statistics.median(a) / dm - 1) * 100, 3)
@@ -586,7 +606,9 @@ def main():
                             round(psup(a, b), 4),
                             min(b), max(b), min(a), max(a), len(b), len(a),
                             ";".join(str(v) for v in b),
-                            ";".join(str(v) for v in a)])
+                            ";".join(str(v) for v in a),
+                            d_lbl, c_lbl,
+                            "" if app is None else app, trimmed])
     print(f"\nper-size stats: {stats_path}")
 
     # --- per-rule verdicts ------------------------------------------------------------------------

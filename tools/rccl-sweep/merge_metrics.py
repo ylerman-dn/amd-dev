@@ -8,6 +8,7 @@ and merges them into a single combined CSV file.
 
 import argparse
 import csv
+import re
 import statistics
 import sys
 from pathlib import Path
@@ -112,6 +113,48 @@ def median_rows(rows):
         if extra not in fields:
             fields.append(extra)
     return out, fields
+
+
+EXEC_LINE = re.compile(
+    r"(\w+): (\d+) Bytes -> Algo (\S+) proto (\S+) "
+    r"channel\{Lo\.\.Hi\}=\{(\d+)\.\.(\d+)\}")
+APPLIED_LINE = re.compile(
+    r"Applied config for collType=\w+, bytes=(\d+).*?channels=(\d+)")
+
+
+def parse_exec_log(paths):
+    """NCCL_DEBUG=INFO dbg logs -> {size: (exec_algo, exec_proto, exec_nchannels,
+    applied_channels_or_None)}.
+
+    The '-> Algo X proto Y channel{Lo..Hi}' line is RCCL's own per-call record
+    of what actually executed - the only trustworthy source for channel counts
+    (the -A 1 column is a pre-launch plan; finding 01). Mode across all
+    ranks/calls per size. 'Applied config' lines are the tuner plugin's claim,
+    kept for the trim comparison.
+    """
+    from collections import Counter, defaultdict
+    seen = defaultdict(list)
+    applied = {}
+    for p in paths:
+        try:
+            with open(p, errors="ignore") as fh:
+                for line in fh:
+                    m = EXEC_LINE.search(line)
+                    if m:
+                        seen[int(m.group(2))].append(
+                            (m.group(3), m.group(4),
+                             int(m.group(6)) - int(m.group(5)) + 1))
+                        continue
+                    m = APPLIED_LINE.search(line)
+                    if m:
+                        applied[int(m.group(1))] = int(m.group(2))
+        except OSError:
+            continue
+    out = {}
+    for size, v in seen.items():
+        algo, proto, ch = Counter(v).most_common(1)[0][0]
+        out[size] = (algo, proto, ch, applied.get(size))
+    return out
 
 
 def merge_metrics(
