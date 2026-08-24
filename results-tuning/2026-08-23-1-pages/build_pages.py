@@ -278,6 +278,8 @@ def build_index():
     h.append("<h2>Method evaluation</h2><ul>"
              "<li><a href='approaches.html'>The story: optuna vs random vs "
              "triage vs adaptive - high level</a></li>"
+             "<li><a href='approaches-draft.html'>approaches page, style-selection "
+             "draft</a> — each topic in 2-3 alternative styles (pick per topic)</li>"
              "<li><a href='methods.html'>grid vs adaptive vs optuna vs random vs triage"
              "</a> — 15 grids, offline replay</li>"
              "<li><a href='configs.html'>the 15 per-scale configs + validation status</a></li>"
