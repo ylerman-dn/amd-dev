@@ -144,9 +144,11 @@ def live_spread(coll, nodes):
             for row in csv.DictReader(fh):
                 if int(row["nodes"]) != nodes:
                     continue
-                out[int(row["size_bytes"])] = (
-                    f"{row['def_min']}-{row['def_max']} / "
-                    f"{row['cfg_min']}-{row['cfg_max']}")
+                out[int(row["size_bytes"])] = {
+                    "spread": (f"{row['def_min']}-{row['def_max']} / "
+                               f"{row['cfg_min']}-{row['cfg_max']}"),
+                    "def_exec": row.get("def_exec", ""),
+                }
     return out
 
 
@@ -231,9 +233,10 @@ def build_gains(coll):
                         if lo <= s <= hi:
                             status, rowcls = f"live A/B dropped: {why}", " class=x"
                 h.append(f"<tr{rowcls}><td>{size_h(s)}</td>"
-                         f"<td>{dc.get(s, '?')}</td><td>{dv:g}</td><td>{cfg}</td>"
+                         f"<td>{(sp.get(s) or {}).get('def_exec') or dc.get(s, '?')}</td>"
+                         f"<td>{dv:g}</td><td>{cfg}</td>"
                          f"<td>{bw:g}</td><td class={cls}>{gain:+.1f}%</td>"
-                         f"<td class=n>{sp.get(s, '')}</td>"
+                         f"<td class=n>{(sp.get(s) or {}).get('spread', '')}</td>"
                          f"<td>{html.escape(status)}</td></tr>")
             else:
                 h.append(f"<tr><td>{size_h(s)}</td><td>{dc.get(s, '?')}</td><td>{dv:g}</td>"

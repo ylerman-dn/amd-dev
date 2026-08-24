@@ -47,25 +47,25 @@ allreduce,65536,131072,tree,ll,32,1,8,-1,-1
 allreduce,262144,262144,ring,ll,32,1,8,-1,-1
 allreduce,524288,1048576,ring,ll,48,1,8,-1,-1</pre>
 <h3>Per size</h3>
-<table><tr><th>size</th><th>RCCL default combo</th><th>our config</th><th>default med</th><th>ours med</th><th>gain</th><th>P(sup)</th><th>verdict</th></tr>
-<tr class=v><td>4K</td><td>TREE/LL ch~1</td><td>TREE/LL/16</td><td>0.32</td><td>0.36</td><td class=g>+12.5%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
-<tr class=v><td>8K</td><td>TREE/LL ch~1</td><td>TREE/LL/4</td><td>0.55</td><td>0.68</td><td class=g>+23.6%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
-<tr class=v><td>16K</td><td>TREE/LL ch~1</td><td>TREE/LL/40</td><td>0.87</td><td>1.24</td><td class=g>+42.5%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
-<tr class=v><td>32K</td><td>TREE/LL ch~2</td><td>TREE/LL/16</td><td>1.7</td><td>2.66</td><td class=g>+56.5%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
-<tr class=v><td>64K</td><td>TREE/LL ch~4</td><td>TREE/LL/32</td><td>3.23</td><td>5.24</td><td class=g>+62.2%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
-<tr class=v><td>128K</td><td>TREE/LL ch~8</td><td>TREE/LL/32</td><td>6.33</td><td>8.87</td><td class=g>+40.1%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
-<tr class=v><td>256K</td><td>TREE/LL ch~16</td><td>RING/LL/32</td><td>12.58</td><td>17.73</td><td class=g>+40.9%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
-<tr class=v><td>512K</td><td>RING/SIMPLE ch~16</td><td>RING/LL/48</td><td>21.07</td><td>35.03</td><td class=g>+66.3%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
-<tr class=v><td>1M</td><td>RING/SIMPLE ch~32</td><td>RING/LL/48</td><td>41.51</td><td>48.62</td><td class=g>+17.1%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
-<tr class=x><td>2M</td><td>RING/SIMPLE ch~56</td><td>RING/SIMPLE/48</td><td>79.22</td><td>78.98</td><td class=n>-0.3%</td><td>0.27</td><td class=wrap>dropped: no gain (-0.3%)</td></tr>
-<tr class=x><td>4M</td><td>RING/SIMPLE ch~56</td><td>RING/SIMPLE/40</td><td>128.22</td><td>125.84</td><td class=n>-1.9%</td><td>0.00</td><td class=wrap>dropped: no gain (-1.9%)</td></tr>
-<tr class=x><td>8M</td><td>RING/SIMPLE ch~56</td><td>RING/SIMPLE/48</td><td>197.4</td><td>195.34</td><td class=n>-1.0%</td><td>0.00</td><td class=wrap>dropped: no gain (-1.0%)</td></tr>
-<tr class=x><td>16M</td><td>RING/SIMPLE ch~56</td><td>RING/SIMPLE/48</td><td>268.35</td><td>248.61</td><td class=b>-7.4%</td><td>0.00</td><td class=wrap>dropped: landmine -7.4%</td></tr>
-<tr class=x><td>32M</td><td>RING/SIMPLE ch~56</td><td>RING/SIMPLE/40</td><td>317.39</td><td>295.61</td><td class=b>-6.9%</td><td>0.00</td><td class=wrap>dropped: landmine -6.9%</td></tr>
-<tr class=x><td>64M</td><td>RING/SIMPLE ch~56</td><td>RING/SIMPLE/48</td><td>355.95</td><td>130.08</td><td class=b>-63.5%</td><td>0.00</td><td class=wrap>dropped: landmine -63.5%</td></tr>
-<tr class=x><td>128M</td><td>RING/SIMPLE ch~56</td><td>RING/SIMPLE/48</td><td>379.27</td><td>134.84</td><td class=b>-64.4%</td><td>0.00</td><td class=wrap>dropped: landmine -64.4%</td></tr>
-<tr class=x><td>256M</td><td>RING/SIMPLE ch~56</td><td>RING/SIMPLE/48</td><td>390.56</td><td>134.91</td><td class=b>-65.5%</td><td>0.00</td><td class=wrap>dropped: landmine -65.5%</td></tr>
-<tr class=x><td>512M</td><td>RING/SIMPLE ch~56</td><td>RING/SIMPLE/48</td><td>397.03</td><td>135.9</td><td class=b>-65.8%</td><td>0.00</td><td class=wrap>dropped: landmine -65.8%</td></tr>
+<table><tr><th>size</th><th>default executed</th><th>ours requested</th><th>ours executed</th><th>default med</th><th>ours med</th><th>gain</th><th>P(sup)</th><th>verdict</th></tr>
+<tr class=v><td>4K</td><td>TREE/LL/1</td><td>TREE/LL/16</td><td>TREE/LL/2 (trimmed)</td><td>0.32</td><td>0.36</td><td class=g>+12.5%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>8K</td><td>TREE/LL/1</td><td>TREE/LL/4</td><td>TREE/LL/4</td><td>0.55</td><td>0.68</td><td class=g>+23.6%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>16K</td><td>TREE/LL/1</td><td>TREE/LL/40</td><td>TREE/LL/8 (trimmed)</td><td>0.87</td><td>1.24</td><td class=g>+42.5%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>32K</td><td>TREE/LL/2</td><td>TREE/LL/16</td><td>TREE/LL/16</td><td>1.7</td><td>2.66</td><td class=g>+56.5%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>64K</td><td>TREE/LL/4</td><td>TREE/LL/32</td><td>TREE/LL/32</td><td>3.23</td><td>5.24</td><td class=g>+62.2%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>128K</td><td>TREE/LL/8</td><td>TREE/LL/32</td><td>TREE/LL/32</td><td>6.33</td><td>8.87</td><td class=g>+40.1%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>256K</td><td>TREE/LL/16</td><td>RING/LL/32</td><td>RING/LL/32</td><td>12.58</td><td>17.73</td><td class=g>+40.9%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>512K</td><td>RING/SIMPLE/16</td><td>RING/LL/48</td><td>RING/LL/43 (trimmed)</td><td>21.07</td><td>35.03</td><td class=g>+66.3%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>1M</td><td>RING/SIMPLE/32</td><td>RING/LL/48</td><td>RING/LL/47 (trimmed)</td><td>41.51</td><td>48.62</td><td class=g>+17.1%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=x><td>2M</td><td>RING/SIMPLE/52</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/43 (trimmed)</td><td>79.22</td><td>78.98</td><td class=n>-0.3%</td><td>0.27</td><td class=wrap>dropped: no gain (-0.3%)</td></tr>
+<tr class=x><td>4M</td><td>RING/SIMPLE/52</td><td>RING/SIMPLE/40</td><td>RING/SIMPLE/40</td><td>128.22</td><td>125.84</td><td class=n>-1.9%</td><td>0.00</td><td class=wrap>dropped: no gain (-1.9%)</td></tr>
+<tr class=x><td>8M</td><td>RING/SIMPLE/54</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/47 (trimmed)</td><td>197.4</td><td>195.34</td><td class=n>-1.0%</td><td>0.00</td><td class=wrap>dropped: no gain (-1.0%)</td></tr>
+<tr class=x><td>16M</td><td>RING/SIMPLE/56</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/48</td><td>268.35</td><td>248.61</td><td class=b>-7.4%</td><td>0.00</td><td class=wrap>dropped: landmine -7.4%</td></tr>
+<tr class=x><td>32M</td><td>RING/SIMPLE/56</td><td>RING/SIMPLE/40</td><td>RING/SIMPLE/40</td><td>317.39</td><td>295.61</td><td class=b>-6.9%</td><td>0.00</td><td class=wrap>dropped: landmine -6.9%</td></tr>
+<tr class=x><td>64M</td><td>RING/SIMPLE/222</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/48</td><td>355.95</td><td>130.08</td><td class=b>-63.5%</td><td>0.00</td><td class=wrap>dropped: landmine -63.5%</td></tr>
+<tr class=x><td>128M</td><td>RING/SIMPLE/222</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/48</td><td>379.27</td><td>134.84</td><td class=b>-64.4%</td><td>0.00</td><td class=wrap>dropped: landmine -64.4%</td></tr>
+<tr class=x><td>256M</td><td>RING/SIMPLE/223</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/48</td><td>390.56</td><td>134.91</td><td class=b>-65.5%</td><td>0.00</td><td class=wrap>dropped: landmine -65.5%</td></tr>
+<tr class=x><td>512M</td><td>RING/SIMPLE/224</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/48</td><td>397.03</td><td>135.9</td><td class=b>-65.8%</td><td>0.00</td><td class=wrap>dropped: landmine -65.8%</td></tr>
 </table>
 <details><summary>raw A/B runs (9 per arm, busbw per size)</summary><table><tr><th>size</th><th>arm</th><th>r1</th><th>r2</th><th>r3</th><th>r4</th><th>r5</th><th>r6</th><th>r7</th><th>r8</th><th>r9</th><th>median</th></tr>
 <tr><td>4K</td><td>default</td><td>0.32</td><td>0.32</td><td>0.31</td><td>0.32</td><td>0.31</td><td>0.31</td><td>0.32</td><td>0.32</td><td>0.31</td><td><b>0.32</b></td></tr>
@@ -132,25 +132,25 @@ allreduce,524288,1048576,ring,ll,48,1,8,-1,-1</pre>
 allreduce,33554432,33554432,ring,ll128,40,2,16,-1,-1
 allreduce,134217728,134217728,ring,simple,40,2,16,-1,-1</pre>
 <h3>Per size</h3>
-<table><tr><th>size</th><th>RCCL default combo</th><th>our config</th><th>default med</th><th>ours med</th><th>gain</th><th>P(sup)</th><th>verdict</th></tr>
-<tr class=x><td>4K</td><td>TREE/LL ch~2</td><td>TREE/LL/2</td><td>0.18</td><td>0.18</td><td class=n>+0.0%</td><td>0.56</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
-<tr class=x><td>8K</td><td>TREE/LL ch~4</td><td>TREE/LL/4</td><td>0.35</td><td>0.35</td><td class=n>+0.0%</td><td>0.54</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
-<tr class=x><td>16K</td><td>TREE/LL ch~8</td><td>TREE/LL/32</td><td>0.69</td><td>0.7</td><td class=n>+1.4%</td><td>0.68</td><td class=wrap>dropped: no gain (+1.4%)</td></tr>
-<tr class=x><td>32K</td><td>TREE/LL ch~16</td><td>TREE/LL/16</td><td>1.34</td><td>1.34</td><td class=n>+0.0%</td><td>0.69</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
-<tr class=x><td>64K</td><td>TREE/LL ch~32</td><td>TREE/LL/40</td><td>2.53</td><td>2.52</td><td class=n>-0.4%</td><td>0.32</td><td class=wrap>dropped: no gain (-0.4%)</td></tr>
-<tr class=x><td>128K</td><td>TREE/LL ch~48</td><td>TREE/LL/32</td><td>4.53</td><td>4.51</td><td class=n>-0.4%</td><td>0.45</td><td class=wrap>dropped: no gain (-0.4%)</td></tr>
-<tr class=x><td>256K</td><td>TREE/LL ch~48</td><td>TREE/LL128/40</td><td>7.92</td><td>8.39</td><td class=g>+5.9%</td><td>0.89</td><td class=wrap>dropped: not reproducible (P 0.89)</td></tr>
-<tr class=x><td>512K</td><td>TREE/LL128 ch~48</td><td>TREE/LL128/32</td><td>15.53</td><td>15.41</td><td class=n>-0.8%</td><td>0.16</td><td class=wrap>dropped: no gain (-0.8%)</td></tr>
-<tr class=x><td>1M</td><td>TREE/LL128 ch~48</td><td>TREE/LL128/48</td><td>28.43</td><td>28.24</td><td class=n>-0.7%</td><td>0.12</td><td class=wrap>dropped: no gain (-0.7%)</td></tr>
-<tr class=x><td>2M</td><td>TREE/LL128 ch~48</td><td>TREE/LL128/48</td><td>51.4</td><td>51.11</td><td class=n>-0.6%</td><td>0.40</td><td class=wrap>dropped: no gain (-0.6%)</td></tr>
-<tr class=x><td>4M</td><td>TREE/LL128 ch~48</td><td>TREE/LL128/48</td><td>88.48</td><td>87.95</td><td class=n>-0.6%</td><td>0.29</td><td class=wrap>dropped: no gain (-0.6%)</td></tr>
-<tr class=x><td>8M</td><td>TREE/LL128 ch~48</td><td>TREE/LL128/48</td><td>139.6</td><td>138.75</td><td class=n>-0.6%</td><td>0.46</td><td class=wrap>dropped: no gain (-0.6%)</td></tr>
-<tr class=x><td>16M</td><td>TREE/LL128 ch~48</td><td>TREE/LL128/48</td><td>192.73</td><td>192.76</td><td class=n>+0.0%</td><td>0.51</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
-<tr class=v><td>32M</td><td>TREE/LL128 ch~48</td><td>RING/LL128/40</td><td>223.52</td><td>239.6</td><td class=g>+7.2%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
-<tr class=x><td>64M</td><td>RING/LL128 ch~48</td><td>RING/LL128/48</td><td>288.46</td><td>289.87</td><td class=n>+0.5%</td><td>0.62</td><td class=wrap>dropped: no gain (+0.5%)</td></tr>
-<tr class=v><td>128M</td><td>RING/SIMPLE ch~48</td><td>RING/SIMPLE/40</td><td>300.98</td><td>308.11</td><td class=g>+2.4%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
-<tr class=x><td>256M</td><td>RING/SIMPLE ch~48</td><td>RING/SIMPLE/48</td><td>368.66</td><td>368.62</td><td class=n>-0.0%</td><td>0.46</td><td class=wrap>dropped: no gain (-0.0%)</td></tr>
-<tr class=x><td>512M</td><td>RING/SIMPLE ch~48</td><td>RING/SIMPLE/48</td><td>374.59</td><td>374.63</td><td class=n>+0.0%</td><td>0.38</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
+<table><tr><th>size</th><th>default executed</th><th>ours requested</th><th>ours executed</th><th>default med</th><th>ours med</th><th>gain</th><th>P(sup)</th><th>verdict</th></tr>
+<tr class=x><td>4K</td><td>TREE/LL/2</td><td>TREE/LL/2</td><td>TREE/LL/2</td><td>0.18</td><td>0.18</td><td class=n>+0.0%</td><td>0.56</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
+<tr class=x><td>8K</td><td>TREE/LL/4</td><td>TREE/LL/4</td><td>TREE/LL/4</td><td>0.35</td><td>0.35</td><td class=n>+0.0%</td><td>0.54</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
+<tr class=x><td>16K</td><td>TREE/LL/8</td><td>TREE/LL/32</td><td>TREE/LL/8 (trimmed)</td><td>0.69</td><td>0.7</td><td class=n>+1.4%</td><td>0.68</td><td class=wrap>dropped: no gain (+1.4%)</td></tr>
+<tr class=x><td>32K</td><td>TREE/LL/16</td><td>TREE/LL/16</td><td>TREE/LL/16</td><td>1.34</td><td>1.34</td><td class=n>+0.0%</td><td>0.69</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
+<tr class=x><td>64K</td><td>TREE/LL/32</td><td>TREE/LL/40</td><td>TREE/LL/32 (trimmed)</td><td>2.53</td><td>2.52</td><td class=n>-0.4%</td><td>0.32</td><td class=wrap>dropped: no gain (-0.4%)</td></tr>
+<tr class=x><td>128K</td><td>TREE/LL/32</td><td>TREE/LL/32</td><td>TREE/LL/32</td><td>4.53</td><td>4.51</td><td class=n>-0.4%</td><td>0.45</td><td class=wrap>dropped: no gain (-0.4%)</td></tr>
+<tr class=x><td>256K</td><td>TREE/LL/43</td><td>TREE/LL128/40</td><td>TREE/LL128/32 (trimmed)</td><td>7.92</td><td>8.39</td><td class=g>+5.9%</td><td>0.89</td><td class=wrap>dropped: not reproducible (P 0.89)</td></tr>
+<tr class=x><td>512K</td><td>TREE/LL128/32</td><td>TREE/LL128/32</td><td>TREE/LL128/32</td><td>15.53</td><td>15.41</td><td class=n>-0.8%</td><td>0.16</td><td class=wrap>dropped: no gain (-0.8%)</td></tr>
+<tr class=x><td>1M</td><td>TREE/LL128/43</td><td>TREE/LL128/48</td><td>TREE/LL128/43 (trimmed)</td><td>28.43</td><td>28.24</td><td class=n>-0.7%</td><td>0.12</td><td class=wrap>dropped: no gain (-0.7%)</td></tr>
+<tr class=x><td>2M</td><td>TREE/LL128/43</td><td>TREE/LL128/48</td><td>TREE/LL128/43 (trimmed)</td><td>51.4</td><td>51.11</td><td class=n>-0.6%</td><td>0.40</td><td class=wrap>dropped: no gain (-0.6%)</td></tr>
+<tr class=x><td>4M</td><td>TREE/LL128/47</td><td>TREE/LL128/48</td><td>TREE/LL128/47 (trimmed)</td><td>88.48</td><td>87.95</td><td class=n>-0.6%</td><td>0.29</td><td class=wrap>dropped: no gain (-0.6%)</td></tr>
+<tr class=x><td>8M</td><td>TREE/LL128/47</td><td>TREE/LL128/48</td><td>TREE/LL128/47 (trimmed)</td><td>139.6</td><td>138.75</td><td class=n>-0.6%</td><td>0.46</td><td class=wrap>dropped: no gain (-0.6%)</td></tr>
+<tr class=x><td>16M</td><td>TREE/LL128/48</td><td>TREE/LL128/48</td><td>TREE/LL128/48</td><td>192.73</td><td>192.76</td><td class=n>+0.0%</td><td>0.51</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
+<tr class=v><td>32M</td><td>TREE/LL128/48</td><td>RING/LL128/40</td><td>RING/LL128/40</td><td>223.52</td><td>239.6</td><td class=g>+7.2%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=x><td>64M</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>288.46</td><td>289.87</td><td class=n>+0.5%</td><td>0.62</td><td class=wrap>dropped: no gain (+0.5%)</td></tr>
+<tr class=v><td>128M</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/40</td><td>RING/SIMPLE/40</td><td>300.98</td><td>308.11</td><td class=g>+2.4%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=x><td>256M</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/48</td><td>368.66</td><td>368.62</td><td class=n>-0.0%</td><td>0.46</td><td class=wrap>dropped: no gain (-0.0%)</td></tr>
+<tr class=x><td>512M</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/48</td><td>374.59</td><td>374.63</td><td class=n>+0.0%</td><td>0.38</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
 </table>
 <details><summary>raw A/B runs (9 per arm, busbw per size)</summary><table><tr><th>size</th><th>arm</th><th>r1</th><th>r2</th><th>r3</th><th>r4</th><th>r5</th><th>r6</th><th>r7</th><th>r8</th><th>r9</th><th>median</th></tr>
 <tr><td>4K</td><td>default</td><td>0.18</td><td>0.18</td><td>0.17</td><td>0.17</td><td>0.18</td><td>0.18</td><td>0.18</td><td>0.18</td><td>0.17</td><td><b>0.18</b></td></tr>

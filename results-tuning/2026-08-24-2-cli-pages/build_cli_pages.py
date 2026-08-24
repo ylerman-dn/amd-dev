@@ -145,8 +145,9 @@ for tag, nodes, statfile, grid_runs in SCALES:
              f"<pre class=keep>{html.escape(final)}</pre>")
 
     h.append("<h3>Per size</h3>")
-    h.append("<table><tr><th>size</th><th>RCCL default combo</th>"
-             "<th>our config</th><th>default med</th><th>ours med</th>"
+    h.append("<table><tr><th>size</th><th>default executed</th>"
+             "<th>ours requested</th><th>ours executed</th>"
+             "<th>default med</th><th>ours med</th>"
              "<th>gain</th><th>P(sup)</th><th>verdict</th></tr>")
     winners = {int(s): w["cfg"] for s, w in rep["winners"].items()}
     for s in sorted(winners):
@@ -158,12 +159,16 @@ for tag, nodes, statfile, grid_runs in SCALES:
         for raw, lo, hi, why in dropped:
             if lo <= s <= hi:
                 verdict, cls = f"dropped: {short_why(why)}", " class=x"
-        dcombo = dc.get(s, "?")
+        dcombo = (r or {}).get("def_exec") or dc.get(s, "?")
         if r:
             gain = float(r["gain_pct"])
             gcls = "g" if gain > 2 else ("b" if gain < -2 else "n")
+            cexec = r.get("cfg_exec", "")
+            if r.get("ch_trimmed") == "yes":
+                cexec += " (trimmed)"
             h.append(f"<tr{cls}><td>{size_h(s)}</td><td>{dcombo}</td>"
-                     f"<td>{winners[s]}</td><td>{r['def_median']}</td>"
+                     f"<td>{winners[s]}</td><td>{cexec}</td>"
+                     f"<td>{r['def_median']}</td>"
                      f"<td>{r['cfg_median']}</td>"
                      f"<td class={gcls}>{gain:+.1f}%</td><td>{float(r['psup']):.2f}</td>"
                      f"<td class=wrap>{html.escape(verdict)}</td></tr>")
