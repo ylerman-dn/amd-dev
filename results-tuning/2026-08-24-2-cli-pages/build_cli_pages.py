@@ -1,26 +1,26 @@
 #!/usr/bin/env python3
-"""Pilot results pages for the rccl-tune CLI effort (separate, clean folder).
-
-Everything here is from the 2026-08-24 pilot: the first ADAPTIVE-SOURCED
-end-to-end run (search -> config -> plugin A/B), all_reduce 1n+2n on {5,8}.
-"""
-import csv, html, json, re
+"""Pilot results page for the rccl-tune CLI effort (dedicated folder)."""
+import csv, html, json, re, statistics
 from pathlib import Path
 
 HERE = Path(__file__).parent
-PILOT = HERE.parent / "2026-08-24-1-pilot"
+RT = HERE.parent
+PILOT = RT / "2026-08-24-1-pilot"
 CSS = """body{font-family:-apple-system,system-ui,sans-serif;margin:12px;max-width:980px;
 background:#14161a;color:#d8dbe0}
-table{border-collapse:collapse;font-size:13px;width:100%;display:block;overflow-x:auto}
-th,td{border:1px solid #34383f;padding:4px 6px;text-align:right;white-space:nowrap}
+table{border-collapse:collapse;font-size:12.5px;width:100%;display:block;overflow-x:auto}
+th,td{border:1px solid #34383f;padding:3px 6px;text-align:right;white-space:nowrap}
 th:first-child,td:first-child{text-align:left}
-tr:nth-child(even){background:#1b1e24}
-h1{font-size:20px;color:#f0f2f5}h2{font-size:16px;color:#e6e9ee}h3{font-size:14px}
+td.wrap{white-space:normal;max-width:220px;text-align:left}
+h1{font-size:20px;color:#f0f2f5}h2{font-size:16px;color:#e6e9ee}h3{font-size:14px;color:#e6e9ee}
 .g{color:#4ec96a;font-weight:600}.b{color:#ff6b6b}.n{color:#8a8f98}
 .v{background:#173321}.x{background:#331a1a}
 .note{color:#9aa0a8;font-size:13px}
 a{color:#6ea8ff;text-decoration:none}
-pre{background:#1b1e24;padding:8px;font-size:12px;overflow-x:auto;border-radius:6px}"""
+pre{background:#1b1e24;padding:8px;font-size:12px;overflow-x:auto;border-radius:6px;line-height:1.5}
+pre .keep{color:#4ec96a}pre .drop{color:#ff6b6b;text-decoration:line-through}
+pre .why{color:#8a8f98;text-decoration:none;font-style:italic}
+details{margin:8px 0}summary{cursor:pointer;color:#6ea8ff;font-size:13px}"""
 
 
 def size_h(b):
@@ -31,19 +31,31 @@ def size_h(b):
     return str(b)
 
 
+def short_why(why):
+    m = re.search(r"regression of (-[\d.]+)%", why)
+    if m:
+        return f"landmine {m.group(1)}%"
+    m = re.search(r"best gain only ([+-][\d.]+)%", why)
+    if m:
+        return f"no gain ({m.group(1)}%)"
+    m = re.search(r"P\(sup\) only ([\d.]+)", why)
+    if m:
+        return f"not reproducible (P {m.group(1)})"
+    return why[:40]
+
+
 def rules(tag):
-    """(lo, hi) -> (verdict, detail) from the validated csv."""
     kept, dropped = [], []
-    with open(PILOT / f"{tag}.validated.csv") as f:
-        for line in f:
-            line = line.strip()
-            m = re.match(r"# dropped: \w+,(\d+),(\d+),.*?\((.*)\)$", line)
-            if m:
-                dropped.append((int(m.group(1)), int(m.group(2)), m.group(3)))
-            elif line and not line.startswith("#") and \
-                    not line.startswith("collective_type"):
-                p = line.split(",")
-                kept.append((int(p[1]), int(p[2])))
+    for line in open(PILOT / f"{tag}.validated.csv"):
+        line = line.strip()
+        m = re.match(r"# dropped: (\w+,(\d+),(\d+),.*?)\s+\((.*)\)$", line)
+        if m:
+            dropped.append((m.group(1), int(m.group(2)), int(m.group(3)),
+                            m.group(4)))
+        elif line and not line.startswith("#") and \
+                not line.startswith("collective_type"):
+            p = line.split(",")
+            kept.append((line, int(p[1]), int(p[2])))
     return kept, dropped
 
 
@@ -51,10 +63,46 @@ def stats(statfile, nodes):
     out = {}
     with open(statfile) as f:
         for row in csv.DictReader(f):
-            if int(row["nodes"]) != nodes:
-                continue
-            out[int(row["size_bytes"])] = row
+            if int(row["nodes"]) == nodes:
+                out[int(row["size_bytes"])] = row
     return out
+
+
+def default_combo(nodes):
+    """RCCL's own default choice per size, from the grid-era default rows
+    (same RCCL build; grid nodes differ from the pilot's - combo choice is a
+    build/topology decision, stable per scale)."""
+    src = RT / f"2026-08-04-{ {1:1,2:4}[nodes] }-sweep{nodes}node/merged.csv".replace(" ", "")
+    rows = {}
+    with open(src) as f:
+        for row in csv.DictReader(f):
+            if (row.get("requested_algo") or "").strip():
+                continue
+            rows.setdefault(int(row["size_bytes"]), []).append(
+                (row["algo"], row["proto"]))
+    return {s: max(set(v), key=v.count) for s, v in rows.items()}
+
+
+def conf_block(tag, kept, dropped):
+    """The search's config with the A/B fate of every rule colored in."""
+    kept_raw = {k[0] for k in kept}
+    lines = []
+    for line in open(PILOT / f"{tag}.conf"):
+        line = line.rstrip()
+        if line.startswith("collective_type"):
+            lines.append(f"<span class=n>{html.escape(line)}</span>")
+            continue
+        matched = False
+        for raw, lo, hi, why in dropped:
+            if line == raw:
+                lines.append(f"<span class=drop>{html.escape(line)}</span>"
+                             f"  <span class=why>&larr; {html.escape(short_why(why))}</span>")
+                matched = True
+        if not matched:
+            cls = "keep" if line in kept_raw else "n"
+            mark = "  <span class=why>&larr; kept</span>" if line in kept_raw else ""
+            lines.append(f"<span class={cls}>{html.escape(line)}</span>{mark}")
+    return "<pre>" + "\n".join(lines) + "</pre>"
 
 
 SCALES = [
@@ -65,60 +113,76 @@ SCALES = [
 h = [f"<!doctype html><meta name=viewport content='width=device-width,"
      f"initial-scale=1'><title>rccl-tune pilot</title><style>{CSS}</style>"]
 h.append("<h1>rccl-tune pilot — all_reduce, adaptive end-to-end</h1>")
-h.append("<p class=note>First full-chain run of the CLI: book &rarr; adaptive "
-         "search &rarr; config &rarr; plugin A/B (9 repeats) &rarr; verdicts. "
-         "Nodes {5,8}, 2026-08-24, jobs 20723 + 20725. Search sourced the "
-         "configs (not the old grids). Spread = min-max over the 9 runs of "
-         "each arm.</p>")
+h.append("<p class=note>One command: <code>rccl-tune run --collectives "
+         "all_reduce --scales 1,2 --repeats 9</code>. Nodes {5,8}, "
+         "2026-08-24, jobs 20723+20725. book &rarr; adaptive search &rarr; "
+         "config &rarr; plugin A/B (9 repeats/arm) &rarr; verdicts.</p>")
 
 for tag, nodes, statfile, grid_runs in SCALES:
     rep = json.load(open(PILOT / tag / "adaptive_report.json"))
     kept, dropped = rules(tag)
     st = stats(PILOT / statfile, nodes)
-    h.append(f"<h2>{tag.replace('_', ' ', 1)} </h2>")
+    dc = default_combo(nodes)
+    h.append(f"<h2>{tag.replace('_', ' ', 1)}</h2>")
     h.append(f"<p class=note>search: <b>{rep['runs']} runs</b> vs full grid "
              f"{grid_runs} (<b>&minus;{(1 - rep['runs'] / grid_runs) * 100:.0f}%"
              f"</b>), {rep['configs']} configs measured, "
-             f"{rep['search_wall_s'] / 60:.0f} min. A/B verdict: "
-             f"<b>{len(kept)} rules kept, {len(dropped)} dropped</b>.</p>")
-    h.append("<table><tr><th>size</th><th>winner (search)</th>"
-             "<th>default median (A/B)</th><th>config median (A/B)</th>"
-             "<th>gain</th><th>P(sup)</th><th>spread def / cfg</th>"
-             "<th>rule verdict</th></tr>")
+             f"{rep['search_wall_s'] / 60:.0f} min search. A/B: "
+             f"<b class=g>{len(kept)} rules kept</b>, "
+             f"<b class=b>{len(dropped)} dropped</b>.</p>")
+
+    h.append("<h3>Config: before A/B &rarr; what ships</h3>")
+    h.append("<p class=note>green = survived the A/B; struck red = the A/B "
+             "killed it (reason inline). Sizes with no rule keep RCCL's "
+             "default.</p>")
+    h.append(conf_block(tag, kept, dropped))
+
+    h.append("<h3>Per size</h3>")
+    h.append("<table><tr><th>size</th><th>RCCL default combo</th>"
+             "<th>our config</th><th>default med</th><th>ours med</th>"
+             "<th>gain</th><th>P(sup)</th><th>verdict</th></tr>")
     winners = {int(s): w["cfg"] for s, w in rep["winners"].items()}
     for s in sorted(winners):
         r = st.get(s)
-        verdict, cls = "no rule (tie with default)", " class=n"
-        for lo, hi in kept:
+        verdict, cls = "no rule", " "
+        for raw, lo, hi in kept:
             if lo <= s <= hi:
                 verdict, cls = "KEPT", " class=v"
-        for lo, hi, why in dropped:
+        for raw, lo, hi, why in dropped:
             if lo <= s <= hi:
-                verdict, cls = f"dropped: {why}", " class=x"
+                verdict, cls = f"dropped: {short_why(why)}", " class=x"
+        dcombo = "/".join(dc.get(s, ("?", "?")))
         if r:
             gain = float(r["gain_pct"])
             gcls = "g" if gain > 2 else ("b" if gain < -2 else "n")
-            h.append(f"<tr{cls}><td>{size_h(s)}</td><td>{winners[s]}</td>"
-                     f"<td>{r['def_median']}</td><td>{r['cfg_median']}</td>"
+            h.append(f"<tr{cls}><td>{size_h(s)}</td><td>{dcombo}</td>"
+                     f"<td>{winners[s]}</td><td>{r['def_median']}</td>"
+                     f"<td>{r['cfg_median']}</td>"
                      f"<td class={gcls}>{gain:+.1f}%</td><td>{r['psup']}</td>"
-                     f"<td class=n>{r['def_min']}-{r['def_max']} / "
-                     f"{r['cfg_min']}-{r['cfg_max']}</td>"
-                     f"<td>{html.escape(str(verdict))}</td></tr>")
-        else:
-            h.append(f"<tr{cls}><td>{size_h(s)}</td><td>{winners[s]}</td>"
-                     f"<td colspan=5 class=n>no A/B data</td>"
-                     f"<td>{html.escape(str(verdict))}</td></tr>")
+                     f"<td class=wrap>{html.escape(verdict)}</td></tr>")
     h.append("</table>")
 
-h.append("<h2>Attempt history (honesty section)</h2>")
-h.append("<pre>pilot 1: failed fast - node 5 python lacks tabulate; empty "
-         "config emitted silently.\n         Fixed: exec-node env probe + "
-         "hard-fail on zero winners.\npilot 2: 1n search 72 runs OK; 2n "
-         "search 117 runs OK; 1n A/B verdict first try.\n         2n A/B: 3 "
-         "preflight refusals (single-run collapses at 1M-256M, exporter "
-         "signature),\n         focused burst: 3 more refusals, then verdict "
-         "on attempt 4.</pre>")
-h.append("<p class=note><a href='../2026-08-23-1-pages/index.html'>"
-         "main results site</a></p>")
+    # raw runs, collapsed - the medians' full evidence
+    h.append("<details><summary>raw A/B runs (9 per arm, busbw per size)"
+             "</summary><table><tr><th>size</th><th>arm</th>"
+             + "".join(f"<th>r{i}</th>" for i in range(1, 10))
+             + "<th>median</th></tr>")
+    for s in sorted(st):
+        r = st[s]
+        for arm, key, med in (("default", "def_runs", r["def_median"]),
+                              ("config", "cfg_runs", r["cfg_median"])):
+            vals = r[key].split(";")
+            h.append(f"<tr><td>{size_h(s)}</td><td>{arm}</td>"
+                     + "".join(f"<td>{v}</td>" for v in vals)
+                     + f"<td><b>{med}</b></td></tr>")
+    h.append("</table></details>")
+
+h.append("<h2>Attempt history</h2>")
+h.append("<pre>pilot 1: failed fast - node 5 python lacks tabulate; empty config emitted silently.\n"
+         "         fixed: exec-node env probe + hard-fail on zero winners.\n"
+         "pilot 2: 1n search 72 runs, 2n search 117 runs, 1n A/B verdict first try.\n"
+         "         2n A/B: 6 preflight refusals across the day (single-run collapses\n"
+         "         at 1M-256M, exporter signature), verdict on attempt 7 overall.</pre>")
+h.append("<p class=note><a href='../2026-08-23-1-pages/index.html'>main results site</a></p>")
 (HERE / "pilot.html").write_text("\n".join(h))
 print("wrote pilot.html")

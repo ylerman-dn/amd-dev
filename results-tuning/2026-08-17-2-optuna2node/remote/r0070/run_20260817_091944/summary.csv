@@ -1,0 +1,2 @@
+timestamp,collective,num_nodes,num_gpus,num_channels,algo,proto,avg_busbw,max_busbw,status,duration_sec,rccl_version
+2026-08-17T09:19:45.071382,all_reduce_perf,2,16,16,TREE,LL,18.6986,36.09,success,8.895116567611694,
