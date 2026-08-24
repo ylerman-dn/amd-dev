@@ -1,0 +1,22 @@
+<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><title>2026-08-24-1-stage2</title><style>body{font-family:-apple-system,system-ui,sans-serif;margin:12px;max-width:980px;
+background:#14161a;color:#d8dbe0}
+table{border-collapse:collapse;font-size:12.5px;width:100%;display:block;overflow-x:auto}
+th,td{border:1px solid #34383f;padding:3px 6px;text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+td.wrap{white-space:normal;max-width:220px;text-align:left}
+h1{font-size:20px;color:#f0f2f5}h2{font-size:16px;color:#e6e9ee}h3{font-size:14px;color:#e6e9ee}
+.g{color:#4ec96a;font-weight:600}.b{color:#ff6b6b}.n{color:#8a8f98}
+.v{background:#173321}.x{background:#331a1a}
+.note{color:#9aa0a8;font-size:13px}
+a{color:#6ea8ff;text-decoration:none}
+pre{background:#1b1e24;padding:8px;font-size:12px;overflow-x:auto;border-radius:6px;line-height:1.5}
+pre .keep{color:#4ec96a}pre .drop{color:#ff6b6b;text-decoration:line-through}
+pre .why{color:#8a8f98;text-decoration:none;font-style:italic}
+details{margin:8px 0}summary{cursor:pointer;color:#6ea8ff;font-size:13px}</style>
+<h1>2026-08-24-1-stage2 — adaptive end-to-end results</h1>
+<p class=note>'executed' columns come from RCCL's own debug-log record (channel{Lo..Hi}) - what actually ran, both arms. '(trimmed)' = RCCL used fewer channels than the rule applied. Verdicts: per size, P(sup) &ge; 0.95 over the interleaved pairs, gain &gt; 2%, no regression.</p>
+<h2>all reduce_1n</h2>
+<p class=note>search: <b>72 runs</b> vs full grid 81 (<b>&minus;11%</b>), 24 configs measured, 23 min. A/B: <b class=g>0 kept</b>, <b class=b>0 dropped</b> <b class=b>(no A/B verdict)</b>.</p>
+<h2>all reduce_2n</h2>
+<p class=note>search: <b>120 runs</b> vs full grid 162 (<b>&minus;26%</b>), 40 configs measured, 34 min. A/B: <b class=g>0 kept</b>, <b class=b>0 dropped</b> <b class=b>(no A/B verdict)</b>.</p>
+<p class=note><a href='../index.html'>main results site</a></p>
