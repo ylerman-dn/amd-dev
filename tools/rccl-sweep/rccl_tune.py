@@ -265,8 +265,10 @@ def phase_search(c, coll, scale, nodes, outdir, remote_base, exec_node):
                 f"failed; see {local_out}/live_runs.log. Refusing to continue "
                 f"to an empty config.")
         log(f"search {tag}: {n_rows} per-size winners")
+    # one rule PER SIZE into the A/B: every size is judged alone, nothing
+    # rides in on a neighbour's P(sup). Merging happens only after validation.
     c.local([sys.executable, TOOL / "generate_tuner_config.py", opt_csv,
-             "-o", conf, "--include-algo-proto"])
+             "-o", conf, "--include-algo-proto", "--no-merge"])
     return conf
 
 
@@ -310,6 +312,41 @@ def phase_ab(c, confs, jobid, nodes, repeats, remote_base, outdir):
              f"scp -o BatchMode=yes {SLURM_HOST}:/tmp/rt_ab.tgz {outdir}/ && "
              f"cd {outdir} && tar xzf rt_ab.tgz && rm rt_ab.tgz"],
             check=False)
+    for v in outdir.glob("*.validated.csv"):
+        n_rules, n_merged = merge_validated(
+            v, outdir / (v.name.split(".")[0] + ".final.conf"))
+        log(f"final config: {v.name.split('.')[0]}.final.conf "
+            f"({n_rules} validated sizes -> {n_merged} rules)")
+
+
+def merge_validated(validated_csv, out_conf):
+    """Merge adjacent surviving per-size rules with identical settings into
+    ranges - the FINAL config. Purely cosmetic: same match behaviour, fewer
+    lines. Adjacency = next size is exactly double (the sweep's size ladder)."""
+    header, rows = None, []
+    for line in Path(validated_csv).read_text().splitlines():
+        s = line.strip()
+        if s.startswith("#") or not s:
+            continue
+        if s.startswith("collective_type"):
+            header = s
+            continue
+        p = s.split(",")
+        rows.append((p[0], int(p[1]), int(p[2]), tuple(p[3:])))
+    rows.sort(key=lambda r: (r[0], r[3], r[1]))
+    merged = []
+    for coll, lo, hi, rest in rows:
+        if merged and merged[-1][0] == coll and merged[-1][3] == rest \
+                and lo == merged[-1][2] * 2:
+            merged[-1] = (coll, merged[-1][1], hi, rest)
+        else:
+            merged.append((coll, lo, hi, rest))
+    merged.sort(key=lambda r: (r[0], r[1]))  # human-readable: by size
+    out = [header or "collective_type,min_bytes,max_bytes,algorithm,protocol,"
+                     "channels,nNodes,nRanks,numPipeOps,regBuff"]
+    out += [f"{c},{lo},{hi},{','.join(r)}" for c, lo, hi, r in merged]
+    Path(out_conf).write_text("\n".join(out) + "\n")
+    return len(rows), len(merged)
 
 
 def runlog_append(text):
