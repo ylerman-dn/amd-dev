@@ -19,3 +19,8 @@ Kept during the autonomous overnight runs. Normal prose, one bullet per item.
   the zero-winners guard stopped the run (allocation released cleanly - the
   new guards worked). Fixed: substituted sizes are dropped per size, matching
   the grid loader. Relaunched.
+- 2026-08-24 20:02Z: stage3a retry crashed after a SUCCESSFUL search (the
+  substitution fix held): the retry reused the same remote dir, stale run_*
+  dirs from attempt 1 got concatenated into the metrics parse and a repeated
+  CSV header crashed the default-run reader. Fixed: unique remote dir per
+  attempt + header-tolerant parsing. Allocation auto-released cleanly again.
