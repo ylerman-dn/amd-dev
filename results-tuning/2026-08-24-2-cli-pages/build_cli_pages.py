@@ -79,8 +79,12 @@ def default_combo(nodes):
             if (row.get("requested_algo") or "").strip():
                 continue
             rows.setdefault(int(row["size_bytes"]), []).append(
-                (row["algo"], row["proto"]))
-    return {s: max(set(v), key=v.count) for s, v in rows.items()}
+                (row["algo"], row["proto"], row["nchannels"]))
+    out = {}
+    for sz, v in rows.items():
+        a, p, ch = max(set(v), key=v.count)
+        out[sz] = f"{a}/{p} ch~{ch}"
+    return out
 
 
 def conf_block(tag, kept, dropped):
@@ -154,14 +158,14 @@ for tag, nodes, statfile, grid_runs in SCALES:
         for raw, lo, hi, why in dropped:
             if lo <= s <= hi:
                 verdict, cls = f"dropped: {short_why(why)}", " class=x"
-        dcombo = "/".join(dc.get(s, ("?", "?")))
+        dcombo = dc.get(s, "?")
         if r:
             gain = float(r["gain_pct"])
             gcls = "g" if gain > 2 else ("b" if gain < -2 else "n")
             h.append(f"<tr{cls}><td>{size_h(s)}</td><td>{dcombo}</td>"
                      f"<td>{winners[s]}</td><td>{r['def_median']}</td>"
                      f"<td>{r['cfg_median']}</td>"
-                     f"<td class={gcls}>{gain:+.1f}%</td><td>{r['psup']}</td>"
+                     f"<td class={gcls}>{gain:+.1f}%</td><td>{float(r['psup']):.2f}</td>"
                      f"<td class=wrap>{html.escape(verdict)}</td></tr>")
     h.append("</table>")
 
