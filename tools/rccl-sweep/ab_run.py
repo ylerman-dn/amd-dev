@@ -29,7 +29,7 @@ BINARY = {"allreduce": "all_reduce_perf", "broadcast": "broadcast_perf",
           "reduce": "reduce_perf", "allgather": "all_gather_perf",
           "reducescatter": "reduce_scatter_perf", "alltoall": "alltoall_perf"}
 # 2026-08-19 published parameters (results-tuning/2026-08-19-1-bcmn-ab/SUMMARY.md)
-WARMUP_RUNS = {1: 4, 2: 4, 3: 8}
+WARMUP_RUNS = {1: 4, 2: 4, 3: 8, 4: 8, 5: 8}
 
 
 def conf_target(path):
