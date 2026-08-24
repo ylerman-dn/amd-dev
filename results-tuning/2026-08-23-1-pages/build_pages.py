@@ -276,6 +276,8 @@ def build_index():
     h.append("<li>alltoall — no config: RCCL forces RING/SIMPLE at source; "
              "channel sweep pending (live batch)</li></ul>")
     h.append("<h2>Method evaluation</h2><ul>"
+             "<li><a href='approaches.html'>The story: optuna vs random vs "
+             "triage vs adaptive - high level</a></li>"
              "<li><a href='methods.html'>grid vs adaptive vs optuna vs random vs triage"
              "</a> — 15 grids, offline replay</li>"
              "<li><a href='configs.html'>the 15 per-scale configs + validation status</a></li>"

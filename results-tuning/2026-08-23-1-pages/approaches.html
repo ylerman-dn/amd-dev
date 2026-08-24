@@ -1,0 +1,88 @@
+<!doctype html><meta name=viewport content='width=device-width,initial-scale=1'>
+<title>Search approaches — the story</title>
+<style>body{font-family:-apple-system,system-ui,sans-serif;margin:14px;max-width:820px;
+background:#14161a;color:#d8dbe0;line-height:1.55}
+h1{font-size:21px;color:#f0f2f5}h2{font-size:17px;color:#e6e9ee;margin-top:28px}
+.card{background:#1b1e24;border:1px solid #34383f;border-radius:10px;padding:12px 16px;margin:14px 0}
+.win{border-color:#2f6b3f}.lose{border-color:#6b2f2f}
+.tag{font-size:12px;padding:2px 8px;border-radius:10px;font-weight:600}
+.tg{background:#173321;color:#4ec96a}.tr{background:#331a1a;color:#ff6b6b}.ty{background:#332e1a;color:#e0c05a}
+.big{font-size:15px}
+table{border-collapse:collapse;font-size:13px;width:100%;display:block;overflow-x:auto;margin:10px 0}
+th,td{border:1px solid #34383f;padding:5px 8px;text-align:left}
+.n{color:#8a8f98;font-size:13px}
+a{color:#6ea8ff;text-decoration:none}</style>
+
+<h1>How we choose RCCL configs — four approaches, one winner</h1>
+<p class=n>The problem: per message size (18 of them), pick algorithm + protocol +
+channel count. Measuring one candidate takes ~30 seconds of cluster time.
+Question: how to find the best candidates without measuring everything?
+All numbers below are from replaying every method on the same 15 measured
+datasets (5 collectives &times; 1/2/3 nodes).</p>
+
+<div class="card"><span class="tag ty">THE RULER</span> <b>Full grid — measure everything</b>
+<p class=big>The ground truth: every candidate, 3 repeats. 434 measurements.
+Too expensive for routine use, irreplaceable as the judge: every other method
+below is scored by "did it find what the grid found?"</p>
+<p class=n>Kept as the rare "calibration" run: new hardware or new RCCL version
+&rarr; run one grid, verify the cheap method still finds the same winners.</p></div>
+
+<div class="card win"><span class="tag tg">THE WINNER</span> <b>Adaptive (racing) search</b>
+<p class=big>Sketch every combo cheaply at 4 anchor points, kill combos that lose
+everywhere, refine the survivors per size. Found the grid's exact winner at
+<b>235 of 236 sizes</b> (worst miss 1.45%) for <b>~20% fewer measurements</b> —
+and it stops by itself when the race is decided.</p>
+<p class=n>This is what the tool runs today. Its picks are then verified live
+against RCCL's default through the deployment path before anything ships.</p></div>
+
+<div class="card lose"><span class="tag tr">REJECTED</span> <b>Optuna — Bayesian "smart guessing"</b>
+<p class=big>Built for huge spaces (thousands of knob combinations, hours per trial)
+where any improvement within a fixed budget is a win. Our space is tiny
+(20-54 candidates) and cheap — so guessing has nothing to add: Optuna needed a
+median <b>~20.5 of 27</b> candidates to find all winners; pure random needed
+~23.5. And in 2-4 tries out of 10 it <b>never</b> found them at all.</p>
+<p class=big>Its fatal flaw for us: <b>it cannot know when to stop</b>. We only knew
+it had "succeeded after 20" by peeking at the grid answer — which real tuning
+does not have. It also re-proposed already-tried candidates 788 times out of
+810 asks (a known weakness on small discrete spaces).</p>
+<p class=n>Fair note: under a relaxed "within 5% is fine" bar it converges in
+nearly all tries at about half the cost — still without a stopping rule.
+If our search space ever grows 100&times;, reconsider it.</p></div>
+
+<div class="card"><span class="tag ty">THE CONTROL</span> <b>Random order</b>
+<p class=big>Not a method — a measuring stick. Any "smart" search must beat a
+dumb shuffle. Here the shuffle nearly matched Optuna, proving that intelligent
+<i>ordering</i> is worthless on this problem; the racing search wins by cheap
+<i>partial information</i> instead (one measurement covers all 18 sizes at once).</p></div>
+
+<div class="card lose"><span class="tag tr">DEMOTED</span> <b>Dip triage — "search only where it hurts"</b>
+<p class=big>Physics says throughput must rise with message size. A <b>dip</b> in the
+default's curve is proof of a mistuned size — found for the price of a single
+measurement. Searching only dip-flagged sizes cost ~90% less&hellip;</p>
+<p class=big>&hellip;but a default can be <b>uniformly slow with no dip</b>: at some
+sizes the curve looked healthy while a config <b>59% faster</b> existed. Dips
+prove guilt; a smooth curve proves nothing.</p>
+<p class=n>Its real home: cheap <b>regression monitoring</b> after tuning — one
+measurement now and then; a new dip = an alarm that something changed.</p></div>
+
+<h2>One-table summary</h2>
+<table>
+<tr><th>approach</th><th>cost</th><th>quality</th><th>knows when to stop?</th><th>role today</th></tr>
+<tr><td>Full grid</td><td>434 meas.</td><td>is the truth</td><td>n/a</td><td>rare calibration</td></tr>
+<tr><td><b>Adaptive racing</b></td><td><b>351 (-19%)</b></td><td><b>235/236 exact</b></td><td><b>yes</b></td><td><b>the production searcher</b></td></tr>
+<tr><td>Optuna (TPE)</td><td>~half, best case</td><td>misses in 2-4 of 10 tries</td><td>no</td><td>rejected (finding 06)</td></tr>
+<tr><td>Random</td><td>~grid</td><td>eventually exact</td><td>no</td><td>control baseline only</td></tr>
+<tr><td>Dip triage</td><td>~10%</td><td>blind to flat-slow defaults</td><td>yes</td><td>future monitor, not a searcher</td></tr>
+</table>
+
+<h2>The one lesson above all</h2>
+<p class=big>Cheap search is safe only because a <b>live A/B gate</b> stands behind it:
+whatever any search picks must beat RCCL's default through the real deployment
+path, reproducibly (P(sup) &ge; 0.95 over 9 interleaved pairs), before it ships.
+The gate caught rules that measured +small in the search and ran <b>-65%</b> in
+deployment. No search method replaces it.</p>
+
+<p class=n>Deep dives: <a href="methods.html">full per-dataset comparison</a> ·
+<a href="explanations/optuna-walkthrough.md">Optuna walkthrough</a> ·
+<a href="explanations/adaptive-walkthrough.md">adaptive walkthrough</a> ·
+<a href="explanations/triage-walkthrough.md">triage walkthrough</a></p>

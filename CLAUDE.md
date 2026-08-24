@@ -96,7 +96,7 @@ Entry criteria — this is the whole point of the folder:
 
 # Cluster
 - Partition `XAI`, nodes `amd-mi355x-1..9`, 8 GPUs per node. Skip node2
-  (orchestrator) and node9 (no ssh key).
+  (orchestrator). node9 ssh access verified 2026-08-24 - usable, but fabric never probed; probe before first use.
 - Binaries (`all_reduce_perf` etc.) are at `/opt/shared/ylerman/GPU-107/bin`,
   which the sweep reads as `$MY_PATH`.
 - `/opt/shared` is NFS on the cluster nodes and is **not** mounted on this dev VM.
