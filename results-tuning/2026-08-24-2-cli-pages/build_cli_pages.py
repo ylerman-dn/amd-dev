@@ -194,6 +194,6 @@ h.append("<pre>pilot 1: failed fast - node 5 python lacks tabulate; empty config
          "         1n: 9/18 sizes kept, all P(sup)=1.00 - incl 64K alone at 1.00.\n"
          "         2n: 2/18 kept (32M +7.2%, 128M +2.4%); yesterday's 262K win did\n"
          "         not reproduce today and correctly did not ship.</pre>")
-h.append("<p class=note><a href='../2026-08-23-1-pages/index.html'>main results site</a></p>")
+h.append("<p class=note><a href='../index.html'>main results site</a></p>")
 (HERE / "pilot.html").write_text("\n".join(h))
 print("wrote pilot.html")
