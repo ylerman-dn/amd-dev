@@ -37,3 +37,15 @@ files are pointed at - small AB map update in build_pages.py)
 - REMAINING: all_reduce/all_gather/reduce_scatter 3n - need 3 healthy nodes
   (node 4 broken). Hourly cron watches for a window and will run them.
 - Rule of engagement kept: no idle allocations; 20713 cancelled at batch end.
+
+## Morning close-out 2026-08-24 ~05:00Z (autonomous)
+- No valid 3-node window appeared all night: idle sets were always {5,8} plus
+  only forbidden nodes (2 orchestrator, 9 no-ssh-key, 4 fabric-broken).
+- The three 3n A/Bs (all_reduce/all_gather/reduce_scatter) remain the only
+  missing verdicts. One ab_run.py command runs them when 3 healthy nodes free
+  up - see the command template above.
+- Worth knowing: node 4 ran an 8-hour dn job overnight (20714) and sits idle
+  now - it may have been repaired. A 10-minute 2n fabric probe ({1,4} or
+  {5,4}, default all_reduce x3) would settle whether it can serve as the
+  third node. User decision.
+- Safety-net cron deleted; nothing holds any allocation.
