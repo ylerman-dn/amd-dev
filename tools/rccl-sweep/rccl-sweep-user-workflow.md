@@ -164,6 +164,58 @@ The automated pipeline performs:
 
 ---
 
+### Workflow Option C: Validating a config live (mandatory before deployment)
+
+A generated config is a **prediction**: the sweep measured configs by forcing
+env vars, but deployment goes through the tuner plugin, and the two paths are
+not equivalent (measured on MI355X: the same 64 channels were free via
+`NCCL_MIN_NCHANNELS` and cost 54% via the plugin). Every config must therefore
+be A/B-validated through the plugin before it ships. Rules that don't
+reproducibly beat the default get dropped; what survives is the deliverable.
+
+The orchestrator is `ab_run.py`; the engine is `validate_tuner_config.py`
+(interleaved config-ON/config-OFF pairs, P(sup) per rule, landmine detection,
+noise gates, retry on bad windows).
+
+```bash
+# 1. Book nodes and hold them (from a cluster node; the dev VM has no Slurm client)
+salloc --no-shell -p XAI -N3 -w amd-mi355x-3,amd-mi355x-5,amd-mi355x-8 \
+       --gres=gpu:8 -t 120 -J my-ab
+squeue -u $USER -n my-ab        # note the JOBID
+
+# 2. Run the A/B for one or more configs (any mix of node counts <= booked)
+cd /opt/shared/ylerman/GPU-107
+python3 rccl-sweep-optuna/ab_run.py --jobid <JOBID> \
+    --nodelist amd-mi355x-3,amd-mi355x-5,amd-mi355x-8 \
+    --outdir /opt/shared/ylerman/GPU-107/ab-<date>/out \
+    /path/to/allreduce_3n.conf [/path/to/more.conf ...]
+
+# add --dry-run first to print the exact commands without launching
+
+# 3. Read the verdicts
+#    <conf>.validated.csv  - the trimmed config: only rules that beat default
+#                            with P(sup) >= 0.95 and no landmine. THIS is what ships.
+#    <outdir>/<scale>/validate.log - per-rule table (KEEP/DROP with reasons)
+
+# 4. Release the allocation immediately
+scancel <JOBID>
+```
+
+Exit codes per attempt: 0 = verdict, at least one rule survived; 1 = verdict,
+no rule survived (a legitimate answer - the defaults win, ship nothing);
+2 = run too noisy for verdicts; 3 = preflight refused the window. `ab_run.py`
+retries 2 and 3 automatically (default 3 attempts).
+
+Notes that cost real time to learn:
+- The plugin path passed to `--plugin` must be **absolute**; a bare .so name
+  makes dlopen miss it and RCCL silently falls back to its internal tuner.
+  `--plugin-must-fire` (always on via ab_run) catches this.
+- A verdict of "no rule survived" is success, not failure - do not loop
+  re-running it hoping for a different answer.
+- Persistent preflight failures on one collective/scale across different node
+  pairs mean the measurement is intrinsically noisy there (broadcast 2n: 18
+  attempts, 2 pairs). Stop and change the approach, not the node set.
+
 ## Output Artifacts Explained
 
 ### Directory Structure
@@ -229,11 +281,18 @@ sweep_results/
 The tuner CSV follows the NCCL/RCCL tuner format:
 ```csv
 collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff
-allreduce,1048576,2097152,0,2,32,2,16,-1,-1
+allreduce,1048576,2097152,ring,simple,32,2,16,-1,-1
 ```
 
-Where algorithm values: `0`=RING, `1`=TREE, `2`=Direct, `-1`=default  
-Protocol values: `0`=LL, `1`=LL128, `2`=SIMPLE, `-1`=default
+Algorithm and protocol are **lowercase strings**, not numbers:
+algorithm `tree|ring|collnet_direct|collnet_chain|nvls|nvls_tree|pat` or `-1`
+for default; protocol `ll|ll128|simple` or `-1` for default.
+
+**Warning:** the plugin parser (`dn/dn-tuner/plugin.c`) silently coerces any
+unrecognized value — an unknown algorithm becomes `ring`, an unknown protocol
+becomes `simple`, with no error. A config written with numeric codes therefore
+loads without complaint and applies the wrong settings. (An earlier revision
+of this document showed numeric codes; that was wrong for this plugin.)
 
 ---
 
