@@ -581,13 +581,16 @@ class LiveOracle:
         result = {}
         subst = 0
         for row in csv.DictReader(metrics.stdout.splitlines()):
+            # grid semantics: a substituted SIZE is dropped, the honoured
+            # sizes stay. all_gather 1n substitutes 12 of 18 sizes (Direct
+            # kernel) and the old all-or-nothing rule killed every config,
+            # leaving the search with zero winners (stage3a, 2026-08-24).
             if row.get("substituted") == "1":
                 subst += 1
+                continue
             result[int(row["size_bytes"])] = float(row["busbw_ip"])
-        if subst:
-            raise SubstitutedError(cfg, subst, len(result))
         if not result:
-            raise RuntimeError(f"live run {rid} {cfg}: empty metrics")
+            raise SubstitutedError(cfg, subst, subst)
         return result
 
 
