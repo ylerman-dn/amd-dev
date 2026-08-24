@@ -190,6 +190,24 @@ def write_servers_file(c, nodes, remote_dir):
     return path
 
 
+def pick_exec_node(c, booked):
+    """The search driver (rccl_sweep.py) runs on one node over ssh and needs
+    python3 with tabulate+yaml - not every node has them (node 5 does not,
+    2026-08-24 pilot). Probe the booked nodes first, then healthy fallbacks;
+    the exec node only drives, so it need not be part of the allocation."""
+    candidates = list(booked) + [n for n in (7, 3, 1) if n not in booked]
+    for n in candidates:
+        if n in FORBIDDEN_NODES or n in BROKEN_NODES:
+            continue
+        p = c.remote("python3 -c 'import tabulate, yaml'",
+                     host=f"amd-mi355x-{n}", check=False, quiet=True)
+        if c.dry or p.returncode == 0:
+            log(f"exec node: amd-mi355x-{n} (python env OK)")
+            return n
+    raise RuntimeError("no node has a python3 with tabulate+yaml - "
+                       "cannot drive the sweep")
+
+
 def sync_tool(c):
     """Push the tool files a live run executes remotely. Refuses while any
     sweep/validate process is running (a mid-flight redeploy once killed a
@@ -219,7 +237,7 @@ def results_dir(name):
     return d
 
 
-def phase_search(c, coll, scale, nodes, outdir, remote_base):
+def phase_search(c, coll, scale, nodes, outdir, remote_base, exec_node):
     """Adaptive live search -> emitted optimized csv -> tuner conf."""
     tag = f"{coll}_{scale}n"
     remote_out = f"{remote_base}/{tag}"
@@ -232,12 +250,21 @@ def phase_search(c, coll, scale, nodes, outdir, remote_base):
              "--anchors", POLICY["anchors"], "--margin", POLICY["margin"],
              "--tol", POLICY["tol"], "--repeat-policy", "3",
              "--collective", coll,
-             "--exec-node", f"amd-mi355x-{nodes[0]}",
+             "--exec-node", f"amd-mi355x-{exec_node}",
              "--remote-tool", REMOTE_TOOL, "--remote-out", remote_out,
              "--servers-file", servers, "--my-path", MY_PATH,
              "--local-out", local_out, "--default-runs", "3",
              "--emit-optimized", opt_csv]
     c.local(args_, timeout=4 * 3600)
+    if not c.dry:
+        with open(opt_csv) as f:
+            n_rows = sum(1 for _ in f) - 1
+        if n_rows <= 0:
+            raise RuntimeError(
+                f"search produced ZERO winners ({opt_csv}) - every live run "
+                f"failed; see {local_out}/live_runs.log. Refusing to continue "
+                f"to an empty config.")
+        log(f"search {tag}: {n_rows} per-size winners")
     c.local([sys.executable, TOOL / "generate_tuner_config.py", opt_csv,
              "-o", conf, "--include-algo-proto"])
     return conf
@@ -329,11 +356,12 @@ def cmd_run(args):
         jobid, nodelist = book(c, nodes, minutes, f"ylerman-{args.name}")
         log(f"allocation {jobid} on {nodelist} for {minutes}m")
         sync_tool(c)
+        exec_node = pick_exec_node(c, nodes)
         confs = []
         for coll, scale in pairs:
             log(f"=== search {coll} {scale}n ===")
             confs.append(phase_search(c, coll, scale, nodes, outdir,
-                                      remote_base))
+                                      remote_base, exec_node))
         log(f"=== A/B: {len(confs)} confs, {args.repeats} repeats ===")
         phase_ab(c, confs, jobid, nodes, args.repeats, remote_base, outdir)
     finally:
