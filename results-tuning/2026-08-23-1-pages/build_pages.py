@@ -203,7 +203,7 @@ pre{background:#1b1e24;padding:8px;font-size:12px;overflow-x:auto;border-radius:
 
 
 def page_head(title):
-    return (f"<!doctype html><meta name=viewport content='width=device-width,"
+    return (f"<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width,"
             f"initial-scale=1'><title>{title}</title><style>{CSS}</style>"
             f"<p><a href='index.html'>&larr; index</a></p><h1>{title}</h1>")
 
@@ -259,7 +259,7 @@ def build_gains(coll):
 
 
 def build_index():
-    h = [f"<!doctype html><meta name=viewport content='width=device-width,initial-scale=1'>"
+    h = [f"<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'>"
          f"<title>GPU-107 tuning</title><style>{CSS}</style>"]
     h.append("<h1>GPU-107 RCCL tuning — status &amp; results</h1>")
     h.append("<h2>The flow</h2><pre>book nodes (human)\n"

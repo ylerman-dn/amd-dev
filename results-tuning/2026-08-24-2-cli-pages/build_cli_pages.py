@@ -114,7 +114,7 @@ SCALES = [
     ("all_reduce_2n", 2, "ab_out3/allreduce_2n_retry2/per_size_stats.csv", 162),
 ]
 
-h = [f"<!doctype html><meta name=viewport content='width=device-width,"
+h = [f"<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width,"
      f"initial-scale=1'><title>rccl-tune pilot</title><style>{CSS}</style>"]
 h.append("<h1>rccl-tune pilot — all_reduce, adaptive end-to-end</h1>")
 h.append("<p class=note>One command: <code>rccl-tune run --collectives "
