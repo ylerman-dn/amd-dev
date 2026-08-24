@@ -149,6 +149,14 @@ def live_spread(coll, nodes):
                                f"{row['cfg_min']}-{row['cfg_max']}"),
                     "def_exec": row.get("def_exec", ""),
                 }
+    # pre-sidecar batches: exec labels only, no spread
+    for f in _g.glob(str(base / "**" / "exec_truth.csv"), recursive=True):
+        with open(f) as fh:
+            for row in csv.DictReader(fh):
+                if int(row["nodes"]) != nodes:
+                    continue
+                out.setdefault(int(row["size_bytes"]), {}).setdefault(
+                    "def_exec", row.get("def_exec", ""))
     return out
 
 
