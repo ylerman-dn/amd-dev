@@ -20,6 +20,9 @@ directly; no server needed).
 | [06](06-optuna-not-viable-here.md) | Optuna (TPE) loses to the racing search, scalarized or fixed to one size |
 | [07](07-racing-search-replaces-grid.md) | **Racing search replaces the full grid** — same winners, fewer runs; policy anchors 1,8,24,48 |
 | [08](08-bcast-reduce-dips-and-detector.md) | broadcast/reduce default dips (1n 512K, 3n bcast 64K); dip detector triages collectives |
+| [09](09-algo-support-matrix.md) | **Which algorithms RCCL honours per collective** — TREE only for all_reduce; silent RING substitution |
+| [10](10-a-flag-blind-spots.md) | `-A 1` is a plan, not execution — channels wrong, side-kernels invisible; debug log is the truth |
+| [11](11-pinned-channels-kill-warpspeed.md) | A pinned-channels rule disables WarpSpeed at >=64M — default runs 224ch, rule forces 48, ~-65% |
 
 ## Open — deliberately not findings
 
@@ -28,8 +31,7 @@ directly; no server needed).
   a busbw-only tuning pass is blind to losing it.
 - **`RCCL_DIRECT_ALLGATHER_THRESHOLD` defaults to 72 MiB but the Direct→RING switch is observed at
   ~16M.** Either the comparison uses a different quantity or there are further gates. Untested.
-- **Does a tuner config saying `ring` disable WarpSpeed above 64M?** Untested, and busbw would not
-  reveal it.
+- ~~Does a tuner config saying `ring` disable WarpSpeed above 64M?~~ **Answered: yes** — finding 11.
 - **Why are channels trimmed to 52/54 at 2M–8M (1 node)?** The binary names a
   `MinTrafficPerchannel` mechanism, but that line never printed in our runs.
 - **Why does WarpSpeed never appear multi-node?** No `RING*` at 2 or 3 nodes, any size.

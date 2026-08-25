@@ -58,3 +58,13 @@ everyone on the cluster and was not attempted.
 
 Evidence: `results-tuning/2026-08-16-8-nicmetrics/` · `pgrep`/`ps` output above, and
 `/opt/shared/ylerman/GPU-107/ab-2026-08-16/pf3/logs/`
+
+## Scope correction (2026-08-25)
+
+Single-node runs are affected too, via host-CPU contention rather than the
+NIC path: the exporter's own log shows its scrapes slowing from 10-11s to
+13.4-15.5s exactly during our 1-node benchmark windows, and 10 of 11 A/B
+preflight failures on 2026-08-23/24 were single-run dips whose timestamps
+overlap the 30s scrape windows (nodes 3/5/8; evidence summarized in
+results-tuning/2026-08-24-2-cli-pages/corrections.md and the preflight
+investigation). The "multi-node only" wording above is too narrow.

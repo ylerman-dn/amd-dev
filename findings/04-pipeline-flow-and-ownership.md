@@ -51,3 +51,12 @@ Nothing enforces it, and nothing warns if step 4 is skipped.
   `optimize_metrics.py:127` still describes the old behaviour.
 
 Row counts verified against `results-tuning/2026-08-04-6-sweep3node/` · 3 nodes, 24 ranks.
+
+## Correction (2026-08-25)
+
+The "step 4 is not in the tool" claim above is stale: the median collapse was
+implemented 2026-08-16 as `merge_metrics.py --median` (commit 7fd439b), later
+extended with `--input` for already-merged CSVs. The racing-search-to-config
+gap is also closed: `adaptive_search.py --emit-optimized` writes winners in
+the optimize_metrics shape consumed by `generate_tuner_config.py`
+(2026-08-21). The ownership analysis above remains accurate as history.
