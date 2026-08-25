@@ -675,7 +675,18 @@ def main():
         (kept if verdict == "KEEP" else dropped).append((rule, reason))
 
     out = os.path.splitext(args.config)[0] + ".validated.csv"
-    with open(out, "w") as fh:
+    # validity pre-check: never write verdicts for a run the gate below voids
+    _spreads_pre = []
+    for _n in scales:
+        for _v in ("default", "config"):
+            for _sz, _vals in measured[_n][_v].items():
+                if len(_vals) >= 2 and min(_vals) > 0:
+                    _spreads_pre.append((max(_vals) - min(_vals)) / min(_vals) * 100)
+    _noisy_pre = [x for x in _spreads_pre if x > args.max_arm_spread]
+    _invalid_pre = len(_noisy_pre) > len(_spreads_pre) * args.max_noisy_fraction
+    if _invalid_pre and os.path.exists(out):
+        os.rename(out, out + ".stale")  # do not let an old file masquerade
+    with open(out if not _invalid_pre else out + ".VOID-rc2", "w") as fh:
         fh.write("# Validated by validate_tuner_config.py: only rules that beat RCCL default\n")
         fh.write(f"# with P(sup) >= {args.min_psup} over {args.repeats} repeats, gain > {args.min_gain}%,\n")
         fh.write(f"# and no size in range regressing more than {args.max_regression}%.\n")
