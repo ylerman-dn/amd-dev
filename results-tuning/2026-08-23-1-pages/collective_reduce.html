@@ -281,3 +281,25 @@ reduce,536870912,536870912,ring,ll128,48,3,24,-1,-1</pre>
 <h2>4 nodes</h2>
 <p class=note>run <b>2026-08-24-1-stage4n</b> · search 75 runs vs grid 81 (&minus;7%), 25 configs, 20 min search · 9 A/B repeats/arm</p>
 <p class=warn>&#9888; A/B window-limited (4 refusals, same window).</p>
+<h3>Per size (predicted from the search - <span class=b>NOT validated, does not ship</span>)</h3>
+<p class=note>Search measurements (env-var path). The deployment path is proven non-equivalent; treat gains as candidates, not results.</p>
+<div class=tw><table><tr><th>size</th><th>search winner</th><th>default med (search session)</th><th>winner med</th><th>predicted gain</th></tr>
+<tr><td>4K</td><td>RING/LL/2</td><td>0.15</td><td>0.21</td><td class=g>+40.0%</td></tr>
+<tr><td>8K</td><td>RING/LL128/8</td><td>0.28</td><td>0.43</td><td class=g>+53.6%</td></tr>
+<tr><td>16K</td><td>RING/LL128/4</td><td>0.73</td><td>0.8</td><td class=g>+9.6%</td></tr>
+<tr><td>32K</td><td>RING/LL128/1</td><td>1.04</td><td>1.51</td><td class=g>+45.2%</td></tr>
+<tr><td>64K</td><td>RING/LL128/1</td><td>1.62</td><td>2.79</td><td class=g>+72.2%</td></tr>
+<tr><td>128K</td><td>RING/LL128/1</td><td>1.49</td><td>3.52</td><td class=g>+136.2%</td></tr>
+<tr><td>256K</td><td>RING/LL128/1</td><td>1.99</td><td>5.46</td><td class=g>+174.4%</td></tr>
+<tr><td>512K</td><td>RING/LL128/1</td><td>4.85</td><td>8.02</td><td class=g>+65.4%</td></tr>
+<tr><td>1M</td><td>RING/LL128/1</td><td>8.6</td><td>9.25</td><td class=g>+7.6%</td></tr>
+<tr><td>2M</td><td>RING/LL128/48</td><td>14.96</td><td>14.8</td><td class=n>-1.1%</td></tr>
+<tr><td>4M</td><td>RING/LL128/24</td><td>23.12</td><td>23.88</td><td class=g>+3.3%</td></tr>
+<tr><td>8M</td><td>RING/LL128/32</td><td>41.92</td><td>42.66</td><td class=n>+1.8%</td></tr>
+<tr><td>16M</td><td>RING/LL128/40</td><td>70.35</td><td>72.77</td><td class=g>+3.4%</td></tr>
+<tr><td>32M</td><td>RING/LL128/40</td><td>112.39</td><td>113.95</td><td class=n>+1.4%</td></tr>
+<tr><td>64M</td><td>RING/LL128/48</td><td>162.19</td><td>163.25</td><td class=n>+0.7%</td></tr>
+<tr><td>128M</td><td>RING/LL128/48</td><td>207.9</td><td>208.4</td><td class=n>+0.2%</td></tr>
+<tr><td>256M</td><td>RING/LL128/48</td><td>243.32</td><td>243.7</td><td class=n>+0.2%</td></tr>
+<tr><td>512M</td><td>RING/LL128/48</td><td>271.22</td><td>271.73</td><td class=n>+0.2%</td></tr>
+</table></div>
