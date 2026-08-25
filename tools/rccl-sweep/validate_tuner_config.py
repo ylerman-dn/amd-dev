@@ -239,19 +239,63 @@ def preflight(args, scales):
                 continue
             for size, bw in data.items():
                 seen[size].append(bw)
-        worst, worst_size = 0.0, None
-        for size, vals in seen.items():
-            if len(vals) >= 2 and min(vals) > 0:
-                sp = (max(vals) - min(vals)) / min(vals) * 100
-                if sp > worst:
-                    worst, worst_size = sp, size
+        def worst_of(sample_sets):
+            w, ws = 0.0, None
+            for size, vals in sample_sets.items():
+                if len(vals) >= 2 and min(vals) > 0:
+                    sp = (max(vals) - min(vals)) / min(vals) * 100
+                    if sp > w:
+                        w, ws = sp, size
+            return w, ws
+
+        worst, worst_size = worst_of(seen)
         if not seen:
             print(f"  {nodes}n: no data from any preflight run")
             ok = False
         elif worst > args.max_arm_spread:
-            print(f"  {nodes}n: WORST SPREAD {worst:.0f}% at {worst_size} bytes "
-                  f"(limit {args.max_arm_spread:.0f}%) -- NOT usable")
-            ok = False
+            # single-outlier confirmation (user-approved 2026-08-25): most
+            # refusals are ONE run photobombed by the ~30s telemetry scrape
+            # while the other runs agree. If excluding exactly one run index
+            # makes EVERY size pass, take one extra confirmation run; pass
+            # only if the confirmed set is clean. Chronic scatter has no such
+            # index and still fails; the rc=2 post-gate remains the backstop.
+            n_runs = max(len(v) for v in seen.values())
+            outlier = None
+            for i in range(n_runs):
+                trial = {sz: [v for j, v in enumerate(vals) if j != i]
+                         for sz, vals in seen.items()}
+                if worst_of(trial)[0] <= args.max_arm_spread:
+                    outlier = i
+                    break
+            if outlier is not None:
+                print(f"  {nodes}n: spread {worst:.0f}% at {worst_size} bytes "
+                      f"caused by run {outlier + 1} alone -- taking one "
+                      f"confirmation run")
+                data, _, hung = run_once(
+                    args, nodes, None,
+                    os.path.join(args.logdir,
+                                 f"{nodes}n_preflight_confirm.log"))
+                if not hung:
+                    confirmed = {sz: [v for j, v in enumerate(vals)
+                                      if j != outlier]
+                                 for sz, vals in seen.items()}
+                    for sz, bw in data.items():
+                        confirmed.setdefault(sz, []).append(bw)
+                    cw, cws = worst_of(confirmed)
+                    if cw <= args.max_arm_spread:
+                        print(f"  {nodes}n: confirmed clean (worst "
+                              f"{cw:.1f}%) -- usable")
+                        continue
+                    print(f"  {nodes}n: confirmation run disagrees too "
+                          f"(worst {cw:.0f}% at {cws} bytes) -- NOT usable")
+                else:
+                    print(f"  {nodes}n: confirmation run HUNG -- NOT usable")
+                ok = False
+            else:
+                print(f"  {nodes}n: WORST SPREAD {worst:.0f}% at {worst_size} "
+                      f"bytes (limit {args.max_arm_spread:.0f}%), no single "
+                      f"outlier -- NOT usable")
+                ok = False
         else:
             print(f"  {nodes}n: worst spread {worst:.1f}% -- usable")
     if not ok:
