@@ -24,3 +24,9 @@ Kept during the autonomous overnight runs. Normal prose, one bullet per item.
   dirs from attempt 1 got concatenated into the metrics parse and a repeated
   CSV header crashed the default-run reader. Fixed: unique remote dir per
   attempt + header-tolerant parsing. Allocation auto-released cleanly again.
+- 4n A/B observation (2026-08-25 ~01:00Z): preflight refusal rate visibly higher
+  at 4 nodes - mixed signature: single-run collapses at large sizes (up to
+  8257% spread at 256M, the exporter/stall class - four nodes mean four
+  unsynchronized 30s exporter scrapes, a much larger busy-window union) plus
+  small-size jitter (32-73% at 8-32K). broadcast 4n abandoned after 4 attempts;
+  reduce 4n burned 3. Feeds the pending preflight-design decision (option C).
