@@ -38,3 +38,7 @@ Kept during the autonomous overnight runs. Normal prose, one bullet per item.
   writes void-run verdicts to .VOID-rc2 only.
 - 5-node stage: impossible tonight - only 4 healthy idle nodes exist while
   node 4 is fabric-broken and nodes 2/3/6/7 carry co-tenants. Noted, skipped.
+- alltoall unblock attempt 2026-08-25: the CLI part works, but alltoall_perf
+  prints N/A in the -A 1 columns and sweep_parser therefore writes no
+  metrics.csv - the search sees no data. Fix is a parser change (tolerate N/A,
+  fill the source-forced RING/SIMPLE); awaiting approval.
