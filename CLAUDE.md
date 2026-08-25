@@ -135,3 +135,14 @@ Append one row per run, at the time of the run:
 
 `nodelist` is the actual allocated nodes, not the count — it is how we later tell
 whether two results are comparable. A run that is not in RUNLOG.md did not happen.
+
+# Commit discipline (agreed 2026-08-25)
+- Commit only meaningful, complete, independent changes — a state we have
+  agreed on. Never commit work-in-progress iterations, presentation tweaks, or
+  polish rounds; iterate uncommitted until the state is accepted, then make ONE
+  commit for that unit.
+- Exceptions that stay commit-at-once, because they are evidence, not work
+  product: run results + their RUNLOG.md row (a run that is not committed with
+  its RUNLOG row did not happen), and a tool fix a live run depends on.
+- Amending an unpushed commit to absorb a follow-up fix of the same unit is
+  preferred over a new tiny commit.
