@@ -1,9 +1,14 @@
-<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><title>GPU-107 tuning</title><style>body{font-family:-apple-system,system-ui,sans-serif;margin:12px;max-width:980px;
+<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><title>GPU-107 tuning</title><style>body{font-family:-apple-system,system-ui,sans-serif;margin:12px;max-width:1280px;
 background:#14161a;color:#d8dbe0}
-table{border-collapse:collapse;font-size:12.5px;width:100%;display:block;overflow-x:auto}
-th,td{border:1px solid #34383f;padding:3px 6px;text-align:right;white-space:nowrap}
-th:first-child,td:first-child{text-align:left}
-td.wrap{white-space:normal;max-width:220px;text-align:left}
+.tw{overflow-x:auto;margin:10px 0}
+table{border-collapse:collapse;font-size:13px;width:100%}
+th{border:1px solid #34383f;padding:4px 8px;text-align:center}
+td{border:1px solid #34383f;padding:4px 8px;text-align:right;white-space:nowrap}
+td:first-child{text-align:left}
+table.fit{width:auto}
+table.fit td{text-align:left;white-space:normal}
+td.runs{font-family:ui-monospace,monospace;font-size:11.5px;max-width:430px}
+td.wrap{white-space:normal;min-width:160px;max-width:260px;text-align:left;font-size:12px}
 h1{font-size:20px;color:#f0f2f5}h2{font-size:16px;color:#e6e9ee;margin-top:26px}
 h3{font-size:14px;color:#e6e9ee}
 .g{color:#4ec96a;font-weight:600}.b{color:#ff6b6b}.n{color:#8a8f98}
@@ -16,12 +21,12 @@ pre .why{color:#8a8f98;text-decoration:none;font-style:italic}
 details{margin:8px 0}summary{cursor:pointer;color:#6ea8ff;font-size:13px}</style>
 <h1>RCCL tuning — results by collective</h1>
 <p class=note>Freshest live A/B verdicts, resolved automatically from all rccl-tune runs. 1 measurement = median of 3 runs; A/B = 9 repeats/arm through the tuner plugin.</p>
-<table><tr><th>collective</th><th>1n</th><th>2n</th><th>3n</th><th>4n</th></tr>
+<div class=tw><table><tr><th>collective</th><th>1n</th><th>2n</th><th>3n</th><th>4n</th></tr>
 <tr><td><a href='collective_all_reduce.html'>all_reduce</a></td><td class=g>8 rules validated</td><td class=g>3 rules validated</td><td class=g>5 rules validated</td><td class=g>4 rules validated</td></tr>
 <tr><td><a href='collective_broadcast.html'>broadcast</a></td><td class=g>5 rules validated</td><td class=warn>no live verdict</td><td class=g>6 rules validated</td><td class=warn>no live verdict</td></tr>
 <tr><td><a href='collective_reduce.html'>reduce</a></td><td class=g>5 rules validated</td><td class=g>6 rules validated</td><td class=g>7 rules validated</td><td class=warn>no live verdict</td></tr>
 <tr><td><a href='collective_all_gather.html'>all_gather</a></td><td class=n>defaults win</td><td class=g>2 rules validated</td><td class=g>4 rules validated</td><td class=warn>no live verdict</td></tr>
 <tr><td><a href='collective_reduce_scatter.html'>reduce_scatter</a></td><td class=n>defaults win</td><td class=g>6 rules validated</td><td class=g>10 rules validated</td><td class=warn>no live verdict</td></tr>
-</table>
+</table></div>
 <p class=note>alltoall: algo/proto forced at source (RING/SIMPLE); channels-only sweep not yet in the CLI.</p>
 <h2>Method evaluation &amp; docs</h2><ul><li><a href='approaches.html'>the story: grid vs adaptive vs optuna vs random vs triage</a> (<a href='approaches-draft.html'>style-selection draft</a>)</li><li><a href='methods.html'>full offline comparison, 15 grids</a></li><li><a href='explanations/adaptive-walkthrough.md'>adaptive walkthrough</a> · <a href='explanations/optuna-walkthrough.md'>optuna</a> · <a href='explanations/triage-walkthrough.md'>triage</a> · <a href='explanations/optuna-verdict.md'>optuna verdict</a></li><li><a href='drafts/new-facts.md'>10 verified facts (awaiting approval)</a></li><li><a href='handoff.md'>handoff / summary</a> · <a href='cli/corrections.md'>corrections log</a></li></ul>

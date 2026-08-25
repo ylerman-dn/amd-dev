@@ -26,12 +26,17 @@ KNOWN_ISSUES = {
     ("all_gather", 4): "A/B window-limited; one rc=2 void attempt quarantined.",
     ("reduce_scatter", 4): "A/B window-limited (4 refusals, same window).",
 }
-CSS = """body{font-family:-apple-system,system-ui,sans-serif;margin:12px;max-width:980px;
+CSS = """body{font-family:-apple-system,system-ui,sans-serif;margin:12px;max-width:1280px;
 background:#14161a;color:#d8dbe0}
-table{border-collapse:collapse;font-size:12.5px;width:100%;display:block;overflow-x:auto}
-th,td{border:1px solid #34383f;padding:3px 6px;text-align:right;white-space:nowrap}
-th:first-child,td:first-child{text-align:left}
-td.wrap{white-space:normal;max-width:220px;text-align:left}
+.tw{overflow-x:auto;margin:10px 0}
+table{border-collapse:collapse;font-size:13px;width:100%}
+th{border:1px solid #34383f;padding:4px 8px;text-align:center}
+td{border:1px solid #34383f;padding:4px 8px;text-align:right;white-space:nowrap}
+td:first-child{text-align:left}
+table.fit{width:auto}
+table.fit td{text-align:left;white-space:normal}
+td.runs{font-family:ui-monospace,monospace;font-size:11.5px;max-width:430px}
+td.wrap{white-space:normal;min-width:160px;max-width:260px;text-align:left;font-size:12px}
 h1{font-size:20px;color:#f0f2f5}h2{font-size:16px;color:#e6e9ee;margin-top:26px}
 h3{font-size:14px;color:#e6e9ee}
 .g{color:#4ec96a;font-weight:600}.b{color:#ff6b6b}.n{color:#8a8f98}
@@ -205,7 +210,7 @@ for coll in COLLS:
         st = load_stats(r["stats"], scale) if r["stats"] else {}
         if st:
             page.append("<h3>Per size (live A/B numbers)</h3>")
-            page.append("<table><tr><th>size</th><th>default executed</th>"
+            page.append("<div class=tw><table><tr><th>size</th><th>default executed</th>"
                         "<th>ours requested</th><th>ours executed</th>"
                         "<th>default med</th><th>ours med</th><th>gain</th>"
                         "<th>P(sup)</th><th>spread def / cfg</th>"
@@ -237,18 +242,18 @@ for coll in COLLS:
                     f"<td class=n>{row['def_min']}-{row['def_max']} / "
                     f"{row['cfg_min']}-{row['cfg_max']}</td>"
                     f"<td class=wrap>{html.escape(verdict)}</td></tr>")
-            page.append("</table>")
+            page.append("</table></div>")
             page.append("<details><summary>raw A/B runs</summary>"
-                        "<table><tr><th>size</th><th>arm</th><th>runs</th>"
+                        "<div class=tw><table class=fit><tr><th>size</th><th>arm</th><th>runs</th>"
                         "<th>median</th></tr>")
             for s in sorted(st):
                 row = st[s]
                 for arm, key, med in (("default", "def_runs", row["def_median"]),
                                       ("config", "cfg_runs", row["cfg_median"])):
                     page.append(f"<tr><td>{size_h(s)}</td><td>{arm}</td>"
-                                f"<td>{row[key].replace(';', ' ')}</td>"
+                                f"<td class=runs>{row[key].replace(';', ' ')}</td>"
                                 f"<td><b>{med}</b></td></tr>")
-            page.append("</table></details>")
+            page.append("</table></div></details>")
     (HERE / f"collective_{coll}.html").write_text("\n".join(page))
 
 # index: status matrix + satellites
@@ -259,7 +264,7 @@ idx.append("<h1>RCCL tuning — results by collective</h1>")
 idx.append("<p class=note>Freshest live A/B verdicts, resolved automatically "
            "from all rccl-tune runs. 1 measurement = median of 3 runs; A/B = "
            "9 repeats/arm through the tuner plugin.</p>")
-idx.append("<table><tr><th>collective</th>"
+idx.append("<div class=tw><table><tr><th>collective</th>"
            + "".join(f"<th>{s}n</th>" for s in SCALES) + "</tr>")
 for coll in COLLS:
     cells = "".join(
@@ -267,7 +272,7 @@ for coll in COLLS:
         for s in SCALES)
     idx.append(f"<tr><td><a href='collective_{coll}.html'>{coll}</a></td>"
                f"{cells}</tr>")
-idx.append("</table>")
+idx.append("</table></div>")
 idx.append("<p class=note>alltoall: algo/proto forced at source (RING/SIMPLE); "
            "channels-only sweep not yet in the CLI.</p>")
 idx.append("<h2>Method evaluation &amp; docs</h2><ul>"
