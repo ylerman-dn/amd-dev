@@ -47,7 +47,309 @@ Across the 15 datasets it matched the grid's winner at 235 of 236 sizes
 (worst deviation 1.45%) using 351 measurements against the grid's 434.</p>
 
 <div class=card>
-<h3><span class=opt>Option A</span>Full worked example &mdash; prose and tables</h3>
+<h3><span class=opt>Option A</span>Step panels &mdash; the search in five frames</h3>
+
+<p class=n>Running example throughout: broadcast at 3 nodes, the smallest real
+search space. Policy values (anchors {1,&nbsp;8,&nbsp;24,&nbsp;48}, 15%
+elimination margin, 0.5% tie tolerance, 2% hill-climb hysteresis) are the real
+ones from <code>adaptive_search.py</code>; the busbw values drawn in Steps
+2&ndash;3 are illustrative; the totals in Step 4 are measured.</p>
+
+<!-- ---------------- Step 0 ---------------- -->
+<div style="background:#14161a;border:1px solid #2a2e35;border-radius:8px;padding:12px 16px;margin:14px 0">
+<p style="margin:0 0 4px 0"><span class=opt>Step 0</span><b>The board</b></p>
+<p class=n style="margin:0 0 10px 0">Per message size, pick the best of 27
+configurations &mdash; and one mechanic makes searching cheap:</p>
+<div style="border-left:3px solid #6ea8ff;background:#1e2c45;border-radius:6px;padding:9px 14px;margin:0 0 12px 0">
+<b>One benchmark run reports all 18 message sizes at once</b> &mdash; so every
+single measurement buys a full curve across sizes, never just one point.</div>
+<svg viewBox="0 0 560 178" font-family="sans-serif" font-size="13" role="img" style="max-width:560px"
+ aria-label="The board: 3 combinations by 9 channel counts, 27 configurations, none measured yet">
+  <g fill="#d8dbe0" text-anchor="end">
+    <text x="118" y="52">RING/LL</text>
+    <text x="118" y="90">RING/LL128</text>
+    <text x="118" y="128">RING/SIMPLE</text>
+  </g>
+  <g fill="none" stroke="#8a8f98" stroke-width="1.5">
+    <circle cx="150" cy="48" r="7"/><circle cx="196" cy="48" r="7"/><circle cx="242" cy="48" r="7"/><circle cx="288" cy="48" r="7"/><circle cx="334" cy="48" r="7"/><circle cx="380" cy="48" r="7"/><circle cx="426" cy="48" r="7"/><circle cx="472" cy="48" r="7"/><circle cx="518" cy="48" r="7"/>
+    <circle cx="150" cy="86" r="7"/><circle cx="196" cy="86" r="7"/><circle cx="242" cy="86" r="7"/><circle cx="288" cy="86" r="7"/><circle cx="334" cy="86" r="7"/><circle cx="380" cy="86" r="7"/><circle cx="426" cy="86" r="7"/><circle cx="472" cy="86" r="7"/><circle cx="518" cy="86" r="7"/>
+    <circle cx="150" cy="124" r="7"/><circle cx="196" cy="124" r="7"/><circle cx="242" cy="124" r="7"/><circle cx="288" cy="124" r="7"/><circle cx="334" cy="124" r="7"/><circle cx="380" cy="124" r="7"/><circle cx="426" cy="124" r="7"/><circle cx="472" cy="124" r="7"/><circle cx="518" cy="124" r="7"/>
+  </g>
+  <g fill="#8a8f98" text-anchor="middle">
+    <text x="150" y="154">1</text><text x="196" y="154">2</text><text x="242" y="154">4</text>
+    <text x="288" y="154">8</text><text x="334" y="154">16</text><text x="380" y="154">24</text>
+    <text x="426" y="154">32</text><text x="472" y="154">40</text><text x="518" y="154">48</text>
+    <text x="334" y="174">channel count &#8212; one dot = one configuration</text>
+  </g>
+</svg>
+<p class=cap style="margin-bottom:2px">3 algorithm/protocol combinations
+&times; 9 channel counts = 27 configurations. The full grid measures all 27;
+the search will not need to.</p>
+</div>
+
+<!-- ---------------- Step 1 ---------------- -->
+<div style="background:#14161a;border:1px solid #2a2e35;border-radius:8px;padding:12px 16px;margin:14px 0">
+<p style="margin:0 0 4px 0"><span class=opt>Step 1</span><b>Anchors</b></p>
+<p class=n style="margin:0 0 10px 0">Measure every combination at just four
+anchor channel counts {1,&nbsp;8,&nbsp;24,&nbsp;48}: 3 &times; 4 = 12
+measurements.</p>
+<svg viewBox="0 0 560 178" font-family="sans-serif" font-size="13" role="img" style="max-width:560px"
+ aria-label="The same board with the four anchor columns highlighted and measured">
+  <g fill="#6ea8ff" opacity="0.09">
+    <rect x="134" y="30" width="32" height="108" rx="6"/>
+    <rect x="272" y="30" width="32" height="108" rx="6"/>
+    <rect x="364" y="30" width="32" height="108" rx="6"/>
+    <rect x="502" y="30" width="32" height="108" rx="6"/>
+  </g>
+  <g fill="#d8dbe0" text-anchor="end">
+    <text x="118" y="52">RING/LL</text>
+    <text x="118" y="90">RING/LL128</text>
+    <text x="118" y="128">RING/SIMPLE</text>
+  </g>
+  <g fill="none" stroke="#8a8f98" stroke-width="1.5">
+    <circle cx="196" cy="48" r="7"/><circle cx="242" cy="48" r="7"/><circle cx="334" cy="48" r="7"/><circle cx="426" cy="48" r="7"/><circle cx="472" cy="48" r="7"/>
+    <circle cx="196" cy="86" r="7"/><circle cx="242" cy="86" r="7"/><circle cx="334" cy="86" r="7"/><circle cx="426" cy="86" r="7"/><circle cx="472" cy="86" r="7"/>
+    <circle cx="196" cy="124" r="7"/><circle cx="242" cy="124" r="7"/><circle cx="334" cy="124" r="7"/><circle cx="426" cy="124" r="7"/><circle cx="472" cy="124" r="7"/>
+  </g>
+  <g fill="#6ea8ff">
+    <circle cx="150" cy="48" r="7"/><circle cx="288" cy="48" r="7"/><circle cx="380" cy="48" r="7"/><circle cx="518" cy="48" r="7"/>
+    <circle cx="150" cy="86" r="7"/><circle cx="288" cy="86" r="7"/><circle cx="380" cy="86" r="7"/><circle cx="518" cy="86" r="7"/>
+    <circle cx="150" cy="124" r="7"/><circle cx="288" cy="124" r="7"/><circle cx="380" cy="124" r="7"/><circle cx="518" cy="124" r="7"/>
+  </g>
+  <g text-anchor="middle">
+    <g fill="#6ea8ff"><text x="150" y="154">1</text><text x="288" y="154">8</text><text x="380" y="154">24</text><text x="518" y="154">48</text></g>
+    <g fill="#8a8f98"><text x="196" y="154">2</text><text x="242" y="154">4</text><text x="334" y="154">16</text><text x="426" y="154">32</text><text x="472" y="154">40</text></g>
+    <text x="334" y="174" fill="#8a8f98">filled = measured (12 of 27)</text>
+  </g>
+</svg>
+<p class=cap style="margin-bottom:2px">12 measurements sketch every combo's
+curve at all sizes &mdash; each filled dot is one run reporting all 18 message
+sizes.</p>
+</div>
+
+<!-- ---------------- Step 2 ---------------- -->
+<div style="background:#14161a;border:1px solid #2a2e35;border-radius:8px;padding:12px 16px;margin:14px 0">
+<p style="margin:0 0 4px 0"><span class=opt>Step 2</span><b>Elimination</b></p>
+<p class=n style="margin:0 0 10px 0">At each size, compare every combination's
+best anchor to the leader; a combination more than 15% behind at
+<b>every one</b> of the 18 sizes is dropped whole.</p>
+<svg viewBox="0 0 660 245" font-family="sans-serif" font-size="13" role="img"
+ aria-label="Anchor curves of the three combinations at 64M with the 15 percent elimination threshold; RING/LL is below it and eliminated">
+  <text x="70" y="24" fill="#8a8f98" font-size="12.5">busbw at 64M, GB/s &#8212; anchor values (illustrative)</text>
+  <g stroke="#24272d" stroke-width="1">
+    <line x1="70" y1="210" x2="450" y2="210"/>
+    <line x1="70" y1="162.8" x2="450" y2="162.8"/>
+    <line x1="70" y1="115.6" x2="450" y2="115.6"/>
+    <line x1="70" y1="68.3" x2="450" y2="68.3"/>
+  </g>
+  <g fill="#8a8f98" text-anchor="end" font-size="12">
+    <text x="62" y="214">0</text><text x="62" y="166.8">50</text>
+    <text x="62" y="119.6">100</text><text x="62" y="72.3">150</text>
+  </g>
+  <g stroke="#3a3f47" stroke-width="1" stroke-dasharray="3 4">
+    <line x1="77.9" y1="36" x2="77.9" y2="210"/>
+    <line x1="133.3" y1="36" x2="133.3" y2="210"/>
+    <line x1="260" y1="36" x2="260" y2="210"/>
+    <line x1="450" y1="36" x2="450" y2="210"/>
+  </g>
+  <!-- survival band: within 15% of the leader -->
+  <rect x="70" y="40" width="380" height="31.9" fill="#4ec96a" opacity="0.07"/>
+  <line x1="70" y1="71.9" x2="450" y2="71.9" stroke="#4ec96a" stroke-width="1" stroke-dasharray="5 4" opacity="0.65"/>
+  <text x="445" y="84" fill="#8a8f98" text-anchor="end" font-size="12">leader &#215; 0.85 = 146.2 &#8212; stay-alive line</text>
+  <!-- curves -->
+  <polyline points="77.9,167.5 133.3,77.8 260,49.4 450,47.6" fill="none" stroke="#6ea8ff" stroke-width="2"/>
+  <polyline points="77.9,172.2 133.3,87.2 260,54.2 450,51.3" fill="none" stroke="#e0c05a" stroke-width="2"/>
+  <g opacity="0.45">
+    <polyline points="77.9,181.7 133.3,125 260,96.7 450,91.9" fill="none" stroke="#ff6b6b" stroke-width="2"/>
+    <g fill="#ff6b6b"><circle cx="77.9" cy="181.7" r="4.5"/><circle cx="133.3" cy="125" r="4.5"/><circle cx="260" cy="96.7" r="4.5"/><circle cx="450" cy="91.9" r="4.5"/></g>
+  </g>
+  <g fill="#6ea8ff"><circle cx="77.9" cy="167.5" r="4.5"/><circle cx="133.3" cy="77.8" r="4.5"/><circle cx="260" cy="49.4" r="4.5"/><circle cx="450" cy="47.6" r="4.5"/></g>
+  <g fill="#e0c05a"><circle cx="77.9" cy="172.2" r="4.5"/><circle cx="133.3" cy="87.2" r="4.5"/><circle cx="260" cy="54.2" r="4.5"/><circle cx="450" cy="51.3" r="4.5"/></g>
+  <!-- direct labels -->
+  <line x1="455" y1="51.3" x2="464" y2="65" stroke="#5a5f68" stroke-width="1"/>
+  <line x1="455" y1="91.9" x2="464" y2="103" stroke="#5a5f68" stroke-width="1"/>
+  <circle cx="467" cy="43" r="4.5" fill="#6ea8ff"/>
+  <text x="476" y="47" fill="#d8dbe0">RING/LL128 &#8212; 172</text>
+  <circle cx="467" cy="67" r="4.5" fill="#e0c05a"/>
+  <text x="476" y="71" fill="#d8dbe0">RING/SIMPLE &#8212; 168</text>
+  <text x="476" y="87" fill="#4ec96a" font-size="12">above the line &#8212; stays in</text>
+  <circle cx="467" cy="105" r="4.5" fill="#ff6b6b" opacity="0.55"/>
+  <text x="476" y="109" fill="#ff6b6b" opacity="0.8">RING/LL &#8212; 125</text>
+  <text x="476" y="127" fill="#ff6b6b" font-size="12">eliminated: &gt;15% behind</text>
+  <text x="476" y="143" fill="#ff6b6b" font-size="12">at every size</text>
+  <!-- x axis -->
+  <g fill="#8a8f98" text-anchor="middle" font-size="12">
+    <text x="77.9" y="230">ch1</text><text x="133.3" y="230">ch8</text>
+    <text x="260" y="230">ch24</text><text x="450" y="230">ch48</text>
+  </g>
+</svg>
+<p class=cap>One size shown (64M). Elimination needs the combination to trail
+at all 18 sizes: RING/LL does (here and everywhere else in this example);
+RING/SIMPLE is below the line at 64K but above it here &mdash; one strong size
+is enough to stay in.</p>
+<svg viewBox="0 0 560 178" font-family="sans-serif" font-size="13" role="img" style="max-width:560px"
+ aria-label="The board after elimination: the whole RING/LL row is faded out">
+  <g fill="#6ea8ff" opacity="0.09">
+    <rect x="134" y="30" width="32" height="108" rx="6"/>
+    <rect x="272" y="30" width="32" height="108" rx="6"/>
+    <rect x="364" y="30" width="32" height="108" rx="6"/>
+    <rect x="502" y="30" width="32" height="108" rx="6"/>
+  </g>
+  <g fill="#d8dbe0" text-anchor="end">
+    <text x="118" y="52" opacity="0.45">RING/LL</text>
+    <text x="118" y="90">RING/LL128</text>
+    <text x="118" y="128">RING/SIMPLE</text>
+  </g>
+  <g fill="none" stroke="#8a8f98" stroke-width="1.5" opacity="0.3">
+    <circle cx="196" cy="48" r="7"/><circle cx="242" cy="48" r="7"/><circle cx="334" cy="48" r="7"/><circle cx="426" cy="48" r="7"/><circle cx="472" cy="48" r="7"/>
+  </g>
+  <g fill="#ff6b6b" opacity="0.45">
+    <circle cx="150" cy="48" r="7"/><circle cx="288" cy="48" r="7"/><circle cx="380" cy="48" r="7"/><circle cx="518" cy="48" r="7"/>
+  </g>
+  <line x1="138" y1="48" x2="530" y2="48" stroke="#ff6b6b" stroke-width="1.5" stroke-dasharray="7 5" opacity="0.55"/>
+  <text x="334" y="70" fill="#ff6b6b" opacity="0.85" font-size="11.5" text-anchor="middle">all 9 RING/LL configurations leave after its 4 anchor measurements</text>
+  <g fill="none" stroke="#8a8f98" stroke-width="1.5">
+    <circle cx="196" cy="86" r="7"/><circle cx="242" cy="86" r="7"/><circle cx="334" cy="86" r="7"/><circle cx="426" cy="86" r="7"/><circle cx="472" cy="86" r="7"/>
+    <circle cx="196" cy="124" r="7"/><circle cx="242" cy="124" r="7"/><circle cx="334" cy="124" r="7"/><circle cx="426" cy="124" r="7"/><circle cx="472" cy="124" r="7"/>
+  </g>
+  <g fill="#6ea8ff">
+    <circle cx="150" cy="86" r="7"/><circle cx="288" cy="86" r="7"/><circle cx="380" cy="86" r="7"/><circle cx="518" cy="86" r="7"/>
+    <circle cx="150" cy="124" r="7"/><circle cx="288" cy="124" r="7"/><circle cx="380" cy="124" r="7"/><circle cx="518" cy="124" r="7"/>
+  </g>
+  <g text-anchor="middle">
+    <g fill="#6ea8ff"><text x="150" y="154">1</text><text x="288" y="154">8</text><text x="380" y="154">24</text><text x="518" y="154">48</text></g>
+    <g fill="#8a8f98"><text x="196" y="154">2</text><text x="242" y="154">4</text><text x="334" y="154">16</text><text x="426" y="154">32</text><text x="472" y="154">40</text></g>
+    <text x="334" y="174" fill="#8a8f98">channel count</text>
+  </g>
+</svg>
+<p class=cap style="margin-bottom:2px">The board after elimination: one third
+of it is gone for the price of 4 measurements.</p>
+</div>
+
+<!-- ---------------- Step 3 ---------------- -->
+<div style="background:#14161a;border:1px solid #2a2e35;border-radius:8px;padding:12px 16px;margin:14px 0">
+<p style="margin:0 0 4px 0"><span class=opt>Step 3</span><b>Refinement &mdash; hill-climb, then the downward tie-walk</b></p>
+<p class=n style="margin:0 0 10px 0">Per size, the surviving leader is refined
+on its channel ladder: climb to the peak, then step down while the speed stays
+within 0.5%.</p>
+<svg viewBox="0 0 700 272" font-family="sans-serif" font-size="13" role="img"
+ aria-label="Zoomed channel curve of RING/LL128 at 64M: hill-climb arrows up to the peak at ch48, then a dashed step down inside the 0.5 percent tie band to ch40">
+  <defs>
+    <marker id="s3up" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#4ec96a"/></marker>
+    <marker id="s3tie" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#e0c05a"/></marker>
+    <marker id="s3stop" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#8a8f98"/></marker>
+  </defs>
+  <text x="70" y="24" fill="#8a8f98" font-size="12.5">RING/LL128 at 64M &#8212; busbw, GB/s (values illustrative)</text>
+  <g stroke="#24272d" stroke-width="1">
+    <line x1="70" y1="215" x2="640" y2="215"/>
+    <line x1="70" y1="158.3" x2="640" y2="158.3"/>
+    <line x1="70" y1="101.7" x2="640" y2="101.7"/>
+    <line x1="70" y1="45" x2="640" y2="45"/>
+  </g>
+  <g fill="#8a8f98" text-anchor="end" font-size="12">
+    <text x="62" y="219">160</text><text x="62" y="162">165</text>
+    <text x="62" y="105.5">170</text><text x="62" y="49">175</text>
+  </g>
+  <!-- 0.5% tie band -->
+  <rect x="70" y="79" width="570" height="9.7" fill="#4ec96a" opacity="0.13"/>
+  <text x="76" y="74" fill="#8a8f98" font-size="12">0.5% tie band of the peak (172): 171.14 &#8211; 172</text>
+  <!-- curve -->
+  <polyline points="100,101.7 270,158.3 440,84.7 610,79" fill="none" stroke="#6ea8ff" stroke-width="2"/>
+  <g fill="#6ea8ff">
+    <circle cx="100" cy="101.7" r="4.5"/><circle cx="270" cy="158.3" r="4.5"/>
+    <circle cx="440" cy="84.7" r="4.5"/><circle cx="610" cy="79" r="4.5"/>
+  </g>
+  <!-- value labels -->
+  <g fill="#8a8f98" font-size="12">
+    <text x="88" y="106" text-anchor="end">170</text>
+    <text x="252" y="168" text-anchor="end">165</text>
+    <text x="440" y="112" text-anchor="middle">171.5</text>
+    <text x="620" y="73">172</text>
+  </g>
+  <!-- 1: hill-climb arrows, uphill to the peak -->
+  <line x1="292" y1="142" x2="400" y2="95" stroke="#4ec96a" stroke-width="2" marker-end="url(#s3up)"/>
+  <line x1="474" y1="70" x2="566" y2="66" stroke="#4ec96a" stroke-width="2" marker-end="url(#s3up)"/>
+  <!-- 2: dashed tie-walk step down one rung -->
+  <path d="M 605,92 Q 528,138 455,96" fill="none" stroke="#e0c05a" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#s3tie)"/>
+  <!-- 3: probe of the next rung fails -->
+  <path d="M 420,98 Q 362,130 307,150" fill="none" stroke="#8a8f98" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#s3stop)"/>
+  <!-- winner -->
+  <circle cx="440" cy="84.7" r="9" fill="none" stroke="#4ec96a" stroke-width="2"/>
+  <!-- numbered events -->
+  <g font-size="11" font-weight="600" text-anchor="middle">
+    <circle cx="325" cy="112" r="9" fill="none" stroke="#4ec96a"/><text x="325" y="116" fill="#d8dbe0">1</text>
+    <circle cx="529" cy="132" r="9" fill="none" stroke="#e0c05a"/><text x="529" y="136" fill="#d8dbe0">2</text>
+    <circle cx="290" cy="172" r="9" fill="none" stroke="#8a8f98"/><text x="290" y="176" fill="#d8dbe0">3</text>
+  </g>
+  <text x="520" y="170" fill="#e0c05a" text-anchor="middle">same speed within noise &#8212; fewer channels wins</text>
+  <!-- x axis -->
+  <g fill="#8a8f98" text-anchor="middle">
+    <text x="100" y="235">ch24</text><text x="270" y="235">ch32</text>
+    <text x="610" y="235">ch48</text>
+  </g>
+  <text x="440" y="235" fill="#4ec96a" font-weight="600" text-anchor="middle">ch40</text>
+  <text x="440" y="258" fill="#4ec96a" font-weight="600" text-anchor="middle">selected: RING/LL128/40</text>
+</svg>
+<ol class=cap style="margin-top:2px">
+<li><b>1</b> &mdash; Hill-climb to the peak: a neighbour must beat the incumbent
+by &gt;2% (the noise guard) to move the climb; nothing beats ch48 = 172, so the
+peak stands there.</li>
+<li><b>2</b> &mdash; Downward tie-walk: ch40 = 171.5 sits inside the 0.5% tie
+band (&ge; 171.14) &mdash; same speed within noise, and ties resolve to fewer
+channels, so the walk steps down one rung.</li>
+<li><b>3</b> &mdash; The next rung, ch32 = 165, falls outside the band &mdash;
+the walk stops. Selected: <b>RING/LL128/40</b>.</li>
+</ol>
+</div>
+
+<!-- ---------------- Step 4 ---------------- -->
+<div style="background:#14161a;border:1px solid #2a2e35;border-radius:8px;padding:12px 16px;margin:14px 0">
+<p style="margin:0 0 4px 0"><span class=opt>Step 4</span><b>Done</b></p>
+<p class=n style="margin:0 0 10px 0">No budget to guess &mdash; the search stops
+by itself when no step improves. The measured bill for broadcast at 3 nodes:</p>
+<div style="display:flex;flex-wrap:wrap;gap:10px;margin:10px 0">
+  <div style="flex:1 1 150px;background:#1b1e24;border:1px solid #34383f;border-radius:8px;padding:12px 14px;text-align:center">
+    <div style="font-size:22px;font-weight:700;color:#6ea8ff">24 / 27</div>
+    <div class=n style="font-size:12.5px">configurations measured</div>
+  </div>
+  <div style="flex:1 1 150px;background:#1b1e24;border:1px solid #34383f;border-radius:8px;padding:12px 14px;text-align:center">
+    <div style="font-size:22px;font-weight:700;color:#6ea8ff">72 vs 81</div>
+    <div class=n style="font-size:12.5px">benchmark runs &mdash; search vs full grid</div>
+  </div>
+  <div style="flex:1 1 150px;background:#1b1e24;border:1px solid #34383f;border-radius:8px;padding:12px 14px;text-align:center">
+    <div style="font-size:22px;font-weight:700;color:#4ec96a">18 / 18</div>
+    <div class=n style="font-size:12.5px">sizes: same winner as the grid</div>
+  </div>
+  <div style="flex:1 1 150px;background:#1b1e24;border:1px solid #34383f;border-radius:8px;padding:12px 14px;text-align:center">
+    <div style="font-size:22px;font-weight:700;color:#e0c05a">self-stopping</div>
+    <div class=n style="font-size:12.5px">halts when no step improves</div>
+  </div>
+</div>
+<p class=cap style="margin-bottom:2px">Measured on the real broadcast-3n replay
+(offline, 2026-08-21). The three configurations never measured (RING/LL/4,
+RING/LL/40, RING/SIMPLE/4) were never on any contender's refinement path at any
+size.</p>
+</div>
+
+<p style="margin:16px 0 4px 0"><b>Glossary</b></p>
+<table>
+<tr><th>term</th><th>plain English</th></tr>
+<tr><td>anchor</td><td>one of the four channel counts (1, 8, 24, 48) every
+combination is measured at first &mdash; four cheap points that sketch its
+whole curve</td></tr>
+<tr><td>combo</td><td>an algorithm + protocol pair, e.g. RING/LL128; each combo
+can run at any of the 9 channel counts</td></tr>
+<tr><td>hill-climb</td><td>from the best point so far, try the neighbouring
+channel count and move only if it is more than 2% faster; stop when no move
+helps</td></tr>
+<tr><td>tolerance 0.5%</td><td>two speeds within 0.5% of each other count as
+the same; the tie always goes to the configuration with fewer channels</td></tr>
+<tr><td>margin 15%</td><td>a combo more than 15% behind the leader at every
+size is dropped from the race &mdash; all 9 of its configurations at
+once</td></tr>
+</table>
+
+<details><summary>full worked example with the arithmetic</summary>
 
 <p><b>Setting.</b> Broadcast at 3 nodes. The search space is 3 combinations
 (RING/LL, RING/LL128, RING/SIMPLE) &times; 9 channel counts
@@ -124,6 +426,7 @@ counts win elsewhere. With anchors {8,&nbsp;24,&nbsp;48} the climb starts at
 ch8 and never looks below it, missing the ch=1 winners by up to 53%
 (measured 2026-08-18). Extending the anchor set to {1,&nbsp;8,&nbsp;24,&nbsp;48}
 fixed exactly this.</p>
+</details>
 </div>
 
 <div class=card>

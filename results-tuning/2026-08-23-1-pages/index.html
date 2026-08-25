@@ -21,12 +21,12 @@ pre .why{color:#8a8f98;text-decoration:none;font-style:italic}
 details{margin:8px 0}summary{cursor:pointer;color:#6ea8ff;font-size:13px}</style>
 <h1>RCCL tuning — results by collective</h1>
 <p class=note>Freshest live A/B verdicts, resolved automatically from all rccl-tune runs. 1 measurement = median of 3 runs; A/B = 9 repeats/arm through the tuner plugin.</p>
-<div class=tw><table><tr><th>collective</th><th>1n</th><th>2n</th><th>3n</th><th>4n</th></tr>
-<tr><td><a href='collective_all_reduce.html'>all_reduce</a></td><td class=g>8 rules validated</td><td class=g>3 rules validated</td><td class=g>5 rules validated</td><td class=g>4 rules validated</td></tr>
-<tr><td><a href='collective_broadcast.html'>broadcast</a></td><td class=g>5 rules validated</td><td class=warn>no live verdict</td><td class=g>6 rules validated</td><td class=warn>no live verdict</td></tr>
-<tr><td><a href='collective_reduce.html'>reduce</a></td><td class=g>5 rules validated</td><td class=g>6 rules validated</td><td class=g>7 rules validated</td><td class=warn>no live verdict</td></tr>
-<tr><td><a href='collective_all_gather.html'>all_gather</a></td><td class=n>defaults win</td><td class=g>2 rules validated</td><td class=g>4 rules validated</td><td class=warn>no live verdict</td></tr>
-<tr><td><a href='collective_reduce_scatter.html'>reduce_scatter</a></td><td class=n>defaults win</td><td class=g>6 rules validated</td><td class=g>10 rules validated</td><td class=warn>no live verdict</td></tr>
+<div class=tw><table><tr><th>collective</th><th>1n</th><th>2n</th><th>3n</th><th>4n</th><th>5n</th></tr>
+<tr><td><a href='collective_all_reduce.html'>all_reduce</a></td><td class=g>8 rules validated</td><td class=g>3 rules validated</td><td class=g>5 rules validated</td><td class=g>4 rules validated</td><td class=warn>no live verdict</td></tr>
+<tr><td><a href='collective_broadcast.html'>broadcast</a></td><td class=g>5 rules validated</td><td class=warn>no live verdict</td><td class=g>6 rules validated</td><td class=warn>no live verdict</td><td class=warn>no live verdict</td></tr>
+<tr><td><a href='collective_reduce.html'>reduce</a></td><td class=g>5 rules validated</td><td class=g>6 rules validated</td><td class=g>7 rules validated</td><td class=warn>no live verdict</td><td class=warn>no live verdict</td></tr>
+<tr><td><a href='collective_all_gather.html'>all_gather</a></td><td class=n>defaults win</td><td class=g>2 rules validated</td><td class=g>4 rules validated</td><td class=warn>no live verdict</td><td class=warn>no live verdict</td></tr>
+<tr><td><a href='collective_reduce_scatter.html'>reduce_scatter</a></td><td class=n>defaults win</td><td class=g>6 rules validated</td><td class=g>10 rules validated</td><td class=warn>no live verdict</td><td class=warn>no live verdict</td></tr>
 </table></div>
 <p class=note>alltoall: algo/proto forced at source (RING/SIMPLE); channels-only sweep not yet in the CLI.</p>
 <h2>Method evaluation &amp; docs</h2><ul><li><a href='approaches.html'>the story: grid vs adaptive vs optuna vs random vs triage</a> (<a href='approaches-draft.html'>style-selection draft</a>)</li><li><a href='methods.html'>full offline comparison, 15 grids</a></li><li><a href='explanations/adaptive-walkthrough.md'>adaptive walkthrough</a> · <a href='explanations/optuna-walkthrough.md'>optuna</a> · <a href='explanations/triage-walkthrough.md'>triage</a> · <a href='explanations/optuna-verdict.md'>optuna verdict</a></li><li><a href='drafts/new-facts.md'>10 verified facts (awaiting approval)</a></li><li><a href='handoff.md'>handoff / summary</a> · <a href='cli/corrections.md'>corrections log</a></li></ul>

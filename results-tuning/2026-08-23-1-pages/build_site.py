@@ -14,7 +14,7 @@ from pathlib import Path
 HERE = Path(__file__).parent
 RT = HERE.parent
 COLLS = ["all_reduce", "broadcast", "reduce", "all_gather", "reduce_scatter"]
-SCALES = [1, 2, 3, 4]
+SCALES = [1, 2, 3, 4, 5]
 KNOWN_ISSUES = {
     ("broadcast", 2): "No live verdict is possible under the current noise "
         "gates: 22 A/B attempts across three node pairs ({5,7}, {5,8}, {1,3}) "
@@ -209,35 +209,50 @@ for coll in COLLS:
                             "RCCL's defaults won every size.</p>")
         st = load_stats(r["stats"], scale) if r["stats"] else {}
         if not st and rep.get("winners"):
-            # no live verdict: show the SEARCH data, clearly labeled
+            # no live verdict: same headers as validated tables; A/B-only
+            # columns stay blank. Executed combos parsed from the SEARCH
+            # session's own debug logs (exec_search.csv).
             defaults = {}
             for d_run in rep.get("default_busbw", []):
                 for k, v in d_run.items():
                     defaults.setdefault(int(k), []).append(v)
+            execs = {}
+            ef = r["dir"] / f"{coll}_{scale}n" / "exec_search.csv"
+            if ef.exists():
+                with open(ef) as fh:
+                    for row in csv.DictReader(fh):
+                        execs[int(row["size_bytes"])] = row
             page.append("<h3>Per size (predicted from the search - "
                         "<span class=b>NOT validated, does not ship</span>)</h3>")
-            page.append("<p class=note>Search measurements (env-var path). "
-                        "The deployment path is proven non-equivalent; treat "
-                        "gains as candidates, not results.</p>")
+            page.append("<p class=note>Search measurements (env-var path); "
+                        "executed combos from the search runs' debug logs. "
+                        "P(sup)/spread/verdict require an A/B and stay blank.</p>")
             page.append("<div class=tw><table><tr><th>size</th>"
-                        "<th>search winner</th><th>default med (search session)"
-                        "</th><th>winner med</th><th>predicted gain</th></tr>")
+                        "<th>default executed</th><th>ours requested</th>"
+                        "<th>ours executed</th><th>default med</th>"
+                        "<th>ours med</th><th>gain</th><th>P(sup)</th>"
+                        "<th>spread def / cfg</th><th>verdict</th></tr>")
             import statistics as _st
             for s2, w in sorted(((int(k), v) for k, v in
                                  rep["winners"].items())):
                 dmed = (_st.median(defaults[s2])
                         if defaults.get(s2) else None)
                 bw = w.get("busbw")
+                e = execs.get(s2, {})
                 if dmed and bw:
                     g = (bw / dmed - 1) * 100
                     gcls = "g" if g > 2 else ("b" if g < -2 else "n")
-                    page.append(f"<tr><td>{size_h(s2)}</td><td>{w['cfg']}</td>"
-                                f"<td>{dmed:g}</td><td>{bw:g}</td>"
-                                f"<td class={gcls}>{g:+.1f}%</td></tr>")
+                    gtxt = f"<td class={gcls}>{g:+.1f}%</td>"
+                    dtxt = f"<td>{dmed:g}</td><td>{bw:g}</td>"
                 else:
-                    page.append(f"<tr><td>{size_h(s2)}</td><td>{w['cfg']}</td>"
-                                f"<td colspan=3 class=n>no default reference"
-                                f"</td></tr>")
+                    gtxt, dtxt = "<td class=n></td>", "<td class=n></td><td class=n></td>"
+                page.append(f"<tr><td>{size_h(s2)}</td>"
+                            f"<td>{e.get('def_exec', '')}</td>"
+                            f"<td>{w['cfg']}</td>"
+                            f"<td>{e.get('ours_exec', '')}</td>"
+                            f"{dtxt}{gtxt}"
+                            f"<td class=n></td><td class=n></td>"
+                            f"<td class='wrap n'>no A/B</td></tr>")
             page.append("</table></div>")
         if st:
             page.append("<h3>Per size (live A/B numbers)</h3>")

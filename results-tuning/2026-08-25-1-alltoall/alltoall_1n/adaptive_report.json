@@ -1,0 +1,130 @@
+{
+  "policy": {
+    "anchors": [
+      1,
+      8,
+      24,
+      48
+    ],
+    "margin": 15.0,
+    "repeat_policy": "3",
+    "tol": 0.5,
+    "band": 3.0,
+    "grid": [
+      1,
+      2,
+      4,
+      8,
+      16,
+      24,
+      32,
+      40,
+      48
+    ],
+    "combos": [
+      [
+        "RING",
+        "LL"
+      ],
+      [
+        "RING",
+        "SIMPLE"
+      ]
+    ]
+  },
+  "winners": {},
+  "runs": 8,
+  "configs": 0,
+  "full_runs": 54,
+  "saving_pct": 85.2,
+  "default_runs": 0,
+  "search_wall_s": 104.2,
+  "alive_combos": [],
+  "dead_combos": [],
+  "failures": [
+    [
+      "r0000",
+      [
+        "RING",
+        "LL",
+        1
+      ],
+      0
+    ],
+    [
+      "r0001",
+      [
+        "RING",
+        "LL",
+        8
+      ],
+      0
+    ],
+    [
+      "r0002",
+      [
+        "RING",
+        "LL",
+        24
+      ],
+      0
+    ],
+    [
+      "r0003",
+      [
+        "RING",
+        "LL",
+        48
+      ],
+      0
+    ],
+    [
+      "r0004",
+      [
+        "RING",
+        "SIMPLE",
+        1
+      ],
+      0
+    ],
+    [
+      "r0005",
+      [
+        "RING",
+        "SIMPLE",
+        8
+      ],
+      0
+    ],
+    [
+      "r0006",
+      [
+        "RING",
+        "SIMPLE",
+        24
+      ],
+      0
+    ],
+    [
+      "r0007",
+      [
+        "RING",
+        "SIMPLE",
+        48
+      ],
+      0
+    ]
+  ],
+  "trace": [
+    "('run_failed', ('RING', 'LL', 1), \"live run r0000 ('RING', 'LL', 1) failed rc=0: \\n======================================================================\\n  RCCL Test Sweep Tool\\n======================================================================\\n\\nFound 1 server(s) in /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/servers.txt\\nSweep Configuration:\\n  Collectives: alltoall\\n  Node counts: 1 (8 GPUs/node)\\n  Channels: 1-1 (step N/A)\\n  Algorithms: RING\\n  Protocols: LL\\n  Total tests: 1\\n  Estimated time: 3m 0s\\n\\nOutput directory: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0000/run_20260825_141308\\nDatabase: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0000/run_20260825_141308/sweep_results.db\\nSession ID: 1\\n\\n\\n[1/1] alltoall_perf | 1 node(s) | 1 ch | RING | LL \\n\\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\\nRunning: alltoall_perf | 1 node(s) | 1 channels | algo=Ring | proto=LL\\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\\n\u2713 Completed in 6.4s\\n\\n======================================================================\\nSweep Complete\\n======================================================================\\n\\n  Total time: 6.4s\\n  Tests run: 1\\n  Successful: 0\\n  Failed: 1\\n  Success rate: 0.0%\\n\\n  Results: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0000/run_20260825_141308\\n  Database: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0000/run_20260825_141308/sweep_results.db\\nExported 1 runs to /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0000/run_20260825_141308/summary.csv\\n  CSV export: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0000/run_20260825_141308/summary.csv\\nNo metrics to export\\n  Metrics CSV: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0000/run_20260825_141308/metrics.csv\\n\\n\")",
+    "('run_failed', ('RING', 'LL', 8), \"live run r0001 ('RING', 'LL', 8) failed rc=0: \\n======================================================================\\n  RCCL Test Sweep Tool\\n======================================================================\\n\\nFound 1 server(s) in /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/servers.txt\\nSweep Configuration:\\n  Collectives: alltoall\\n  Node counts: 1 (8 GPUs/node)\\n  Channels: 8-8 (step N/A)\\n  Algorithms: RING\\n  Protocols: LL\\n  Total tests: 1\\n  Estimated time: 3m 0s\\n\\nOutput directory: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0001/run_20260825_141320\\nDatabase: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0001/run_20260825_141320/sweep_results.db\\nSession ID: 1\\n\\n\\n[1/1] alltoall_perf | 1 node(s) | 8 ch | RING | LL \\n\\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\\nRunning: alltoall_perf | 1 node(s) | 8 channels | algo=Ring | proto=LL\\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\\n\u2713 Completed in 5.9s\\n\\n======================================================================\\nSweep Complete\\n======================================================================\\n\\n  Total time: 6.0s\\n  Tests run: 1\\n  Successful: 0\\n  Failed: 1\\n  Success rate: 0.0%\\n\\n  Results: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0001/run_20260825_141320\\n  Database: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0001/run_20260825_141320/sweep_results.db\\nExported 1 runs to /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0001/run_20260825_141320/summary.csv\\n  CSV export: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0001/run_20260825_141320/summary.csv\\nNo metrics to export\\n  Metrics CSV: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0001/run_20260825_141320/metrics.csv\\n\\n\")",
+    "('run_failed', ('RING', 'LL', 24), \"live run r0002 ('RING', 'LL', 24) failed rc=0: \\n======================================================================\\n  RCCL Test Sweep Tool\\n======================================================================\\n\\nFound 1 server(s) in /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/servers.txt\\nSweep Configuration:\\n  Collectives: alltoall\\n  Node counts: 1 (8 GPUs/node)\\n  Channels: 24-24 (step N/A)\\n  Algorithms: RING\\n  Protocols: LL\\n  Total tests: 1\\n  Estimated time: 3m 0s\\n\\nOutput directory: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0002/run_20260825_141331\\nDatabase: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0002/run_20260825_141331/sweep_results.db\\nSession ID: 1\\n\\n\\n[1/1] alltoall_perf | 1 node(s) | 24 ch | RING | LL \\n\\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\\nRunning: alltoall_perf | 1 node(s) | 24 channels | algo=Ring | proto=LL\\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\\n\u2713 Completed in 7.8s\\n\\n======================================================================\\nSweep Complete\\n======================================================================\\n\\n  Total time: 7.8s\\n  Tests run: 1\\n  Successful: 0\\n  Failed: 1\\n  Success rate: 0.0%\\n\\n  Results: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0002/run_20260825_141331\\n  Database: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0002/run_20260825_141331/sweep_results.db\\nExported 1 runs to /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0002/run_20260825_141331/summary.csv\\n  CSV export: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0002/run_20260825_141331/summary.csv\\nNo metrics to export\\n  Metrics CSV: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0002/run_20260825_141331/metrics.csv\\n\\n\")",
+    "('run_failed', ('RING', 'LL', 48), \"live run r0003 ('RING', 'LL', 48) failed rc=0: \\n======================================================================\\n  RCCL Test Sweep Tool\\n======================================================================\\n\\nFound 1 server(s) in /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/servers.txt\\nSweep Configuration:\\n  Collectives: alltoall\\n  Node counts: 1 (8 GPUs/node)\\n  Channels: 48-48 (step N/A)\\n  Algorithms: RING\\n  Protocols: LL\\n  Total tests: 1\\n  Estimated time: 3m 0s\\n\\nOutput directory: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0003/run_20260825_141344\\nDatabase: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0003/run_20260825_141344/sweep_results.db\\nSession ID: 1\\n\\n\\n[1/1] alltoall_perf | 1 node(s) | 48 ch | RING | LL \\n\\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\\nRunning: alltoall_perf | 1 node(s) | 48 channels | algo=Ring | proto=LL\\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\\n\u2713 Completed in 10.5s\\n\\n======================================================================\\nSweep Complete\\n======================================================================\\n\\n  Total time: 10.6s\\n  Tests run: 1\\n  Successful: 0\\n  Failed: 1\\n  Success rate: 0.0%\\n\\n  Results: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0003/run_20260825_141344\\n  Database: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0003/run_20260825_141344/sweep_results.db\\nExported 1 runs to /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0003/run_20260825_141344/summary.csv\\n  CSV export: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0003/run_20260825_141344/summary.csv\\nNo metrics to export\\n  Metrics CSV: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0003/run_20260825_141344/metrics.csv\\n\\n\")",
+    "('run_failed', ('RING', 'SIMPLE', 1), \"live run r0004 ('RING', 'SIMPLE', 1) failed rc=0: \\n======================================================================\\n  RCCL Test Sweep Tool\\n======================================================================\\n\\nFound 1 server(s) in /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/servers.txt\\nSweep Configuration:\\n  Collectives: alltoall\\n  Node counts: 1 (8 GPUs/node)\\n  Channels: 1-1 (step N/A)\\n  Algorithms: RING\\n  Protocols: SIMPLE\\n  Total tests: 1\\n  Estimated time: 3m 0s\\n\\nOutput directory: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0004/run_20260825_141400\\nDatabase: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0004/run_20260825_141400/sweep_results.db\\nSession ID: 1\\n\\n\\n[1/1] alltoall_perf | 1 node(s) | 1 ch | RING | SIMPLE \\n\\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\\nRunning: alltoall_perf | 1 node(s) | 1 channels | algo=Ring | proto=SIMPLE\\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\\n\u2713 Completed in 6.4s\\n\\n======================================================================\\nSweep Complete\\n======================================================================\\n\\n  Total time: 6.4s\\n  Tests run: 1\\n  Successful: 0\\n  Failed: 1\\n  Success rate: 0.0%\\n\\n  Results: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0004/run_20260825_141400\\n  Database: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0004/run_20260825_141400/sweep_results.db\\nExported 1 runs to /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0004/run_20260825_141400/summary.csv\\n  CSV export: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0004/run_20260825_141400/summary.csv\\nNo metrics to export\\n  Metrics CSV: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0004/run_20260825_141400/metrics.csv\\n\\n\")",
+    "('run_failed', ('RING', 'SIMPLE', 8), \"live run r0005 ('RING', 'SIMPLE', 8) failed rc=0: \\n======================================================================\\n  RCCL Test Sweep Tool\\n======================================================================\\n\\nFound 1 server(s) in /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/servers.txt\\nSweep Configuration:\\n  Collectives: alltoall\\n  Node counts: 1 (8 GPUs/node)\\n  Channels: 8-8 (step N/A)\\n  Algorithms: RING\\n  Protocols: SIMPLE\\n  Total tests: 1\\n  Estimated time: 3m 0s\\n\\nOutput directory: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0005/run_20260825_141411\\nDatabase: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0005/run_20260825_141411/sweep_results.db\\nSession ID: 1\\n\\n\\n[1/1] alltoall_perf | 1 node(s) | 8 ch | RING | SIMPLE \\n\\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\\nRunning: alltoall_perf | 1 node(s) | 8 channels | algo=Ring | proto=SIMPLE\\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\\n\u2713 Completed in 6.1s\\n\\n======================================================================\\nSweep Complete\\n======================================================================\\n\\n  Total time: 6.1s\\n  Tests run: 1\\n  Successful: 0\\n  Failed: 1\\n  Success rate: 0.0%\\n\\n  Results: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0005/run_20260825_141411\\n  Database: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0005/run_20260825_141411/sweep_results.db\\nExported 1 runs to /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0005/run_20260825_141411/summary.csv\\n  CSV export: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0005/run_20260825_141411/summary.csv\\nNo metrics to export\\n  Metrics CSV: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0005/run_20260825_141411/metrics.csv\\n\\n\")",
+    "('run_failed', ('RING', 'SIMPLE', 24), \"live run r0006 ('RING', 'SIMPLE', 24) failed rc=0: \\n======================================================================\\n  RCCL Test Sweep Tool\\n======================================================================\\n\\nFound 1 server(s) in /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/servers.txt\\nSweep Configuration:\\n  Collectives: alltoall\\n  Node counts: 1 (8 GPUs/node)\\n  Channels: 24-24 (step N/A)\\n  Algorithms: RING\\n  Protocols: SIMPLE\\n  Total tests: 1\\n  Estimated time: 3m 0s\\n\\nOutput directory: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0006/run_20260825_141423\\nDatabase: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0006/run_20260825_141423/sweep_results.db\\nSession ID: 1\\n\\n\\n[1/1] alltoall_perf | 1 node(s) | 24 ch | RING | SIMPLE \\n\\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\\nRunning: alltoall_perf | 1 node(s) | 24 channels | algo=Ring | proto=SIMPLE\\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\\n\u2713 Completed in 7.8s\\n\\n======================================================================\\nSweep Complete\\n======================================================================\\n\\n  Total time: 7.8s\\n  Tests run: 1\\n  Successful: 0\\n  Failed: 1\\n  Success rate: 0.0%\\n\\n  Results: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0006/run_20260825_141423\\n  Database: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0006/run_20260825_141423/sweep_results.db\\nExported 1 runs to /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0006/run_20260825_141423/summary.csv\\n  CSV export: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0006/run_20260825_141423/summary.csv\\nNo metrics to export\\n  Metrics CSV: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0006/run_20260825_141423/metrics.csv\\n\\n\")",
+    "('run_failed', ('RING', 'SIMPLE', 48), \"live run r0007 ('RING', 'SIMPLE', 48) failed rc=0: \\n======================================================================\\n  RCCL Test Sweep Tool\\n======================================================================\\n\\nFound 1 server(s) in /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/servers.txt\\nSweep Configuration:\\n  Collectives: alltoall\\n  Node counts: 1 (8 GPUs/node)\\n  Channels: 48-48 (step N/A)\\n  Algorithms: RING\\n  Protocols: SIMPLE\\n  Total tests: 1\\n  Estimated time: 3m 0s\\n\\nOutput directory: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0007/run_20260825_141436\\nDatabase: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0007/run_20260825_141436/sweep_results.db\\nSession ID: 1\\n\\n\\n[1/1] alltoall_perf | 1 node(s) | 48 ch | RING | SIMPLE \\n\\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\\nRunning: alltoall_perf | 1 node(s) | 48 channels | algo=Ring | proto=SIMPLE\\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\\n\u2713 Completed in 10.8s\\n\\n======================================================================\\nSweep Complete\\n======================================================================\\n\\n  Total time: 10.8s\\n  Tests run: 1\\n  Successful: 0\\n  Failed: 1\\n  Success rate: 0.0%\\n\\n  Results: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0007/run_20260825_141436\\n  Database: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0007/run_20260825_141436/sweep_results.db\\nExported 1 runs to /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0007/run_20260825_141436/summary.csv\\n  CSV export: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0007/run_20260825_141436/summary.csv\\nNo metrics to export\\n  Metrics CSV: /opt/shared/ylerman/GPU-107/rccl-tune-2026-08-25-alltoall/alltoall_1n-1787667180/r0007/run_20260825_141436/metrics.csv\\n\\n\")"
+  ],
+  "default_busbw": [],
+  "evals": {}
+}

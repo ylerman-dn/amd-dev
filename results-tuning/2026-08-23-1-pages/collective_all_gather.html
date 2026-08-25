@@ -21,7 +21,7 @@ pre .why{color:#8a8f98;text-decoration:none;font-style:italic}
 details{margin:8px 0}summary{cursor:pointer;color:#6ea8ff;font-size:13px}</style>
 <p><a href='index.html'>&larr; all collectives</a></p>
 <h1>all_gather</h1>
-<p class=note>1n: <span class=n>defaults win</span> &nbsp;·&nbsp; 2n: <span class=g>2 rules validated</span> &nbsp;·&nbsp; 3n: <span class=g>4 rules validated</span> &nbsp;·&nbsp; 4n: <span class=warn>no live verdict</span></p>
+<p class=note>1n: <span class=n>defaults win</span> &nbsp;·&nbsp; 2n: <span class=g>2 rules validated</span> &nbsp;·&nbsp; 3n: <span class=g>4 rules validated</span> &nbsp;·&nbsp; 4n: <span class=warn>no live verdict</span> &nbsp;·&nbsp; 5n: <span class=warn>no live verdict</span></p>
 <h2>1 node</h2>
 <p class=note>run <b>2026-08-24-2-stage3a</b> · search 30 runs vs grid 54 (&minus;44%), 10 configs, 7 min search · 9 A/B repeats/arm</p>
 <h3>Search config &rarr; A/B verdicts</h3>
@@ -254,4 +254,53 @@ allgather,134217600,134217600,ring,ll128,40,3,24,-1,-1</pre>
 <tr><td>256M</td><td>config</td><td class=runs>310.72 310.22 311.99 311.91 312.38 310.95 313.18 311.59 311.44</td><td><b>311.59</b></td></tr>
 <tr><td>512M</td><td>default</td><td class=runs>366.94 289.34 366.3 366.25 366.96 365.65 367.58 367.94 366.77</td><td><b>366.77</b></td></tr>
 <tr><td>512M</td><td>config</td><td class=runs>365.15 365.68 364.29 364.31 364.67 5.01 365.26 351.33 364.43</td><td><b>364.43</b></td></tr>
+</table></div></details>
+<h2>5 nodes</h2>
+<p class=note>run <b>2026-08-25-1-stage5n</b> · search 51 runs vs grid 81 (&minus;37%), 17 configs, 22 min search · 9 A/B repeats/arm</p>
+<h3>Per size (live A/B numbers)</h3>
+<div class=tw><table><tr><th>size</th><th>default executed</th><th>ours requested</th><th>ours executed</th><th>default med</th><th>ours med</th><th>gain</th><th>P(sup)</th><th>spread def / cfg</th><th>verdict</th></tr>
+<tr ><td>16.0M</td><td></td><td>RING/LL128/16</td><td></td><td>64.21</td><td>90.98</td><td class=g>+41.7%</td><td>1.00</td><td class=n>62.0-65.13 / 85.62-91.72</td><td class=wrap>no rule</td></tr>
+<tr ><td>32.0M</td><td></td><td>RING/LL128/24</td><td></td><td>111.27</td><td>145.26</td><td class=g>+30.5%</td><td>0.89</td><td class=n>68.11-113.38 / 31.72-147.27</td><td class=wrap>no rule</td></tr>
+<tr ><td>64.0M</td><td></td><td>RING/LL128/32</td><td></td><td>182.74</td><td>219.68</td><td class=g>+20.2%</td><td>1.00</td><td class=n>156.33-185.86 / 207.31-220.51</td><td class=wrap>no rule</td></tr>
+<tr ><td>128.0M</td><td></td><td>RING/LL128/48</td><td></td><td>285.42</td><td>284.77</td><td class=n>-0.2%</td><td>0.39</td><td class=n>269.8-286.83 / 275.73-287.0</td><td class=wrap>no rule</td></tr>
+<tr ><td>256.0M</td><td></td><td>RING/LL128/40</td><td></td><td>279.72</td><td>286.84</td><td class=g>+2.5%</td><td>1.00</td><td class=n>260.75-280.56 / 284.72-287.64</td><td class=wrap>no rule</td></tr>
+<tr ><td>512.0M</td><td></td><td>RING/SIMPLE/40</td><td></td><td>357.01</td><td>356.68</td><td class=n>-0.1%</td><td>0.44</td><td class=n>342.4-358.96 / 344.65-357.93</td><td class=wrap>no rule</td></tr>
+</table></div>
+<details><summary>raw A/B runs</summary><div class=tw><table class=fit><tr><th>size</th><th>arm</th><th>runs</th><th>median</th></tr>
+<tr><td>3.8K</td><td>default</td><td class=runs>0.04 0.05 0.05 0.05 0.05 0.0 0.05 0.04 0.05</td><td><b>0.05</b></td></tr>
+<tr><td>3.8K</td><td>config</td><td class=runs>0.05 0.04 0.04 0.05 0.05 0.03 0.05 0.04 0.04</td><td><b>0.04</b></td></tr>
+<tr><td>7.5K</td><td>default</td><td class=runs>0.07 0.09 0.01 0.01 0.09 0.09 0.09 0.09 0.09</td><td><b>0.09</b></td></tr>
+<tr><td>7.5K</td><td>config</td><td class=runs>0.09 0.09 0.09 0.09 0.09 0.06 0.09 0.09 0.09</td><td><b>0.09</b></td></tr>
+<tr><td>15.6K</td><td>default</td><td class=runs>0.12 0.19 0.19 0.19 0.19 0.19 0.19 0.17 0.12</td><td><b>0.19</b></td></tr>
+<tr><td>15.6K</td><td>config</td><td class=runs>0.19 0.18 0.18 0.2 0.19 0.19 0.19 0.13 0.19</td><td><b>0.19</b></td></tr>
+<tr><td>31.9K</td><td>default</td><td class=runs>0.21 0.38 0.39 0.4 0.39 0.39 0.39 0.39 0.39</td><td><b>0.39</b></td></tr>
+<tr><td>31.9K</td><td>config</td><td class=runs>0.39 0.39 0.39 0.39 0.4 0.39 0.38 0.39 0.39</td><td><b>0.39</b></td></tr>
+<tr><td>63.8K</td><td>default</td><td class=runs>0.79 0.79 0.79 0.81 0.8 0.78 0.79 0.43 0.8</td><td><b>0.79</b></td></tr>
+<tr><td>63.8K</td><td>config</td><td class=runs>0.8 0.77 0.53 0.81 0.81 0.8 0.7 0.79 0.76</td><td><b>0.79</b></td></tr>
+<tr><td>127.5K</td><td>default</td><td class=runs>1.53 1.51 1.41 1.5 1.41 1.51 1.49 1.51 1.52</td><td><b>1.51</b></td></tr>
+<tr><td>127.5K</td><td>config</td><td class=runs>1.52 1.51 1.51 1.55 1.55 1.51 1.48 1.49 1.48</td><td><b>1.51</b></td></tr>
+<tr><td>255.6K</td><td>default</td><td class=runs>2.11 1.77 3.11 3.08 3.11 3.15 3.13 3.02 3.09</td><td><b>3.09</b></td></tr>
+<tr><td>255.6K</td><td>config</td><td class=runs>3.14 2.92 2.96 3.06 3.21 3.05 3.03 3.08 3.1</td><td><b>3.06</b></td></tr>
+<tr><td>511.9K</td><td>default</td><td class=runs>6.01 5.43 5.94 6.14 3.27 5.88 5.85 6.24 6.24</td><td><b>5.94</b></td></tr>
+<tr><td>511.9K</td><td>config</td><td class=runs>5.72 6.27 5.44 6.28 6.29 6.18 6.11 6.16 3.46</td><td><b>6.16</b></td></tr>
+<tr><td>1023.8K</td><td>default</td><td class=runs>10.82 10.4 10.14 10.02 11.11 10.02 11.08 10.05 7.48</td><td><b>10.14</b></td></tr>
+<tr><td>1023.8K</td><td>config</td><td class=runs>10.95 11.04 10.85 11.11 11.25 11.01 11.05 11.09 10.66</td><td><b>11.04</b></td></tr>
+<tr><td>2.0M</td><td>default</td><td class=runs>17.22 11.69 16.73 17.34 17.1 17.31 17.33 16.97 16.34</td><td><b>17.1</b></td></tr>
+<tr><td>2.0M</td><td>config</td><td class=runs>17.15 17.41 17.24 17.24 17.0 14.29 17.4 17.07 17.4</td><td><b>17.24</b></td></tr>
+<tr><td>4.0M</td><td>default</td><td class=runs>22.09 22.26 22.26 22.2 19.49 22.21 22.3 20.3 22.24</td><td><b>22.21</b></td></tr>
+<tr><td>4.0M</td><td>config</td><td class=runs>22.24 22.23 22.34 22.27 22.09 22.34 22.17 22.31 22.2</td><td><b>22.24</b></td></tr>
+<tr><td>8.0M</td><td>default</td><td class=runs>33.62 34.96 35.32 35.04 35.18 35.14 35.01 28.59 35.04</td><td><b>35.04</b></td></tr>
+<tr><td>8.0M</td><td>config</td><td class=runs>35.25 35.19 29.91 34.98 34.58 10.15 34.94 35.04 32.55</td><td><b>34.94</b></td></tr>
+<tr><td>16.0M</td><td>default</td><td class=runs>64.97 65.13 64.21 64.27 63.87 63.62 64.96 63.4 62.0</td><td><b>64.21</b></td></tr>
+<tr><td>16.0M</td><td>config</td><td class=runs>90.68 91.72 85.62 90.94 90.98 91.16 91.35 91.56 90.4</td><td><b>90.98</b></td></tr>
+<tr><td>32.0M</td><td>default</td><td class=runs>111.27 111.84 68.11 113.38 110.75 111.45 110.38 108.68 112.21</td><td><b>111.27</b></td></tr>
+<tr><td>32.0M</td><td>config</td><td class=runs>143.76 127.96 147.27 145.26 31.72 146.41 145.28 145.61 144.51</td><td><b>145.26</b></td></tr>
+<tr><td>64.0M</td><td>default</td><td class=runs>181.16 184.49 185.86 185.57 184.49 180.81 167.98 182.74 156.33</td><td><b>182.74</b></td></tr>
+<tr><td>64.0M</td><td>config</td><td class=runs>216.79 219.74 220.44 219.68 211.22 207.31 220.51 219.99 218.08</td><td><b>219.68</b></td></tr>
+<tr><td>128.0M</td><td>default</td><td class=runs>281.94 285.83 285.42 284.79 286.38 286.43 269.8 286.83 285.41</td><td><b>285.42</b></td></tr>
+<tr><td>128.0M</td><td>config</td><td class=runs>285.42 285.11 284.0 284.77 286.2 287.0 275.73 282.18 284.6</td><td><b>284.77</b></td></tr>
+<tr><td>256.0M</td><td>default</td><td class=runs>280.21 279.72 280.56 280.21 279.17 278.33 279.95 260.75 278.06</td><td><b>279.72</b></td></tr>
+<tr><td>256.0M</td><td>config</td><td class=runs>287.24 286.86 285.78 287.45 287.64 284.72 285.99 286.84 285.4</td><td><b>286.84</b></td></tr>
+<tr><td>512.0M</td><td>default</td><td class=runs>357.29 357.73 358.96 358.02 356.59 354.18 356.21 342.4 357.01</td><td><b>357.01</b></td></tr>
+<tr><td>512.0M</td><td>config</td><td class=runs>354.94 357.04 354.53 357.23 357.6 344.65 356.68 356.67 357.93</td><td><b>356.68</b></td></tr>
 </table></div></details>
