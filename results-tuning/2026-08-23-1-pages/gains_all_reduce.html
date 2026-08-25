@@ -3,7 +3,6 @@ background:#14161a;color:#d8dbe0}
 table{border-collapse:collapse;font-size:13px;width:100%;display:block;overflow-x:auto}
 th,td{border:1px solid #34383f;padding:4px 6px;text-align:right;white-space:nowrap}
 th:first-child,td:first-child{text-align:left}
-tr:nth-child(even){background:#1b1e24}
 h1{font-size:20px;color:#f0f2f5}h2{font-size:16px;color:#e6e9ee}h3{font-size:14px;color:#e6e9ee}
 .g{color:#4ec96a;font-weight:600}.b{color:#ff6b6b}.n{color:#8a8f98}
 .v{background:#173321}.x{background:#331a1a}
@@ -13,64 +12,64 @@ pre{background:#1b1e24;padding:8px;font-size:12px;overflow-x:auto;border-radius:
 <p class=note>gain = (our config &minus; default) / default, on busbw. 'default combo' = what RCCL itself chose (algo/proto verified via -A 1; ch~ is the planned ceiling, not the verified actual - finding 01). <b>predicted</b> = grid data (env-var path). <b>validated</b> = live A/B through the tuner plugin. A predicted win is not deliverable until validated: the env-var path and the plugin path are proven non-equivalent.</p>
 <h2>1 node <span class=tag>(node 7 (2026-08-04))</span></h2>
 <table><tr><th>size</th><th>default combo</th><th>default</th><th>our config</th><th>ours busbw</th><th>gain</th><th>A/B spread (def / cfg)</th><th>status</th></tr>
-<tr class=v><td>4K</td><td>RING/LL/1</td><td>0.32</td><td>TREE/LL/ch24</td><td>0.38</td><td class=g>+18.8%</td><td class=n>0.28-0.35 / 0.23-0.31</td><td>VALIDATED win (live)</td></tr>
-<tr class=v><td>8K</td><td>RING/LL/1</td><td>0.54</td><td>TREE/LL/ch4</td><td>0.71</td><td class=g>+31.5%</td><td class=n>0.6-0.71 / 0.53-0.62</td><td>VALIDATED win (live)</td></tr>
-<tr class=v><td>16K</td><td>RING/LL/1</td><td>0.87</td><td>TREE/LL/ch40</td><td>1.37</td><td class=g>+57.5%</td><td class=n>1.04-1.16 / 0.89-1.1</td><td>VALIDATED win (live)</td></tr>
-<tr class=v><td>32K</td><td>RING/LL/2</td><td>1.7</td><td>TREE/LL/ch40</td><td>2.76</td><td class=g>+62.4%</td><td class=n>2.08-2.29 / 1.77-2.06</td><td>VALIDATED win (live)</td></tr>
-<tr class=v><td>64K</td><td>RING/LL/4</td><td>3.3</td><td>TREE/LL/ch40</td><td>5.37</td><td class=g>+62.7%</td><td class=n>3.66-3.95 / 3.76-4.24</td><td>VALIDATED win (live)</td></tr>
-<tr class=v><td>128K</td><td>RING/LL/8</td><td>6.37</td><td>TREE/LL/ch32</td><td>9.33</td><td class=g>+46.5%</td><td class=n>5.91-6.36 / 6.42-7.45</td><td>VALIDATED win (live)</td></tr>
-<tr class=v><td>256K</td><td>RING/LL/16</td><td>12.68</td><td>RING/LL/ch32</td><td>18.13</td><td class=g>+43.0%</td><td class=n>12.8-13.27 / 12.47-14.42</td><td>VALIDATED win (live)</td></tr>
-<tr class=x><td>512K</td><td>RING/SIMPLE/16</td><td>21.3</td><td>RING/LL/ch48</td><td>35.54</td><td class=g>+66.9%</td><td class=n>10.14-10.23 / 24.36-26.65</td><td>live A/B dropped: P(sup) only 0.89, not reproducible</td></tr>
-<tr class=v><td>1M</td><td>RING/SIMPLE/32</td><td>41.81</td><td>RING/LL/ch56</td><td>49.62</td><td class=g>+18.7%</td><td class=n>19.37-19.43 / 38.27-41.58</td><td>VALIDATED win (live)</td></tr>
-<tr class=x><td>2M</td><td>RING/SIMPLE/64</td><td>79.81</td><td>RING/SIMPLE/ch48</td><td>80.27</td><td class=n>+0.6%</td><td class=n>37.89-38.06 / 60.23-61.27</td><td>live A/B dropped: best gain only -0.5%</td></tr>
-<tr class=x><td>4M</td><td>RING/SIMPLE/86</td><td>128.48</td><td>RING/SIMPLE/ch56</td><td>128.56</td><td class=n>+0.1%</td><td class=n>65.9-66.26 / 77.56-78.01</td><td>live A/B dropped: best gain only -2.0%</td></tr>
-<tr class=x><td>8M</td><td>RING/SIMPLE/103</td><td>197.71</td><td>RING/SIMPLE/ch56</td><td>197.8</td><td class=n>+0.0%</td><td class=n>107.36-108.26 / 91.18-91.59</td><td>live A/B dropped: best gain only -0.9%</td></tr>
-<tr class=x><td>16M</td><td>RING/SIMPLE/103</td><td>268.93</td><td>RING/SIMPLE/ch56</td><td>269.37</td><td class=n>+0.2%</td><td class=n>163.5-165.01 / 120.07-120.43</td><td>live A/B dropped: contains a regression of -7.6% (landmine)</td></tr>
-<tr class=x><td>32M</td><td>RING/SIMPLE/108</td><td>317.77</td><td>RING/SIMPLE/ch56</td><td>318.54</td><td class=n>+0.2%</td><td class=n>222.22-223.67 / 143.54-144.58</td><td>live A/B dropped: contains a regression of -6.9% (landmine)</td></tr>
-<tr class=x><td>64M</td><td>RING/SIMPLE/111</td><td>355.99</td><td>RING/SIMPLE/ch56</td><td>355.85</td><td class=n>-0.0%</td><td class=n>249.58-250.72 / 173.21-174.66</td><td>live A/B dropped: contains a regression of -63.3% (landmine)</td></tr>
-<tr class=x><td>128M</td><td>RING/SIMPLE/111</td><td>379.23</td><td>RING/SIMPLE/ch56</td><td>379.09</td><td class=n>-0.0%</td><td class=n>301.2-302.46 / 190.98-192.68</td><td>live A/B dropped: contains a regression of -64.3% (landmine)</td></tr>
-<tr class=x><td>256M</td><td>RING/SIMPLE/112</td><td>390.13</td><td>RING/SIMPLE/ch56</td><td>389.81</td><td class=n>-0.1%</td><td class=n>315.1-315.79 / 210.61-213.48</td><td>live A/B dropped: contains a regression of -65.3% (landmine)</td></tr>
-<tr class=x><td>512M</td><td>RING/SIMPLE/112</td><td>396.47</td><td>RING/SIMPLE/ch56</td><td>396.31</td><td class=n>-0.0%</td><td class=n>349.51-350.6 / 222.15-224.61</td><td>live A/B dropped: contains a regression of -65.7% (landmine)</td></tr>
+<tr class=v><td>4K</td><td>TREE/LL/1</td><td>0.32</td><td>TREE/LL/ch24</td><td>0.36</td><td class=g>+12.5%</td><td class=n>0.31-0.33 / 0.34-0.38</td><td>VALIDATED win (live)</td></tr>
+<tr class=v><td>8K</td><td>TREE/LL/1</td><td>0.55</td><td>TREE/LL/ch4</td><td>0.7</td><td class=g>+27.3%</td><td class=n>0.54-0.56 / 0.65-0.71</td><td>VALIDATED win (live)</td></tr>
+<tr class=v><td>16K</td><td>TREE/LL/1</td><td>0.86</td><td>TREE/LL/ch40</td><td>1.27</td><td class=g>+47.7%</td><td class=n>0.84-0.87 / 1.24-1.35</td><td>VALIDATED win (live)</td></tr>
+<tr class=v><td>32K</td><td>TREE/LL/2</td><td>1.7</td><td>TREE/LL/ch40</td><td>2.67</td><td class=g>+57.1%</td><td class=n>1.68-1.71 / 2.58-2.72</td><td>VALIDATED win (live)</td></tr>
+<tr class=v><td>64K</td><td>TREE/LL/4</td><td>3.27</td><td>TREE/LL/ch40</td><td>5.2</td><td class=g>+59.0%</td><td class=n>3.22-3.27 / 5.16-5.27</td><td>VALIDATED win (live)</td></tr>
+<tr class=v><td>128K</td><td>TREE/LL/8</td><td>6.34</td><td>TREE/LL/ch32</td><td>8.78</td><td class=g>+38.5%</td><td class=n>6.26-6.4 / 8.29-9.05</td><td>VALIDATED win (live)</td></tr>
+<tr class=v><td>256K</td><td>TREE/LL/16</td><td>12.6</td><td>RING/LL/ch32</td><td>17.79</td><td class=g>+41.2%</td><td class=n>12.41-12.71 / 17.48-17.94</td><td>VALIDATED win (live)</td></tr>
+<tr class=x><td>512K</td><td>RING/SIMPLE/16</td><td>21.26</td><td>RING/LL/ch48</td><td>34.96</td><td class=g>+64.4%</td><td class=n>21.0-21.36 / 9.98-35.11</td><td>live A/B dropped: P(sup) only 0.89, not reproducible</td></tr>
+<tr class=v><td>1M</td><td>RING/SIMPLE/32</td><td>41.46</td><td>RING/LL/ch56</td><td>48.43</td><td class=g>+16.8%</td><td class=n>41.2-41.75 / 47.65-48.52</td><td>VALIDATED win (live)</td></tr>
+<tr class=x><td>2M</td><td>RING/SIMPLE/52</td><td>79.26</td><td>RING/SIMPLE/ch48</td><td>78.89</td><td class=n>-0.5%</td><td class=n>78.58-79.7 / 78.61-79.49</td><td>live A/B dropped: best gain only -0.5%</td></tr>
+<tr class=x><td>4M</td><td>RING/SIMPLE/52</td><td>128.23</td><td>RING/SIMPLE/ch56</td><td>125.68</td><td class=n>-2.0%</td><td class=n>127.36-128.7 / 125.25-126.31</td><td>live A/B dropped: best gain only -2.0%</td></tr>
+<tr class=x><td>8M</td><td>RING/SIMPLE/54</td><td>197.47</td><td>RING/SIMPLE/ch56</td><td>195.63</td><td class=n>-0.9%</td><td class=n>196.55-197.99 / 194.9-196.04</td><td>live A/B dropped: best gain only -0.9%</td></tr>
+<tr class=x><td>16M</td><td>RING/SIMPLE/56</td><td>269.03</td><td>RING/SIMPLE/ch56</td><td>248.67</td><td class=b>-7.6%</td><td class=n>268.13-269.29 / 246.83-249.5</td><td>live A/B dropped: contains a regression of -7.6% (landmine)</td></tr>
+<tr class=x><td>32M</td><td>RING/SIMPLE/56</td><td>318.18</td><td>RING/SIMPLE/ch56</td><td>296.2</td><td class=b>-6.9%</td><td class=n>316.71-318.96 / 295.44-296.9</td><td>live A/B dropped: contains a regression of -6.9% (landmine)</td></tr>
+<tr class=x><td>64M</td><td>RING/SIMPLE/222</td><td>354.49</td><td>RING/SIMPLE/ch56</td><td>129.97</td><td class=b>-63.3%</td><td class=n>353.64-355.92 / 129.57-130.2</td><td>live A/B dropped: contains a regression of -63.3% (landmine)</td></tr>
+<tr class=x><td>128M</td><td>RING/SIMPLE/222</td><td>377.94</td><td>RING/SIMPLE/ch56</td><td>134.94</td><td class=b>-64.3%</td><td class=n>376.87-378.47 / 134.54-135.16</td><td>live A/B dropped: contains a regression of -64.3% (landmine)</td></tr>
+<tr class=x><td>256M</td><td>RING/SIMPLE/223</td><td>389.03</td><td>RING/SIMPLE/ch56</td><td>135.03</td><td class=b>-65.3%</td><td class=n>388.25-390.17 / 134.78-135.26</td><td>live A/B dropped: contains a regression of -65.3% (landmine)</td></tr>
+<tr class=x><td>512M</td><td>RING/SIMPLE/224</td><td>396.49</td><td>RING/SIMPLE/ch56</td><td>135.93</td><td class=b>-65.7%</td><td class=n>396.24-396.76 / 135.79-136.14</td><td>live A/B dropped: contains a regression of -65.7% (landmine)</td></tr>
 </table>
 <h2>2 nodes <span class=tag>({5,7} (08-04))</span></h2>
 <table><tr><th>size</th><th>default combo</th><th>default</th><th>our config</th><th>ours busbw</th><th>gain</th><th>A/B spread (def / cfg)</th><th>status</th></tr>
-<tr class=x><td>4K</td><td>RING/LL/8</td><td>0.2</td><td>TREE/LL/ch2</td><td>0.2</td><td class=n>+0.0%</td><td class=n>0.09-0.09 / 0.09-0.09</td><td>live A/B dropped: best gain only +0.0%</td></tr>
-<tr class=x><td>8K</td><td>RING/LL/16</td><td>0.39</td><td>TREE/LL/ch4</td><td>0.39</td><td class=n>+0.0%</td><td class=n>0.18-0.19 / 0.17-0.18</td><td>live A/B dropped: best gain only +0.0%</td></tr>
-<tr class=x><td>16K</td><td>RING/LL/16</td><td>0.78</td><td>TREE/LL/ch8</td><td>0.78</td><td class=n>+0.0%</td><td class=n>0.36-0.38 / 0.36-0.37</td><td>live A/B dropped: best gain only +0.0%</td></tr>
-<tr class=x><td>32K</td><td>RING/LL/16</td><td>1.51</td><td>TREE/LL/ch16</td><td>1.51</td><td class=n>+0.0%</td><td class=n>0.63-0.71 / 0.68-0.74</td><td>live A/B dropped: best gain only +0.0%</td></tr>
-<tr class=x><td>64K</td><td>RING/LL/16</td><td>2.8</td><td>TREE/LL/ch48</td><td>2.83</td><td class=n>+1.1%</td><td class=n>1.25-1.31 / 1.4-1.42</td><td>live A/B dropped: best gain only -0.4%</td></tr>
-<tr class=x><td>128K</td><td>RING/LL128/32</td><td>4.88</td><td>TREE/LL/ch40</td><td>4.96</td><td class=n>+1.6%</td><td class=n>2.38-2.52 / 2.36-2.49</td><td>live A/B dropped: best gain only +0.2%</td></tr>
-<tr class=v><td>256K</td><td>RING/LL128/32</td><td>8.48</td><td>TREE/LL128/ch32</td><td>9.15</td><td class=g>+7.9%</td><td class=n>4.67-4.97 / 4.48-4.84</td><td>VALIDATED win (live)</td></tr>
-<tr class=x><td>512K</td><td>RING/LL128/40</td><td>16.81</td><td>TREE/LL128/ch32</td><td>16.76</td><td class=n>-0.3%</td><td class=n>8.78-8.98 / 7.74-8.98</td><td>live A/B dropped: best gain only -0.8%</td></tr>
-<tr class=x><td>1M</td><td>RING/LL128/32</td><td>30.11</td><td>TREE/LL128/ch48</td><td>30.31</td><td class=n>+0.7%</td><td class=n>13.45-14.38 / 14.33-15.01</td><td>live A/B dropped: best gain only -0.3%</td></tr>
-<tr class=x><td>2M</td><td>RING/LL128/48</td><td>54.33</td><td>TREE/LL128/ch48</td><td>54.57</td><td class=n>+0.4%</td><td class=n>10.27-24.88 / 24.6-25.01</td><td>live A/B dropped: best gain only +0.1%</td></tr>
-<tr class=x><td>4M</td><td>RING/LL128/48</td><td>93.37</td><td>TREE/LL128/ch48</td><td>93.37</td><td class=n>+0.0%</td><td class=n>40.24-41.47 / 49.07-51.39</td><td>live A/B dropped: best gain only -0.3%</td></tr>
-<tr class=x><td>8M</td><td>RING/LL128/48</td><td>144.64</td><td>TREE/LL128/ch48</td><td>144.72</td><td class=n>+0.1%</td><td class=n>69.02-71.52 / 88.89-91.12</td><td>live A/B dropped: best gain only -0.0%</td></tr>
-<tr class=x><td>16M</td><td>RING/SIMPLE/48</td><td>193.45</td><td>TREE/LL128/ch48</td><td>195.27</td><td class=n>+0.9%</td><td class=n>140.85-146.23 / 139.77-144.7</td><td>live A/B dropped: best gain only +0.2%</td></tr>
-<tr class=v><td>32M</td><td>RING/SIMPLE/48</td><td>225.25</td><td>RING/LL128/ch40</td><td>250.89</td><td class=g>+11.4%</td><td class=n>208.6-215.44 / 214.72-220.49</td><td>VALIDATED win (live)</td></tr>
-<tr class=x><td>64M</td><td>RING/LL128 ch~48</td><td>292.21</td><td>RING/LL128/ch48</td><td>291.16</td><td class=n>-0.4%</td><td class=n>267.6-270.61 / 262.01-270.14</td><td>live A/B dropped: best gain only -0.1%</td></tr>
-<tr class=v><td>128M</td><td>RING/SIMPLE ch~48</td><td>320.38</td><td>RING/SIMPLE/ch40</td><td>323.03</td><td class=n>+0.8%</td><td class=n>291.34-293.29 / 310.78-314.35</td><td>VALIDATED win (live)</td></tr>
-<tr class=x><td>256M</td><td>RING/SIMPLE ch~48</td><td>370.15</td><td>RING/SIMPLE/ch48</td><td>369.64</td><td class=n>-0.1%</td><td class=n>355.5-357.63 / 355.89-357.63</td><td>live A/B dropped: best gain only -0.3%</td></tr>
-<tr class=x><td>512M</td><td>RING/SIMPLE ch~48</td><td>374.83</td><td>RING/SIMPLE/ch40</td><td>373.54</td><td class=n>-0.3%</td><td class=n>364.46-365.55 / 363.45-365.1</td><td>live A/B dropped: best gain only -0.2%</td></tr>
+<tr class=x><td>4K</td><td>TREE/LL/2</td><td>0.2</td><td>TREE/LL/ch2</td><td>0.2</td><td class=n>+0.0%</td><td class=n>0.19-0.2 / 0.18-0.2</td><td>live A/B dropped: best gain only +0.0%</td></tr>
+<tr class=x><td>8K</td><td>TREE/LL/4</td><td>0.39</td><td>TREE/LL/ch4</td><td>0.39</td><td class=n>+0.0%</td><td class=n>0.37-0.39 / 0.36-0.4</td><td>live A/B dropped: best gain only +0.0%</td></tr>
+<tr class=x><td>16K</td><td>TREE/LL/8</td><td>0.77</td><td>TREE/LL/ch8</td><td>0.77</td><td class=n>+0.0%</td><td class=n>0.75-0.78 / 0.1-0.78</td><td>live A/B dropped: best gain only +0.0%</td></tr>
+<tr class=x><td>32K</td><td>TREE/LL/16</td><td>1.47</td><td>TREE/LL/ch16</td><td>1.47</td><td class=n>+0.0%</td><td class=n>1.42-1.5 / 1.46-1.49</td><td>live A/B dropped: best gain only +0.0%</td></tr>
+<tr class=x><td>64K</td><td>TREE/LL/32</td><td>2.77</td><td>TREE/LL/ch48</td><td>2.76</td><td class=n>-0.4%</td><td class=n>2.69-2.81 / 2.72-2.79</td><td>live A/B dropped: best gain only -0.4%</td></tr>
+<tr class=x><td>128K</td><td>TREE/LL/32</td><td>4.85</td><td>TREE/LL/ch40</td><td>4.86</td><td class=n>+0.2%</td><td class=n>4.82-4.92 / 4.81-4.89</td><td>live A/B dropped: best gain only +0.2%</td></tr>
+<tr class=v><td>256K</td><td>TREE/LL/43</td><td>8.5</td><td>TREE/LL128/ch32</td><td>9.06</td><td class=g>+6.6%</td><td class=n>8.42-8.55 / 8.96-9.13</td><td>VALIDATED win (live)</td></tr>
+<tr class=x><td>512K</td><td>TREE/LL128/32</td><td>16.68</td><td>TREE/LL128/ch32</td><td>16.54</td><td class=n>-0.8%</td><td class=n>16.44-16.8 / 16.07-16.71</td><td>live A/B dropped: best gain only -0.8%</td></tr>
+<tr class=x><td>1M</td><td>TREE/LL128/43</td><td>30.3</td><td>TREE/LL128/ch48</td><td>30.21</td><td class=n>-0.3%</td><td class=n>30.18-30.63 / 29.89-30.39</td><td>live A/B dropped: best gain only -0.3%</td></tr>
+<tr class=x><td>2M</td><td>TREE/LL128/43</td><td>54.38</td><td>TREE/LL128/ch48</td><td>54.44</td><td class=n>+0.1%</td><td class=n>49.97-54.97 / 54.0-54.74</td><td>live A/B dropped: best gain only +0.1%</td></tr>
+<tr class=x><td>4M</td><td>TREE/LL128/47</td><td>92.82</td><td>TREE/LL128/ch48</td><td>92.52</td><td class=n>-0.3%</td><td class=n>91.75-93.64 / 92.26-93.49</td><td>live A/B dropped: best gain only -0.3%</td></tr>
+<tr class=x><td>8M</td><td>TREE/LL128/47</td><td>143.96</td><td>TREE/LL128/ch48</td><td>143.9</td><td class=n>-0.0%</td><td class=n>137.35-145.17 / 141.68-145.03</td><td>live A/B dropped: best gain only -0.0%</td></tr>
+<tr class=x><td>16M</td><td>TREE/LL128/48</td><td>193.29</td><td>TREE/LL128/ch48</td><td>193.59</td><td class=n>+0.2%</td><td class=n>191.19-195.38 / 191.11-194.33</td><td>live A/B dropped: best gain only +0.2%</td></tr>
+<tr class=v><td>32M</td><td>TREE/LL128/48</td><td>222.03</td><td>RING/LL128/ch40</td><td>246.1</td><td class=g>+10.8%</td><td class=n>219.8-225.16 / 237.32-246.54</td><td>VALIDATED win (live)</td></tr>
+<tr class=x><td>64M</td><td>RING/LL128/48</td><td>290.75</td><td>RING/LL128/ch48</td><td>290.51</td><td class=n>-0.1%</td><td class=n>290.24-292.21 / 289.3-292.2</td><td>live A/B dropped: best gain only -0.1%</td></tr>
+<tr class=v><td>128M</td><td>RING/SIMPLE/48</td><td>317.74</td><td>RING/SIMPLE/ch40</td><td>324.52</td><td class=g>+2.1%</td><td class=n>87.92-319.23 / 322.59-325.74</td><td>VALIDATED win (live)</td></tr>
+<tr class=x><td>256M</td><td>RING/SIMPLE/48</td><td>369.63</td><td>RING/SIMPLE/ch48</td><td>368.35</td><td class=n>-0.3%</td><td class=n>369.23-370.4 / 366.18-368.74</td><td>live A/B dropped: best gain only -0.3%</td></tr>
+<tr class=x><td>512M</td><td>RING/SIMPLE/48</td><td>374.55</td><td>RING/SIMPLE/ch40</td><td>373.66</td><td class=n>-0.2%</td><td class=n>374.29-375.32 / 372.95-373.86</td><td>live A/B dropped: best gain only -0.2%</td></tr>
 </table>
 <h2>3 nodes <span class=tag>({5,6,7} (08-04))</span></h2>
 <table><tr><th>size</th><th>default combo</th><th>default</th><th>our config</th><th>ours busbw</th><th>gain</th><th>A/B spread (def / cfg)</th><th>status</th></tr>
-<tr class=x><td>4K</td><td>TREE/LL/2</td><td>0.11</td><td>TREE/LL/ch2</td><td>0.11</td><td class=n>+0.0%</td><td class=n>0.1-0.1 / 0.1-0.1</td><td>live A/B dropped: best gain only +0.0%</td></tr>
-<tr class=x><td>8K</td><td>TREE/LL/4</td><td>0.22</td><td>TREE/LL/ch4</td><td>0.22</td><td class=n>+0.0%</td><td class=n>0.19-0.2 / 0.2-0.2</td><td>live A/B dropped: best gain only +0.0%</td></tr>
-<tr class=x><td>16K</td><td>TREE/LL/8</td><td>0.43</td><td>TREE/LL/ch8</td><td>0.43</td><td class=n>+0.0%</td><td class=n>0.38-0.4 / 0.4-0.41</td><td>live A/B dropped: best gain only +0.0%</td></tr>
-<tr class=x><td>32K</td><td>TREE/LL/16</td><td>0.83</td><td>TREE/LL/ch16</td><td>0.83</td><td class=n>+0.0%</td><td class=n>0.77-0.78 / 0.77-0.79</td><td>live A/B dropped: best gain only +0.0%</td></tr>
-<tr class=x><td>64K</td><td>TREE/LL/32</td><td>1.54</td><td>TREE/LL/ch32</td><td>1.58</td><td class=g>+2.6%</td><td class=n>1.47-1.51 / 1.44-1.48</td><td>live A/B dropped: best gain only -0.7%</td></tr>
-<tr class=v><td>128K</td><td>TREE/LL/32</td><td>2.75</td><td>TREE/LL128/ch16</td><td>2.89</td><td class=g>+5.1%</td><td class=n>0.87-2.65 / 2.71-2.74</td><td>VALIDATED win (live)</td></tr>
-<tr class=v><td>256K</td><td>TREE/LL/43</td><td>4.89</td><td>TREE/LL128/ch48</td><td>5.5</td><td class=g>+12.5%</td><td class=n>3.08-4.73 / 4.85-5.22</td><td>VALIDATED win (live)</td></tr>
-<tr class=x><td>512K</td><td>TREE/LL128/32</td><td>10.23</td><td>TREE/LL128/ch32</td><td>10.27</td><td class=n>+0.4%</td><td class=n>9.74-9.84 / 9.37-9.72</td><td>live A/B dropped: best gain only -1.3%</td></tr>
-<tr class=x><td>1M</td><td>TREE/LL128/43</td><td>18.87</td><td>TREE/LL128/ch48</td><td>18.84</td><td class=n>-0.2%</td><td class=n>17.48-18.18 / 17.66-17.93</td><td>live A/B dropped: best gain only -1.1%</td></tr>
-<tr class=x><td>2M</td><td>TREE/LL128/43</td><td>35.02</td><td>TREE/LL128/ch48</td><td>35.18</td><td class=n>+0.5%</td><td class=n>32.43-33.81 / 33.09-33.44</td><td>live A/B dropped: best gain only -1.1%</td></tr>
-<tr class=x><td>4M</td><td>TREE/LL128/47</td><td>61.61</td><td>TREE/LL128/ch48</td><td>61.93</td><td class=n>+0.5%</td><td class=n>59.38-60.29 / 47.71-59.95</td><td>live A/B dropped: best gain only -1.2%</td></tr>
-<tr class=x><td>8M</td><td>TREE/LL128/47</td><td>102.65</td><td>TREE/LL128/ch48</td><td>102.19</td><td class=n>-0.4%</td><td class=n>93.97-100.49 / 99.12-100.05</td><td>live A/B dropped: best gain only +0.1%</td></tr>
-<tr class=x><td>16M</td><td>TREE/LL128/48</td><td>149.21</td><td>TREE/LL128/ch48</td><td>149.45</td><td class=n>+0.2%</td><td class=n>124.93-147.6 / 137.44-146.49</td><td>live A/B dropped: best gain only -0.6%</td></tr>
-<tr class=v><td>32M</td><td>TREE/LL128/48</td><td>186.37</td><td>RING/LL128/ch32</td><td>203.81</td><td class=g>+9.4%</td><td class=n>166.9-185.81 / 197.57-200.37</td><td>VALIDATED win (live)</td></tr>
-<tr class=x><td>64M</td><td>RING/LL128/48</td><td>268.59</td><td>RING/LL128/ch40</td><td>267.98</td><td class=n>-0.2%</td><td class=n>239.99-269.12 / 266.8-267.74</td><td>live A/B dropped: best gain only -0.4%</td></tr>
-<tr class=v><td>128M</td><td>RING/LL128/48</td><td>244.71</td><td>RING/LL128/ch40</td><td>271.37</td><td class=g>+10.9%</td><td class=n>242.54-244.95 / 268.15-272.96</td><td>VALIDATED win (live)</td></tr>
-<tr class=v><td>256M</td><td>RING/LL128/48</td><td>295.97</td><td>RING/SIMPLE/ch48</td><td>344.52</td><td class=g>+16.4%</td><td class=n>293.67-295.39 / 344.83-347.53</td><td>VALIDATED win (live)</td></tr>
-<tr class=x><td>512M</td><td>RING/SIMPLE/48</td><td>374.02</td><td>RING/SIMPLE/ch48</td><td>374.16</td><td class=n>+0.0%</td><td class=n>367.85-374.79 / 58.26-374.3</td><td>live A/B dropped: best gain only -0.1%</td></tr>
+<tr class=x><td>4K</td><td>TREE/LL/2</td><td>0.1</td><td>TREE/LL/ch2</td><td>0.1</td><td class=n>+0.0%</td><td class=n>0.1-0.1 / 0.1-0.1</td><td>live A/B dropped: best gain only +0.0%</td></tr>
+<tr class=x><td>8K</td><td>TREE/LL/4</td><td>0.2</td><td>TREE/LL/ch4</td><td>0.2</td><td class=n>+0.0%</td><td class=n>0.19-0.2 / 0.2-0.2</td><td>live A/B dropped: best gain only +0.0%</td></tr>
+<tr class=x><td>16K</td><td>TREE/LL/8</td><td>0.4</td><td>TREE/LL/ch8</td><td>0.4</td><td class=n>+0.0%</td><td class=n>0.38-0.4 / 0.4-0.41</td><td>live A/B dropped: best gain only +0.0%</td></tr>
+<tr class=x><td>32K</td><td>TREE/LL/16</td><td>0.78</td><td>TREE/LL/ch16</td><td>0.78</td><td class=n>+0.0%</td><td class=n>0.77-0.78 / 0.77-0.79</td><td>live A/B dropped: best gain only +0.0%</td></tr>
+<tr class=x><td>64K</td><td>TREE/LL/32</td><td>1.48</td><td>TREE/LL/ch32</td><td>1.47</td><td class=n>-0.7%</td><td class=n>1.47-1.51 / 1.44-1.48</td><td>live A/B dropped: best gain only -0.7%</td></tr>
+<tr class=v><td>128K</td><td>TREE/LL/32</td><td>2.63</td><td>TREE/LL128/ch16</td><td>2.72</td><td class=g>+3.4%</td><td class=n>0.87-2.65 / 2.71-2.74</td><td>VALIDATED win (live)</td></tr>
+<tr class=v><td>256K</td><td>TREE/LL/43</td><td>4.69</td><td>TREE/LL128/ch48</td><td>5.19</td><td class=g>+10.7%</td><td class=n>3.08-4.73 / 4.85-5.22</td><td>VALIDATED win (live)</td></tr>
+<tr class=x><td>512K</td><td>TREE/LL128/32</td><td>9.8</td><td>TREE/LL128/ch32</td><td>9.67</td><td class=n>-1.3%</td><td class=n>9.74-9.84 / 9.37-9.72</td><td>live A/B dropped: best gain only -1.3%</td></tr>
+<tr class=x><td>1M</td><td>TREE/LL128/43</td><td>18.1</td><td>TREE/LL128/ch48</td><td>17.9</td><td class=n>-1.1%</td><td class=n>17.48-18.18 / 17.66-17.93</td><td>live A/B dropped: best gain only -1.1%</td></tr>
+<tr class=x><td>2M</td><td>TREE/LL128/43</td><td>33.65</td><td>TREE/LL128/ch48</td><td>33.29</td><td class=n>-1.1%</td><td class=n>32.43-33.81 / 33.09-33.44</td><td>live A/B dropped: best gain only -1.1%</td></tr>
+<tr class=x><td>4M</td><td>TREE/LL128/47</td><td>59.96</td><td>TREE/LL128/ch48</td><td>59.23</td><td class=n>-1.2%</td><td class=n>59.38-60.29 / 47.71-59.95</td><td>live A/B dropped: best gain only -1.2%</td></tr>
+<tr class=x><td>8M</td><td>TREE/LL128/47</td><td>99.16</td><td>TREE/LL128/ch48</td><td>99.3</td><td class=n>+0.1%</td><td class=n>93.97-100.49 / 99.12-100.05</td><td>live A/B dropped: best gain only +0.1%</td></tr>
+<tr class=x><td>16M</td><td>TREE/LL128/48</td><td>146.92</td><td>TREE/LL128/ch48</td><td>145.98</td><td class=n>-0.6%</td><td class=n>124.93-147.6 / 137.44-146.49</td><td>live A/B dropped: best gain only -0.6%</td></tr>
+<tr class=v><td>32M</td><td>TREE/LL128/48</td><td>184.5</td><td>RING/LL128/ch32</td><td>198.8</td><td class=g>+7.8%</td><td class=n>166.9-185.81 / 197.57-200.37</td><td>VALIDATED win (live)</td></tr>
+<tr class=x><td>64M</td><td>RING/LL128/48</td><td>268.43</td><td>RING/LL128/ch40</td><td>267.38</td><td class=n>-0.4%</td><td class=n>239.99-269.12 / 266.8-267.74</td><td>live A/B dropped: best gain only -0.4%</td></tr>
+<tr class=v><td>128M</td><td>RING/LL128/48</td><td>243.08</td><td>RING/LL128/ch40</td><td>271.34</td><td class=g>+11.6%</td><td class=n>242.54-244.95 / 268.15-272.96</td><td>VALIDATED win (live)</td></tr>
+<tr class=v><td>256M</td><td>RING/LL128/48</td><td>294.59</td><td>RING/SIMPLE/ch48</td><td>346.18</td><td class=g>+17.5%</td><td class=n>293.67-295.39 / 344.83-347.53</td><td>VALIDATED win (live)</td></tr>
+<tr class=x><td>512M</td><td>RING/SIMPLE/48</td><td>373.94</td><td>RING/SIMPLE/ch48</td><td>373.74</td><td class=n>-0.1%</td><td class=n>367.85-374.79 / 58.26-374.3</td><td>live A/B dropped: best gain only -0.1%</td></tr>
 </table>

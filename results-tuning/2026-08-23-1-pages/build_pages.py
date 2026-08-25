@@ -138,8 +138,11 @@ def live_spread(coll, nodes):
         return {}
     import glob as _g
     base = (RT / path).parent
+    stem = f"{coll}_{nodes}n".replace("all_reduce", "allreduce").replace(
+        "all_gather", "allgather").replace("reduce_scatter", "reducescatter")
     out = {}
-    for f in _g.glob(str(base / "**" / "per_size_stats.csv"), recursive=True):
+    for f in _g.glob(str(base / "**" / f"{stem}*" / "per_size_stats.csv"),
+                     recursive=True):
         with open(f) as fh:
             for row in csv.DictReader(fh):
                 if int(row["nodes"]) != nodes:
@@ -148,9 +151,13 @@ def live_spread(coll, nodes):
                     "spread": (f"{row['def_min']}-{row['def_max']} / "
                                f"{row['cfg_min']}-{row['cfg_max']}"),
                     "def_exec": row.get("def_exec", ""),
+                    "def_med": row.get("def_median", ""),
+                    "cfg_med": row.get("cfg_median", ""),
+                    "gain": row.get("gain_pct", ""),
                 }
     # pre-sidecar batches: exec labels only, no spread
-    for f in _g.glob(str(base / "**" / "exec_truth.csv"), recursive=True):
+    for f in _g.glob(str(base / "**" / f"{stem}*" / "exec_truth.csv"),
+                     recursive=True):
         with open(f) as fh:
             for row in csv.DictReader(fh):
                 if int(row["nodes"]) != nodes:
@@ -193,7 +200,6 @@ background:#14161a;color:#d8dbe0}
 table{border-collapse:collapse;font-size:13px;width:100%;display:block;overflow-x:auto}
 th,td{border:1px solid #34383f;padding:4px 6px;text-align:right;white-space:nowrap}
 th:first-child,td:first-child{text-align:left}
-tr:nth-child(even){background:#1b1e24}
 h1{font-size:20px;color:#f0f2f5}h2{font-size:16px;color:#e6e9ee}h3{font-size:14px;color:#e6e9ee}
 .g{color:#4ec96a;font-weight:600}.b{color:#ff6b6b}.n{color:#8a8f98}
 .v{background:#173321}.x{background:#331a1a}
@@ -231,6 +237,13 @@ def build_gains(coll):
             if s in w and w[s]["bw"] is not None:
                 bw, cfg = w[s]["bw"], w[s]["cfg"]
                 gain = (bw - dv) / dv * 100.0
+                live = sp.get(s) or {}
+                if live.get("gain"):
+                    # live A/B numbers (the deployment path) supersede the
+                    # grid-era prediction on validated rows
+                    dv = float(live["def_med"])
+                    bw = float(live["cfg_med"])
+                    gain = float(live["gain"])
                 cls = "g" if gain > 2 else ("b" if gain < -2 else "n")
                 status, rowcls = "predicted", ""
                 if lv:
