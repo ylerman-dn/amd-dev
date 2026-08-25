@@ -20,7 +20,7 @@ The dev VM has no Slurm client: Slurm calls go through ssh to --slurm-host.
 Benchmarks themselves run mpirun-over-ssh from the first booked node, driven
 by adaptive_search.py (search) and validate_tuner_config.py (A/B).
 
-Node policy: nodes 2 (orchestrator) and 9 (no ssh key) are never used; the
+Node policy: node 2 (orchestrator) is never used (node 9 verified usable 2026-08-24); the
 broken list starts with node 4 (fabric fault 2026-08-18) and can be edited in
 BROKEN_NODES below. Booking prefers previously-published node sets.
 """
