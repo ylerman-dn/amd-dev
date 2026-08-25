@@ -30,3 +30,11 @@ Kept during the autonomous overnight runs. Normal prose, one bullet per item.
   unsynchronized 30s exporter scrapes, a much larger busy-window union) plus
   small-size jitter (32-73% at 8-32K). broadcast 4n abandoned after 4 attempts;
   reduce 4n burned 3. Feeds the pending preflight-design decision (option C).
+- 2026-08-25 ~02:00Z: found + fixed a verdict-integrity bug - validate wrote
+  .validated.csv BEFORE its own validity gate, so an rc=2 (void) run left
+  verdicts on disk; the stage4n fetch shipped an all_gather_4n file whose
+  verdicts the tool itself had declared meaningless. Quarantined
+  (all_gather_4n.validated.csv.INVALID-rc2, final conf removed); validate now
+  writes void-run verdicts to .VOID-rc2 only.
+- 5-node stage: impossible tonight - only 4 healthy idle nodes exist while
+  node 4 is fabric-broken and nodes 2/3/6/7 carry co-tenants. Noted, skipped.
