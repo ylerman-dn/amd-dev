@@ -70,3 +70,42 @@ files are pointed at - small AB map update in build_pages.py)
      accept it as unmeasurable.
   3. node 5 has a crash-looping node-exporter.service (324,491 restarts, port
      conflict) - report to cluster admin.
+
+## Overnight summary 2026-08-24/25 (autonomous; all times UTC)
+
+What ran (all through rccl-tune, per-size verdicts, 9 repeats/arm, executed-truth columns):
+- stage2 (all_reduce, broadcast, reduce_scatter x 1/2/3n on {1,3,8}): 9/9
+  searches; A/B 8/9 verdicts. broadcast 2n abandoned on a THIRD node pair -
+  22 attempts lifetime; its instability is intrinsic.
+- stage3a (all_gather, reduce x 1/2/3n on {3,5,8}): first fully clean
+  end-to-end CLI run. 6/6 searches, 6/6 verdicts (all_gather 1n: defaults win,
+  correct empty config).
+- stage4n (all 5 collectives at 4 NODES on {1,5,8,9} - first ever): 5/5
+  searches (all_reduce/broadcast/reduce/reduce_scatter 18 winners each,
+  all_gather 6); A/B window hostile after midnight - only all_reduce 4n
+  validated (rc=0 first try); the other four exhausted retry budgets.
+- node probes: node 4 STILL broken (3/3 timeouts); node 9 HEALTHY and served
+  its first workload (unblacklisted).
+- 5-node stage: infeasible - never 5 healthy idle nodes.
+- alltoall: skipped (no CLI channels-only mode yet).
+
+Tool bugs found by the runs and fixed (all committed on gpu107-cli):
+1. A/B launch ssh hang crashed the run and orphaned a live ab_run (fixed:
+   short launch timeout + process verification).
+2. Live oracle killed whole configs on any substituted size (fixed: per-size
+   drop, grid semantics) - unblocked all_gather.
+3. Retry over a reused remote dir concatenated stale metrics (fixed: unique
+   dir per attempt + header-tolerant parsing).
+4. validate wrote .validated.csv for rc=2 VOID runs (fixed: void verdicts go
+   to .VOID-rc2; the one shipped file quarantined).
+
+Pages (all dark, executed-truth columns): main site + per-run pages
+(cli/2026-08-24-1-pilot, -1-stage2, -2-stage3a, -1-stage4n) + approaches.html
++ approaches-draft.html (style options for your pick).
+
+Decisions waiting for the user:
+1. broadcast 2n (and now most 4n) A/B unmeasurable under current gates -
+   preflight option C recommended (see the noise investigation).
+2. The 10 one-liner facts: approve/strike -> findings.
+3. approaches-draft.html: pick styles per topic.
+4. Node 4: report to cluster admin (probe evidence in RUNLOG).
