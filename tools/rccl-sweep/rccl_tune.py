@@ -53,7 +53,7 @@ POLICY = dict(anchors="1,8,24,48", margin="15", tol="0.5",
               grid="1,2,4,8,16,24,32,40,48")
 
 COLLECTIVES = ["all_reduce", "broadcast", "reduce", "all_gather",
-               "reduce_scatter"]
+               "reduce_scatter", "alltoall"]
 
 
 def utc():
@@ -397,9 +397,7 @@ def cmd_run(args):
     scales = [int(s) for s in args.scales.split(",")]
     for coll in colls:
         if coll not in COLLECTIVES:
-            sys.exit(f"unsupported collective '{coll}' "
-                     f"(alltoall: channels-only sweep, not wired yet; "
-                     f"supported: {COLLECTIVES})")
+            sys.exit(f"unsupported collective '{coll}'; supported: {COLLECTIVES}")
     pairs = [(coll, s) for coll in colls for s in scales]
     need = max(scales)
     outdir = RESULTS / "DRY-RUN" if args.dry_run else results_dir(args.name)
