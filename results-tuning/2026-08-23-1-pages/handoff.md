@@ -135,3 +135,40 @@ Key paths: findings 09/10/11 written; corrections log at
 results-tuning/2026-08-24-2-cli-pages/corrections.md; per-collective pages
 built by results-tuning/2026-08-23-1-pages/build_site.py (auto-resolves
 freshest verdicts); CLI = tools/rccl-sweep/rccl_tune.py (~/.local/bin/rccl-tune).
+
+## 2026-08-26 session (autonomous, user away)
+
+User approvals executed: (2) rule-scoped preflight - implemented, tested,
+deployed (`--preflight-scope rules`, ab_run passes it); (3) alltoall - full
+pipeline built and run at 1-5 nodes.
+
+alltoall reality (source-verified, 2e42aa8 enqueue.cc): decomposed into p2p
+send/recv tasks - NCCL_ALGO/PROTO no-ops, tuner plugin never consulted,
+-A 1 prints N/A. Tool changes: N/A-tolerant sweep_parser, channels-only
+search (pseudo-combo "P2P/-"), env-arm A/B (NCCL_MIN/MAX_NCHANNELS as the ON
+arm, verified via the debug log's "set by environment" echo), p2p-channel
+exec truth. Results: defaults win at EVERY scale (1n/3n by A/B rc=1, 2n/5n
+at the search stage, 4n voided rc=2 x4 - the usual >=4n transients).
+Exec-truth bonus: at 1n a 40-channel request executes the same 64 p2p
+channels as the default (WarpSpeed x4); at 2n requests cap at 32; at 5n 40
+rounds up to 64.
+
+broadcast 2n UNLOCKED: first verdict after 22 refusals. Scoped preflight
+excluded 4K/16K, judged the rest; 4 rules verified (32K +17.9%, 64K +104.7%,
+128K +66.0%, 256K +30.6%, ring/ll128 ch=1) -> broadcast_2n.final.conf
+(one merged rule 32768-262144).
+
+5n noise analyzed offline (stage5n/NOISE-ANALYSIS.md): no 30s/60s wall-phase
+clustering of outliers - wall-aligned exporter scrapes unsupported; signature
+is transient fabric stalls at all sizes. Exporters-stopped A/B (admin) stays
+the definitive test.
+
+Incidents (corrections.md has details): sync_tool never pushed the
+remote-executed stack (fixed, list widened); refill launcher ssh hung ~5h and
+burned allocation 20783 (broadcast_2n verdict landed before that; fixed
+script refill_ab2 has a 30s launch timeout).
+
+Still open: reduce/reduce_scatter/all_gather 4n + all five 5n A/B refills -
+blocked by a multi-node co-tenant (regeveyal hpo night, nodes 1,3,5,7); a
+window watcher relaunches refill_ab2.sh when nodes 3,5,6,7,8 go idle with an
+empty pending queue. broadcast 4n gave up again (rc=3,2,2,2).
