@@ -91,6 +91,7 @@ def main():
                    "--warmup-runs", str(WARMUP_RUNS[n]),
                    "--min-bytes", "4096", "--max-bytes", "536870912",
                    "--iters", "20", "--warmup", "5",
+                   "--preflight-scope", "rules",
                    "--logdir", str(logdir)]
             if env_arm:
                 ch = chans.copy().pop()

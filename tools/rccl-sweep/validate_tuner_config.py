@@ -200,8 +200,17 @@ def load_sweep_env(path):
     return {k: str(v) for k, v in env.items()}
 
 
-def preflight(args, scales):
+def preflight(args, scales, rules=None):
     """Measure whether the machine can currently produce a decidable answer, before spending an A/B.
+
+    With `rules` (--preflight-scope rules, agreed 2026-08-26): the decision is scoped to the sizes
+    the config actually ships rules for, and a PARTIALLY noisy scale is used rather than refused --
+    the chronically noisy sizes are returned as excluded, their rules get dropped with that reason,
+    and every other size is judged normally. Chronic small-size scatter (broadcast 2n 4-16K: 22
+    attempts refused; alltoall 1n 32K at 690% spread) otherwise vetoes sizes that measure cleanly.
+    Refusal still happens when EVERY scoped size is noisy.
+
+    Returns {scale: set(excluded sizes)} when usable (empty sets in unscoped mode), None when not.
 
     Runs the DEFAULT configuration a handful of times at each scale and looks at how much its own
     repeats disagree. Nothing is being compared here -- identical runs should give identical numbers,
@@ -216,8 +225,17 @@ def preflight(args, scales):
     Returns True when every scale looks decidable.
     """
     print(f"preflight: {args.preflight} default runs per scale, checking the machine can decide "
-          f"anything before spending an A/B\n", flush=True)
+          f"anything before spending an A/B"
+          + (" (scoped to the config's rule sizes)" if rules else "") + "\n", flush=True)
     ok = True
+    excluded = {n: set() for n in scales}
+
+    def covered(size, nodes):
+        if rules is None:
+            return True
+        return any(r["nodes"] == nodes and r["min_bytes"] <= size <= r["max_bytes"]
+                   for r in rules)
+
     for nodes in scales:
         # GPU-107: warm THIS scale's nodes before judging them. Preflight used to run before any
         # warm-up, so on a freshly allocated node it measured the idle-clock ramp -- the very thing
@@ -249,7 +267,12 @@ def preflight(args, scales):
                         w, ws = sp, size
             return w, ws
 
-        worst, worst_size = worst_of(seen)
+        scoped = {sz: vals for sz, vals in seen.items() if covered(sz, nodes)}
+        if rules is not None and seen and not scoped:
+            # a scale with data but no rule coverage has nothing to judge
+            print(f"  {nodes}n: no rule covers any measured size -- nothing to preflight")
+            continue
+        worst, worst_size = worst_of(scoped)
         if not seen:
             print(f"  {nodes}n: no data from any preflight run")
             ok = False
@@ -260,14 +283,15 @@ def preflight(args, scales):
             # makes EVERY size pass, take one extra confirmation run; pass
             # only if the confirmed set is clean. Chronic scatter has no such
             # index and still fails; the rc=2 post-gate remains the backstop.
-            n_runs = max(len(v) for v in seen.values())
+            n_runs = max(len(v) for v in scoped.values())
             outlier = None
             for i in range(n_runs):
                 trial = {sz: [v for j, v in enumerate(vals) if j != i]
-                         for sz, vals in seen.items()}
+                         for sz, vals in scoped.items()}
                 if worst_of(trial)[0] <= args.max_arm_spread:
                     outlier = i
                     break
+            judged = scoped
             if outlier is not None:
                 print(f"  {nodes}n: spread {worst:.0f}% at {worst_size} bytes "
                       f"caused by run {outlier + 1} alone -- taking one "
@@ -279,23 +303,45 @@ def preflight(args, scales):
                 if not hung:
                     confirmed = {sz: [v for j, v in enumerate(vals)
                                       if j != outlier]
-                                 for sz, vals in seen.items()}
+                                 for sz, vals in scoped.items()}
                     for sz, bw in data.items():
-                        confirmed.setdefault(sz, []).append(bw)
+                        if covered(sz, nodes):
+                            confirmed.setdefault(sz, []).append(bw)
                     cw, cws = worst_of(confirmed)
                     if cw <= args.max_arm_spread:
                         print(f"  {nodes}n: confirmed clean (worst "
                               f"{cw:.1f}%) -- usable")
                         continue
                     print(f"  {nodes}n: confirmation run disagrees too "
-                          f"(worst {cw:.0f}% at {cws} bytes) -- NOT usable")
+                          f"(worst {cw:.0f}% at {cws} bytes)")
+                    judged = confirmed
                 else:
-                    print(f"  {nodes}n: confirmation run HUNG -- NOT usable")
+                    print(f"  {nodes}n: confirmation run HUNG")
+            # scoped mode: exclude the chronically noisy sizes instead of
+            # vetoing the sizes that measure cleanly; refuse only when
+            # nothing in scope is measurable
+            if rules is not None:
+                noisy = {sz for sz, vals in judged.items()
+                         if len(vals) >= 2 and min(vals) > 0 and
+                         (max(vals) - min(vals)) / min(vals) * 100
+                         > args.max_arm_spread}
+                if len(noisy) < len(judged):
+                    excluded[nodes] = noisy
+                    print(f"  {nodes}n: {len(noisy)} of {len(judged)} scoped "
+                          f"size(s) unmeasurable and EXCLUDED "
+                          f"({sorted(noisy)}); the rest are judged normally "
+                          f"-- usable")
+                    continue
+                print(f"  {nodes}n: every scoped size is noisy -- NOT usable")
                 ok = False
             else:
-                print(f"  {nodes}n: WORST SPREAD {worst:.0f}% at {worst_size} "
-                      f"bytes (limit {args.max_arm_spread:.0f}%), no single "
-                      f"outlier -- NOT usable")
+                if outlier is None:
+                    print(f"  {nodes}n: WORST SPREAD {worst:.0f}% at "
+                          f"{worst_size} bytes (limit "
+                          f"{args.max_arm_spread:.0f}%), no single outlier "
+                          f"-- NOT usable")
+                else:
+                    print(f"  {nodes}n: NOT usable")
                 ok = False
         else:
             print(f"  {nodes}n: worst spread {worst:.1f}% -- usable")
@@ -307,7 +353,7 @@ def preflight(args, scales):
               "    nodes. Fix the cause and retry; pass --no-preflight to override. ***")
     else:
         print("preflight OK\n")
-    return ok
+    return excluded if ok else None
 
 
 def psup(a, b):
@@ -487,6 +533,12 @@ def main():
                          "more than --max-arm-spread mean the environment is unusable. 0 disables.")
     ap.add_argument("--no-preflight", action="store_true",
                     help="skip the preflight and run the A/B regardless")
+    ap.add_argument("--preflight-scope", choices=["all", "rules"], default="all",
+                    help="'rules' (agreed 2026-08-26): judge preflight spread only on sizes the "
+                         "config ships rules for, and EXCLUDE chronically noisy sizes instead of "
+                         "refusing the machine -- their rules drop with that reason, the clean "
+                         "sizes get judged. Refusal still happens when every scoped size is noisy. "
+                         "'all' is the original whole-ladder veto.")
     ap.add_argument("--warmup-runs", type=int, default=4,
                     help="discarded full runs before the measured repeats, to bring the GPUs off "
                          "idle clocks (default 4). Distinct from -w/--warmup, which is iterations "
@@ -583,9 +635,13 @@ def main():
             for k in sorted(_probe_env):
                 fh.write(f"{k}={_probe_env[k]}\n")
 
+    pf_excluded = {n: set() for n in scales}
     if args.preflight and not args.no_preflight:
-        if not preflight(args, scales):
+        pf = preflight(args, scales,
+                       rules if args.preflight_scope == "rules" else None)
+        if pf is None:
             return 3
+        pf_excluded.update(pf)
 
     measured = {}   # nodes -> variant -> size -> [busbw]
     hangs = defaultdict(int)
@@ -717,7 +773,15 @@ def main():
     for rule in rules:
         base = measured[rule["nodes"]]["default"]
         cand = measured[rule["nodes"]]["config"]
-        sizes = [s for s in sorted(base) if rule["min_bytes"] <= s <= rule["max_bytes"]]
+        _excl = pf_excluded.get(rule["nodes"], set())
+        in_range = [s for s in sorted(base) if rule["min_bytes"] <= s <= rule["max_bytes"]]
+        sizes = [s for s in in_range if s not in _excl]
+        if in_range and not sizes:
+            label = f"{rule['coll']} {rule['min_bytes']}-{rule['max_bytes']} ch{rule['channels']} {rule['nodes']}n"
+            print(f"{label:<44} {0:>6} {0:>+9.1f}% {0:>+7.1f}% {0:>7.2f}  DROP "
+                  f"(preflight: every size in range unmeasurable)")
+            dropped.append((rule, "preflight: every size in range unmeasurable"))
+            continue
         gains, psups, worst = [], [], 0.0
         per_size = []          # (size, gain, psup) for the sizes that actually have data
         for s in sizes:
@@ -776,10 +840,15 @@ def main():
 
     out = os.path.splitext(args.config)[0] + ".validated.csv"
     # validity pre-check: never write verdicts for a run the gate below voids
+    # sizes the scoped preflight excluded are already vetoed per rule; letting
+    # their (known chronic) scatter also trip the whole-run rc=2 void would
+    # re-veto the clean sizes the scoping exists to save
     _spreads_pre = []
     for _n in scales:
         for _v in ("default", "config"):
             for _sz, _vals in measured[_n][_v].items():
+                if _sz in pf_excluded.get(_n, set()):
+                    continue
                 if len(_vals) >= 2 and min(_vals) > 0:
                     _spreads_pre.append((max(_vals) - min(_vals)) / min(_vals) * 100)
     _noisy_pre = [x for x in _spreads_pre if x > args.max_arm_spread]
@@ -790,6 +859,11 @@ def main():
         fh.write("# Validated by validate_tuner_config.py: only rules that beat RCCL default\n")
         fh.write(f"# with P(sup) >= {args.min_psup} over {args.repeats} repeats, gain > {args.min_gain}%,\n")
         fh.write(f"# and no size in range regressing more than {args.max_regression}%.\n")
+        for _n in scales:
+            if pf_excluded.get(_n):
+                fh.write(f"# preflight-excluded sizes at {_n}n (chronic same-config scatter over "
+                         f"{args.max_arm_spread:.0f}%): {sorted(pf_excluded[_n])} -- "
+                         f"no verdict was issued for these sizes.\n")
         if blocked:
             fh.write("# WARNING: the config's hang rate exceeded the limit -- do not deploy via the\n")
             fh.write("#          plugin until that is resolved. Consider applying channel counts via\n")
@@ -815,6 +889,8 @@ def main():
     for nodes in scales:
         for variant in ("default", "config"):
             for size, vals in measured[nodes][variant].items():
+                if size in pf_excluded.get(nodes, set()):
+                    continue  # scoped-preflight exclusion, see above
                 if len(vals) >= 2 and min(vals) > 0:
                     spreads.append(((max(vals) - min(vals)) / min(vals) * 100, nodes, variant, size))
     worst_spread = max(spreads)[0] if spreads else 0.0
