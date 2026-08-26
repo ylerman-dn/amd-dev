@@ -19,8 +19,9 @@ SCALES = [1, 2, 3, 4, 5]
 KNOWN_ISSUES = {
     ("broadcast", 2): "No live verdict is possible under the current noise "
         "gates: 22 A/B attempts across three node pairs ({5,7}, {5,8}, {1,3}) "
-        "all failed preflight on intrinsic small-size (4-32K) scatter. "
-        "Decision pending (preflight option C).",
+        "failed preflight on intrinsic small-size (4-16K) scatter. RESOLVED "
+        "2026-08-26 by the rule-scoped preflight: 4K/16K excluded as "
+        "unmeasurable, every other size judged - 4 rules verified.",
     ("broadcast", 4): "A/B window-limited on 2026-08-25 (~01:00Z): 4 preflight "
         "refusals, mixed exporter-collapse + small-size jitter.",
     ("reduce", 4): "A/B window-limited (4 refusals, same window).",
