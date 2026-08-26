@@ -42,3 +42,16 @@ Kept during the autonomous overnight runs. Normal prose, one bullet per item.
   prints N/A in the -A 1 columns and sweep_parser therefore writes no
   metrics.csv - the search sees no data. Fix is a parser change (tolerate N/A,
   fill the source-forced RING/SIMPLE); awaiting approval.
+- alltoall completed 2026-08-26: the "fill the source-forced RING/SIMPLE" part
+  of the planned fix was WRONG - reading enqueue.cc (2e42aa8) showed alltoall
+  is decomposed into p2p send/recv tasks, so no algo/proto exists to fill and
+  the tuner plugin is never consulted. Shipped instead: N/A-tolerant parser,
+  channels-only search (pseudo-combo P2P/-), env-arm A/B via
+  NCCL_MIN/MAX_NCHANNELS. Two aborted launches on the way: one wrote results
+  into the wrong worktree root (relaunched with --results-root), one ran with
+  a stale remote parser because sync_tool never pushed the remote-executed
+  stack (rccl_sweep/sweep_parser/sweep_db/sweep_executor) - sync list fixed.
+- alltoall 1n A/B exec truth: a 40-channel env request executes 64 p2p
+  channels at 1 node (WarpSpeed multiplier x4, cap) - identical to the
+  default arm. The per_size_stats exec columns made this visible; without
+  them the A/B would have looked like a mysterious exact tie.

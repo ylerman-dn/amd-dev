@@ -1,0 +1,23 @@
+# Validated by validate_tuner_config.py: only rules that beat RCCL default
+# with P(sup) >= 0.95 over 9 repeats, gain > 2.0%,
+# and no size in range regressing more than 2.0%.
+# preflight-excluded sizes at 2n (chronic same-config scatter over 25%): [4096, 16384] -- no verdict was issued for these sizes.
+# dropped: broadcast,4096,4096,ring,ll128,8,2,16,-1,-1   (preflight: every size in range unmeasurable)
+# dropped: broadcast,8192,8192,ring,ll128,1,2,16,-1,-1   (contains a regression of -2.5% (landmine))
+# dropped: broadcast,16384,16384,ring,ll128,8,2,16,-1,-1   (preflight: every size in range unmeasurable)
+# dropped: broadcast,524288,524288,ring,ll128,48,2,16,-1,-1   (best gain only -1.7%)
+# dropped: broadcast,1048576,1048576,ring,ll128,32,2,16,-1,-1   (contains a regression of -2.0% (landmine))
+# dropped: broadcast,2097152,2097152,ring,ll128,48,2,16,-1,-1   (best gain only -0.7%)
+# dropped: broadcast,4194304,4194304,ring,ll128,24,2,16,-1,-1   (best gain only -0.6%)
+# dropped: broadcast,8388608,8388608,ring,ll128,32,2,16,-1,-1   (contains a regression of -3.9% (landmine))
+# dropped: broadcast,16777216,16777216,ring,ll128,40,2,16,-1,-1   (best gain only +1.2%)
+# dropped: broadcast,33554432,33554432,ring,ll128,40,2,16,-1,-1   (best gain only -1.6%)
+# dropped: broadcast,67108864,67108864,ring,ll128,40,2,16,-1,-1   (best gain only -0.9%)
+# dropped: broadcast,134217728,134217728,ring,ll128,48,2,16,-1,-1   (best gain only -0.1%)
+# dropped: broadcast,268435456,268435456,ring,simple,40,2,16,-1,-1   (best gain only -0.5%)
+# dropped: broadcast,536870912,536870912,ring,simple,32,2,16,-1,-1   (best gain only +1.9%)
+collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff
+broadcast,32768,32768,ring,ll128,1,2,16,-1,-1
+broadcast,65536,65536,ring,ll128,1,2,16,-1,-1
+broadcast,131072,131072,ring,ll128,1,2,16,-1,-1
+broadcast,262144,262144,ring,ll128,1,2,16,-1,-1
