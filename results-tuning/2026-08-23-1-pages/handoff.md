@@ -109,3 +109,29 @@ Decisions waiting for the user:
 2. The 10 one-liner facts: approve/strike -> findings.
 3. approaches-draft.html: pick styles per topic.
 4. Node 4: report to cluster admin (probe evidence in RUNLOG).
+
+## Session-state snapshot 2026-08-25 evening (context-compaction insurance)
+
+State: all trees clean; no allocations; site at http://10.10.73.168:8807/
+(server rooted at results-tuning/2026-08-23-1-pages, cli/ symlink inside).
+Tool branch gpu107-cli (amd-dev worktree); results branch gpu107-optuna.
+
+Data status: searches complete for 5 collectives x scales 1-5 (+ alltoall
+blocked in sweep_parser, N/A -A columns). Live A/B verdicts: all 1n/2n/3n
+scales (except broadcast 2n - chronic 4-16K scatter, 22 attempts, 3 pairs)
++ all_reduce 4n. 4n/5n others: searches done, A/B window-limited - option C
+fixed preflight, the A/B noise gate now binds at >=4 nodes (one exporter per
+node).
+
+Agreed policies: per-size A/B verdicts, merge only in final configs; commit
+discipline in CLAUDE.md; repeats 9; option C preflight (deployed); executed
+values from debug logs everywhere (-A 1 channel column retired as source).
+
+Pending user decisions: (1) approaches-draft style picks; (2) rule-scoped
+preflight - judge only rule-covered sizes (broadcast 2n unlock); (3) alltoall
+sweep_parser N/A fix; (4) node-4 fabric report to cluster admin.
+
+Key paths: findings 09/10/11 written; corrections log at
+results-tuning/2026-08-24-2-cli-pages/corrections.md; per-collective pages
+built by results-tuning/2026-08-23-1-pages/build_site.py (auto-resolves
+freshest verdicts); CLI = tools/rccl-sweep/rccl_tune.py (~/.local/bin/rccl-tune).
