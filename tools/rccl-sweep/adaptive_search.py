@@ -561,7 +561,11 @@ class LiveOracle:
                f"--output-dir {out} --nodes {self.nodes} "
                f"--collective {self.collective} "
                f"--min-size {self.min_size} --max-size {self.max_size} "
-               f"--channels {ch} --algo {algo} --proto {proto}")
+               f"--channels {ch}")
+        # the P2P pseudo-combo (alltoall) has no requestable algo/proto:
+        # the run goes out with the channel request only
+        if algo != "P2P":
+            cmd += f" --algo {algo} --proto {proto}"
         t0 = time.time()
         p = subprocess.run(["ssh", self.exec_node, cmd],
                            stdin=subprocess.DEVNULL, capture_output=True,
@@ -729,6 +733,14 @@ def cmd_baseline(args):
 def cmd_live(args):
     if args.collective == "all_reduce":
         combos = COMBOS_1N if args.nodes == 1 else COMBOS_MN
+    elif args.collective == "alltoall":
+        # alltoall never reaches the collective tuner: it is decomposed into
+        # p2p send/recv tasks at enqueue (enqueue.cc taskAppend, deployed
+        # 2e42aa8), so NCCL_ALGO/NCCL_PROTO are no-ops and -A 1 prints N/A.
+        # Verified live: RING/LL vs RING/SIMPLE identical at every channel
+        # count (rccl-tune-2026-08-25-alltoall). The only knob is the channel
+        # request, so the search runs one pseudo-combo with no algo/proto.
+        combos = [("P2P", "-")]
     else:
         # RING is the only requestable algo for the other collectives
         # (findings/drafts: tuning.cc:653-656); LL128 is dead at 1 node

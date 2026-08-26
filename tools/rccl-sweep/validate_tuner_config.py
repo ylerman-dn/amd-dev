@@ -54,6 +54,7 @@ import argparse
 import csv
 import itertools
 import os
+import re
 import statistics
 import subprocess
 import sys
@@ -344,8 +345,18 @@ def run_once(args, nodes, conf_path, log_path):
             k, v = kv.split("=", 1)
             env[k] = v
     if conf_path:
-        env["NCCL_TUNER_PLUGIN"] = args.plugin
-        env["NCCL_TUNER_CONFIG_FILE"] = conf_path
+        if getattr(args, "arm_env", None):
+            # env-arm A/B (alltoall): the tuner plugin is never consulted for
+            # p2p-path collectives (enqueue.cc: alltoall becomes send/recv
+            # tasks; getAlgoInfo/tuner runs only for coll tasks), so the ON
+            # arm is the config's env vars instead of the plugin.
+            for kv in args.arm_env:
+                if "=" in kv:
+                    k, v = kv.split("=", 1)
+                    env[k] = v
+        else:
+            env["NCCL_TUNER_PLUGIN"] = args.plugin
+            env["NCCL_TUNER_CONFIG_FILE"] = conf_path
 
     cmd = args.launcher.split() + [
         "-N", str(nodes),
@@ -384,10 +395,32 @@ def run_once(args, nodes, conf_path, log_path):
             fh.write(text)
     data = parse_busbw(text)
 
+    # GPU-107: for an env-arm config run, prove RCCL actually saw the vars: the ENV
+    # debug subsystem echoes "<VAR> set by environment" per rank. Without this an
+    # ON arm whose env got lost (srun --export comma truncation, a wrapper eating
+    # vars) would be A/B'd against itself and reported as "no difference".
+    if conf_path and getattr(args, "arm_env", None):
+        import glob as _glob
+        need = [kv.split("=", 1)[0] for kv in args.arm_env if "=" in kv]
+        seen = set()
+        for f in _glob.glob(os.path.splitext(log_path)[0] + "_dbg_*.log"):
+            try:
+                txt = open(f, errors="ignore").read()
+            except OSError:
+                continue
+            for k in need:
+                if f"{k} set by environment" in txt:
+                    seen.add(k)
+        missing = [k for k in need if k not in seen]
+        if missing:
+            print(f"    !! env arm vars NOT echoed by RCCL for {os.path.basename(log_path)}: "
+                  f"{missing} -- treating as failed rather than as 'no difference'")
+            return {}, elapsed, True
+
     # GPU-107: for a config arm, prove the plugin loaded AND applied a rule. A config
     # that silently fails to load would otherwise be A/B'd against itself and reported
     # as "no difference".
-    if conf_path and args.plugin_must_fire:
+    if conf_path and args.plugin_must_fire and not getattr(args, "arm_env", None):
         import glob as _glob
         applied = False
         for f in _glob.glob(os.path.splitext(log_path)[0] + "_dbg_*.log"):
@@ -480,6 +513,11 @@ def main():
     ap.add_argument("--timeout", type=int, default=220)
     ap.add_argument("--logdir", default="validate_logs")
     ap.add_argument("--times-csv", default="", help="append per-run wall-times here")
+    ap.add_argument("--arm-env", action="append", default=[], metavar="KEY=VAL",
+                    help="env-arm A/B: the ON arm sets these variables instead of loading the "
+                         "tuner plugin. For collectives the plugin cannot tune (alltoall runs on "
+                         "the p2p path and never consults the tuner). The vars are verified in the "
+                         "NCCL debug log ('<VAR> set by environment') on every ON run.")
     ap.add_argument("--env", action="append", default=[], metavar="KEY=VAL",
                     help="extra environment for the benchmark, repeatable. MULTI-NODE RUNS USUALLY "
                          "REQUIRE THIS: without the fabric settings (e.g. NCCL_SOCKET_IFNAME, "
@@ -615,11 +653,27 @@ def main():
     import glob as _glob2
     from merge_metrics import parse_exec_log
     exec_truth = {}
+    p2p_truth = {}
     for nodes in scales:
         for variant in ("default", "config"):
             paths = _glob2.glob(os.path.join(
                 args.logdir, f"{nodes}n_{variant}_r*_dbg_*.log"))
             exec_truth[(nodes, variant)] = parse_exec_log(paths)
+            if not exec_truth[(nodes, variant)]:
+                # p2p-path collectives (alltoall) print no per-size
+                # "Bytes -> Algo" lines; the executed channel truth is the
+                # comm's p2p channel count, one value for all sizes.
+                counts = []
+                for f in paths:
+                    try:
+                        counts += [int(m) for m in re.findall(
+                            r"p2p channels:(\d+)",
+                            open(f, errors="ignore").read())]
+                    except OSError:
+                        pass
+                if counts:
+                    n_p2p = max(set(counts), key=counts.count)
+                    p2p_truth[(nodes, variant)] = ("P2P", "-", n_p2p, None)
 
     stats_path = os.path.join(args.logdir, "per_size_stats.csv")
     with open(stats_path, "w", newline="") as fh:
@@ -636,8 +690,10 @@ def main():
                 if not a or not b:
                     continue
                 dm = statistics.median(b)
-                de = exec_truth.get((nodes, "default"), {}).get(s2)
-                ce = exec_truth.get((nodes, "config"), {}).get(s2)
+                de = exec_truth.get((nodes, "default"), {}).get(s2) \
+                    or p2p_truth.get((nodes, "default"))
+                ce = exec_truth.get((nodes, "config"), {}).get(s2) \
+                    or p2p_truth.get((nodes, "config"))
                 d_lbl = f"{de[0]}/{de[1]}/{de[2]}" if de else ""
                 c_lbl = f"{ce[0]}/{ce[1]}/{ce[2]}" if ce else ""
                 app = ce[3] if ce else None

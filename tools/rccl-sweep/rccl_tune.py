@@ -28,7 +28,9 @@ BROKEN_NODES below. Booking prefers previously-published node sets.
 import argparse
 import csv
 import datetime
+import json
 import re
+import statistics
 import subprocess
 import sys
 import time
@@ -267,11 +269,83 @@ def phase_search(c, coll, scale, nodes, outdir, remote_base, exec_node):
                 f"failed; see {local_out}/live_runs.log. Refusing to continue "
                 f"to an empty config.")
         log(f"search {tag}: {n_rows} per-size winners")
+    # alltoall has no tuner-plugin deployment (p2p path, plugin never
+    # consulted): the shippable artifact is one global channel env setting,
+    # picked from the search's own data and A/B'd as an env arm.
+    if coll == "alltoall":
+        if c.dry:
+            log(f"dry-run: would pick a global channel for {tag} from "
+                f"{local_out}/adaptive_report.json")
+            return conf
+        return alltoall_env_conf(local_out / "adaptive_report.json",
+                                 conf, scale)
     # one rule PER SIZE into the A/B: every size is judged alone, nothing
     # rides in on a neighbour's P(sup). Merging happens only after validation.
     c.local([sys.executable, TOOL / "generate_tuner_config.py", opt_csv,
              "-o", conf, "--include-algo-proto", "--no-merge"])
     return conf
+
+
+def alltoall_env_conf(report_path, conf_path, scale):
+    """Pick ONE channel count for alltoall from the search's own data and
+    write it as a single-rule conf for the env-arm A/B.
+
+    Env vars are one value per launch, so unlike the plugin collectives there
+    is no per-size deployment: the candidate that maximises the median
+    per-size gain over the same-session default runs wins. Candidates whose
+    search medians already show a >2% regression at any size are considered
+    only if no clean candidate exists (the A/B landmine gate still judges
+    whatever is sent). Returns None - and leaves a SEARCH-VERDICT marker -
+    when no candidate beats the default at all, which is a legitimate
+    'defaults win' outcome, not a failure."""
+    rep = json.loads(Path(report_path).read_text())
+    defaults = rep.get("default_busbw") or []
+    if not defaults:
+        raise RuntimeError(f"{report_path}: no default runs recorded - "
+                           f"cannot rank alltoall candidates")
+    sizes = sorted({int(s) for d in defaults for s in d})
+    def_med = {s: statistics.median([d[str(s)] for d in defaults
+                                     if str(s) in d]) for s in sizes}
+    scored = []          # (median_gain_pct, landmined?, channels, n_sizes)
+    for cfg_s, per_size in rep["evals"].items():
+        ch = int(cfg_s.split("/")[-1])
+        gains = []
+        for s_str, vals in per_size.items():
+            vals = [v for v in vals if v is not None]
+            s = int(s_str)
+            if not vals or def_med.get(s, 0) <= 0:
+                continue
+            gains.append((statistics.median(vals) / def_med[s] - 1) * 100)
+        if gains:
+            scored.append((statistics.median(gains),
+                           min(gains) < -2.0, ch, len(gains)))
+    if not scored:
+        raise RuntimeError(f"{report_path}: no evaluated candidate has data")
+    clean = [x for x in scored if not x[1]]
+    score, landmined, ch, n = max(clean or scored)
+    if score <= 0:
+        marker = conf_path.parent / (conf_path.stem + ".SEARCH-VERDICT.txt")
+        marker.write_text(
+            f"defaults win at the search stage: best candidate ch={ch} "
+            f"scored {score:+.2f}% median gain over {n} sizes vs the "
+            f"same-session default runs ({report_path}). No config to ship, "
+            f"nothing to A/B.\n")
+        log(f"alltoall {scale}n: defaults win in search data "
+            f"(best ch={ch} at {score:+.2f}%) - no conf, skipping A/B")
+        return None
+    header = ("collective_type,min_bytes,max_bytes,algorithm,protocol,"
+              "channels,nNodes,nRanks,numPipeOps,regBuff")
+    rule = f"alltoall,4096,536870912,none,none,{ch},{scale},{scale * 8},-1,-1"
+    conf_path.write_text(
+        f"# env-arm conf: deployed as NCCL_MIN_NCHANNELS/NCCL_MAX_NCHANNELS="
+        f"{ch}, not via the tuner plugin (alltoall runs on the p2p path).\n"
+        f"# picked from {report_path.name}: median gain {score:+.2f}% over "
+        f"{n} sizes vs same-session defaults"
+        f"{' (landmined in search data, A/B decides)' if landmined else ''}.\n"
+        f"{header}\n{rule}\n")
+    log(f"alltoall {scale}n: candidate ch={ch} ({score:+.2f}% median gain) "
+        f"-> env-arm conf {conf_path.name}")
+    return conf_path
 
 
 def phase_ab(c, confs, jobid, nodes, repeats, remote_base, outdir,
@@ -425,11 +499,17 @@ def cmd_run(args):
         confs = []
         for coll, scale in pairs:
             log(f"=== search {coll} {scale}n ===")
-            confs.append(phase_search(c, coll, scale, nodes, outdir,
-                                      remote_base, exec_node))
-        log(f"=== A/B: {len(confs)} confs, {args.repeats} repeats ===")
-        phase_ab(c, confs, jobid, nodes, args.repeats, remote_base, outdir,
-                 args.ab_retries)
+            cf = phase_search(c, coll, scale, nodes, outdir,
+                              remote_base, exec_node)
+            if cf is not None:   # None = defaults won at the search stage
+                confs.append(cf)
+        if confs:
+            log(f"=== A/B: {len(confs)} confs, {args.repeats} repeats ===")
+            phase_ab(c, confs, jobid, nodes, args.repeats, remote_base,
+                     outdir, args.ab_retries)
+        else:
+            log("no confs to A/B - every pair resolved to 'defaults win' "
+                "at the search stage")
     finally:
         release(c, jobid)
     dur = int(time.time() - t0)

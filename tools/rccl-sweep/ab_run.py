@@ -33,17 +33,19 @@ WARMUP_RUNS = {1: 4, 2: 4, 3: 8, 4: 8, 5: 8}
 
 
 def conf_target(path):
-    """(collective, nNodes) from the conf's rules; refuses a mixed file."""
-    seen = set()
+    """(collective, nNodes, channel set) from the conf's rules; refuses a mixed file."""
+    seen, chans = set(), set()
     for line in Path(path).read_text().splitlines():
         line = line.strip()
         if not line or line.startswith("#") or line.startswith("collective_type"):
             continue
         p = line.split(",")
         seen.add((p[0], int(p[6])))
+        chans.add(p[5])
     if len(seen) != 1:
         raise SystemExit(f"{path}: expected one (collective, nNodes), got {sorted(seen)}")
-    return seen.pop()
+    coll, n = seen.pop()
+    return coll, n, chans
 
 
 def main():
@@ -67,24 +69,36 @@ def main():
     outdir = Path(args.outdir)
     results = []
     for conf in args.confs:
-        coll, n = conf_target(conf)
+        coll, n, chans = conf_target(conf)
         if n > len(nodes_all):
             raise SystemExit(f"{conf}: needs {n} nodes, only {len(nodes_all)} given")
         stem = f"{coll}_{n}n"
         binary = f"{args.my_path}/{BINARY[coll]}"
+        # alltoall runs on the p2p path: the tuner plugin is never consulted
+        # for it, so the ON arm is the channel env vars instead. Env vars are
+        # one value per launch -- the conf must carry a single channel count,
+        # and --split-ranges is off because no per-size deployment exists.
+        env_arm = coll == "alltoall"
+        if env_arm and len(chans) != 1:
+            raise SystemExit(f"{conf}: env-arm needs ONE channel value, got {sorted(chans)}")
         for attempt in range(1, args.retries + 1):
             logdir = outdir / (stem if attempt == 1 else f"{stem}_retry{attempt}")
             cmd = [sys.executable, str(TOOL / "validate_tuner_config.py"),
                    "--config", conf, "--binary", binary,
-                   "--plugin", args.plugin, "--plugin-must-fire",
                    "--jobid", args.jobid,
                    "--nodelist", ",".join(nodes_all[:n]),
                    "--repeats", str(args.repeats),
                    "--warmup-runs", str(WARMUP_RUNS[n]),
-                   "--split-ranges",
                    "--min-bytes", "4096", "--max-bytes", "536870912",
                    "--iters", "20", "--warmup", "5",
                    "--logdir", str(logdir)]
+            if env_arm:
+                ch = chans.copy().pop()
+                cmd += ["--arm-env", f"NCCL_MIN_NCHANNELS={ch}",
+                        "--arm-env", f"NCCL_MAX_NCHANNELS={ch}"]
+            else:
+                cmd += ["--plugin", args.plugin, "--plugin-must-fire",
+                        "--split-ranges"]
             print(f"[{stem} attempt {attempt}] {' '.join(cmd)}", flush=True)
             if args.dry_run:
                 results.append((stem, "dry-run", 0))

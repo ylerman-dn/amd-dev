@@ -149,11 +149,17 @@ class RCCLOutputParser:
                             'busbw_ip': float(parts[11]),
                             'errors_ip': parse_int_or_na(parts[12]),
                         }
-                        # Parse extended columns if present (algo, proto, nchannels)
+                        # Parse extended columns if present (algo, proto, nchannels).
+                        # alltoall runs on the p2p path (send/recv tasks, no collective
+                        # plan), so -A 1 prints N/A in all three columns; the row is
+                        # still a valid measurement and must not be dropped.
                         if len(parts) >= 16:
-                            metric['algo'] = parts[13]
-                            metric['proto'] = parts[14]
-                            metric['nchannels'] = int(parts[15])
+                            if parts[13] != 'N/A':
+                                metric['algo'] = parts[13]
+                            if parts[14] != 'N/A':
+                                metric['proto'] = parts[14]
+                            if parts[15] != 'N/A':
+                                metric['nchannels'] = int(parts[15])
                         metrics.append(metric)
                 except (ValueError, IndexError):
                     # Skip lines that don't match expected format
