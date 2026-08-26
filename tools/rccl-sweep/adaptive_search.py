@@ -577,11 +577,16 @@ class LiveOracle:
             stdin=subprocess.DEVNULL, capture_output=True, text=True)
         with open(self.log, "a") as f:
             f.write(f"{rid} cfg={algo}/{proto}/{ch} rc={p.returncode} "
-                    f"dur={dt:.0f}s out={out}\n")
+                    f"metrics_rc={metrics.returncode} dur={dt:.0f}s "
+                    f"out={out}\n")
         if p.returncode != 0 or metrics.returncode != 0:
             self.failures.append((rid, cfg, p.returncode))
-            raise RuntimeError(f"live run {rid} {cfg} failed rc={p.returncode}: "
-                               f"{p.stdout[-2000:]}\n{p.stderr[-2000:]}")
+            raise RuntimeError(
+                f"live run {rid} {cfg} failed: sweep rc={p.returncode}, "
+                f"metrics read rc={metrics.returncode} (rc=0 sweep with a "
+                f"failed metrics read means the run parsed ZERO rows - "
+                f"check the remote sweep_parser copy): "
+                f"{p.stdout[-2000:]}\n{p.stderr[-2000:]}")
         result = {}
         subst = 0
         for row in csv.DictReader(metrics.stdout.splitlines()):

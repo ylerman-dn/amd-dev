@@ -219,9 +219,14 @@ def sync_tool(c):
     if not c.dry and p.stdout.strip() not in ("", "0"):
         raise RuntimeError("remote sweep/validate processes are running - "
                            "refusing to sync the tool over them")
+    # the full remote-executed stack, not only the orchestrators: rccl_sweep
+    # and its parser/db/executor run ON the exec node, so an unsynced parser
+    # silently serves stale logic there (the 2026-08-26 alltoall N/A fix was
+    # live locally but every remote run still produced zero metrics)
     for f in ("adaptive_search.py", "validate_tuner_config.py", "ab_run.py",
               "merge_metrics.py", "optimize_metrics.py",
-              "generate_tuner_config.py"):
+              "generate_tuner_config.py", "rccl_sweep.py", "sweep_parser.py",
+              "sweep_executor.py", "sweep_db.py"):
         c.local(["scp", "-o", "BatchMode=yes", str(TOOL / f),
                  f"{SLURM_HOST}:{REMOTE_TOOL}/{f}"], quiet=True)
     log("tool synced to shared")
