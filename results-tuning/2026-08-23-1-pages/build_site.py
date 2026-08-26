@@ -13,7 +13,8 @@ from pathlib import Path
 
 HERE = Path(__file__).parent
 RT = HERE.parent
-COLLS = ["all_reduce", "broadcast", "reduce", "all_gather", "reduce_scatter"]
+COLLS = ["all_reduce", "broadcast", "reduce", "all_gather", "reduce_scatter",
+         "alltoall"]
 SCALES = [1, 2, 3, 4, 5]
 KNOWN_ISSUES = {
     ("broadcast", 2): "No live verdict is possible under the current noise "
@@ -25,6 +26,12 @@ KNOWN_ISSUES = {
     ("reduce", 4): "A/B window-limited (4 refusals, same window).",
     ("all_gather", 4): "A/B window-limited; one rc=2 void attempt quarantined.",
     ("reduce_scatter", 4): "A/B window-limited (4 refusals, same window).",
+    ("alltoall", 1): "candidate ch=40 A/B'd 2026-08-26: no rule survived - "
+        "defaults win. 32K excluded by the scoped preflight (chronic 690% "
+        "same-config scatter).",
+    ("alltoall", 4): "A/B voided (rc=2) in all 4 attempts on 2026-08-26 - "
+        "transient fabric stalls at 4+ nodes (see stage5n NOISE-ANALYSIS.md). "
+        "Numbers below are from the voided runs; no verdicts were issued.",
 }
 CSS = """body{font-family:-apple-system,system-ui,sans-serif;margin:12px;max-width:1280px;
 background:#14161a;color:#d8dbe0}
@@ -79,7 +86,7 @@ def resolve():
     """(coll, scale) -> dict with the freshest run's artifact paths."""
     out = {}
     for d in sorted(RT.glob("2026-*-*")):
-        if not (d.is_dir() and re.search(r"-(pilot|stage\w*)$", d.name)):
+        if not (d.is_dir() and re.search(r"-(pilot|stage\w*|a2a\w*)$", d.name)):
             continue
         for coll in COLLS:
             for scale in SCALES:
@@ -158,6 +165,9 @@ def scale_status(r, coll, scale):
     if not r:
         return ("not run", "n")
     if not r["vfile"]:
+        sv = r["dir"] / f"{coll}_{scale}n.SEARCH-VERDICT.txt"
+        if sv.exists():
+            return ("defaults win (search)", "n")
         return ("no live verdict", "warn")
     kept, _ = rules(r["vfile"])
     if not kept:
@@ -173,6 +183,17 @@ for coll in COLLS:
             f"<title>{coll}</title><style>{CSS}</style>"]
     page.append(f"<p><a href='index.html'>&larr; all collectives</a></p>")
     page.append(f"<h1>{coll}</h1>")
+    if coll == "alltoall":
+        page.append(
+            "<p class=note>alltoall never reaches RCCL's collective tuner: "
+            "it is decomposed into p2p send/recv tasks at enqueue, so "
+            "NCCL_ALGO/NCCL_PROTO requests are no-ops, <code>-A 1</code> "
+            "prints N/A, and the tuner plugin cannot apply per-size rules. "
+            "The search therefore sweeps the channel request only "
+            "('P2P/-/N'), the deployable artifact is one global "
+            "NCCL_MIN/MAX_NCHANNELS value, and the A/B validates that env "
+            "setting against the untouched default. Executed channels are "
+            "read from the debug logs' 'p2p channels' line.</p>")
     strip = []
     for scale in SCALES:
         txt, cls = scale_status(R.get((coll, scale)), coll, scale)
@@ -255,7 +276,11 @@ for coll in COLLS:
                             f"<td class='wrap n'>no A/B</td></tr>")
             page.append("</table></div>")
         if st:
-            page.append("<h3>Per size (live A/B numbers)</h3>")
+            if r["vfile"]:
+                page.append("<h3>Per size (live A/B numbers)</h3>")
+            else:
+                page.append("<h3>Per size (live A/B numbers - run VOIDED, "
+                            "<span class=b>no verdicts issued</span>)</h3>")
             page.append("<div class=tw><table><tr><th>size</th><th>default executed</th>"
                         "<th>ours requested</th><th>ours executed</th>"
                         "<th>default med</th><th>ours med</th><th>gain</th>"
@@ -319,8 +344,11 @@ for coll in COLLS:
     idx.append(f"<tr><td><a href='collective_{coll}.html'>{coll}</a></td>"
                f"{cells}</tr>")
 idx.append("</table></div>")
-idx.append("<p class=note>alltoall: algo/proto forced at source (RING/SIMPLE); "
-           "channels-only sweep not yet in the CLI.</p>")
+idx.append("<p class=note>alltoall: runs on the p2p path (send/recv tasks) - "
+           "NCCL_ALGO/NCCL_PROTO are no-ops and the tuner plugin is never "
+           "consulted, so its search is channels-only and its A/B uses "
+           "NCCL_MIN/MAX_NCHANNELS as the ON arm (in the CLI since "
+           "2026-08-26).</p>")
 idx.append("<h2>Method evaluation &amp; docs</h2><ul>"
            "<li><a href='approaches.html'>the story: grid vs adaptive vs "
            "optuna vs random vs triage</a> "
