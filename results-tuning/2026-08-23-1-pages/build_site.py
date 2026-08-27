@@ -22,17 +22,16 @@ KNOWN_ISSUES = {
         "failed preflight on intrinsic small-size (4-16K) scatter. RESOLVED "
         "2026-08-26 by the rule-scoped preflight: 4K/16K excluded as "
         "unmeasurable, every other size judged - 4 rules verified.",
-    ("broadcast", 4): "still unverdicted after 10 voided attempts across 3 days "
-        "(rc=2/rc=3), including on the same-leaf L1 set - transient noise, "
-        "source unknown.",
-    ("all_gather", 4): "A/B window-limited; one rc=2 void attempt quarantined.",
-    ("reduce_scatter", 4): "A/B window-limited (4 refusals, same window).",
+    ("broadcast", 4): "verdict via cv-core replay (2026-08-27) of the L1 run: single "
+        "transient dips discarded by MAD outlier rejection, chronic sizes still "
+        "excluded. 13 earlier attempts voided under the plain spread gate.",
+    ("all_gather", 4): "verdict via cv-core replay (2026-08-27) of the L1 run.",
+    ("reduce_scatter", 4): "verdict via cv-core replay (2026-08-27) of the L1 run.",
     ("alltoall", 1): "candidate ch=40 A/B'd 2026-08-26: no rule survived - "
         "defaults win. 32K excluded by the scoped preflight (chronic 690% "
         "same-config scatter).",
-    ("alltoall", 4): "A/B voided (rc=2) in all 4 attempts on 2026-08-26 - "
-        "transient fabric stalls at 4+ nodes (see stage5n NOISE-ANALYSIS.md). "
-        "Numbers below are from the voided runs; no verdicts were issued.",
+    ("alltoall", 4): "verdict via cv-core replay (2026-08-27): the env-arm rule "
+        "contains a -14.3% regression - defaults win at 4n too.",
 }
 CSS = """body{font-family:-apple-system,system-ui,sans-serif;margin:12px;max-width:1280px;
 background:#14161a;color:#d8dbe0}

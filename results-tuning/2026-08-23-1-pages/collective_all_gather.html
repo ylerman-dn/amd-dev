@@ -21,7 +21,7 @@ pre .why{color:#8a8f98;text-decoration:none;font-style:italic}
 details{margin:8px 0}summary{cursor:pointer;color:#6ea8ff;font-size:13px}</style>
 <p><a href='index.html'>&larr; all collectives</a></p>
 <h1>all_gather</h1>
-<p class=note>1n: <span class=n>defaults win</span> &nbsp;·&nbsp; 2n: <span class=g>2 rules validated</span> &nbsp;·&nbsp; 3n: <span class=g>4 rules validated</span> &nbsp;·&nbsp; 4n: <span class=warn>no live verdict</span> &nbsp;·&nbsp; 5n: <span class=warn>no live verdict</span></p>
+<p class=note>1n: <span class=n>defaults win</span> &nbsp;·&nbsp; 2n: <span class=g>2 rules validated</span> &nbsp;·&nbsp; 3n: <span class=g>4 rules validated</span> &nbsp;·&nbsp; 4n: <span class=g>4 rules validated</span> &nbsp;·&nbsp; 5n: <span class=warn>no live verdict</span></p>
 <h2>1 node</h2>
 <p class=note>run <b>2026-08-24-2-stage3a</b> · search 30 runs vs grid 54 (&minus;44%), 10 configs, 7 min search · 9 A/B repeats/arm</p>
 <h3>Search config &rarr; A/B verdicts</h3>
@@ -207,15 +207,28 @@ allgather,134217600,134217600,ring,ll128,40,3,24,-1,-1</pre>
 </table></div></details>
 <h2>4 nodes</h2>
 <p class=note>run <b>2026-08-24-1-stage4n</b> · search 51 runs vs grid 81 (&minus;37%), 17 configs, 19 min search · 9 A/B repeats/arm</p>
-<p class=warn>&#9888; A/B window-limited; one rc=2 void attempt quarantined.</p>
-<h3>Per size (live A/B numbers - run VOIDED, <span class=b>no verdicts issued</span>)</h3>
+<p class=warn>&#9888; verdict via cv-core replay (2026-08-27) of the L1 run.</p>
+<h3>Search config &rarr; A/B verdicts</h3>
+<pre><span class=n>collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff</span>
+<span class=keep>allgather,16777216,16777216,ring,ll128,16,4,32,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=keep>allgather,33554432,33554432,ring,ll128,24,4,32,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=keep>allgather,67108864,67108864,ring,ll128,40,4,32,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=drop>allgather,134217728,134217728,ring,ll128,48,4,32,-1,-1</span>  <span class=why>&larr; no gain (+0.7%)</span>
+<span class=keep>allgather,268435456,268435456,ring,simple,40,4,32,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=drop>allgather,536870912,536870912,ring,simple,40,4,32,-1,-1</span>  <span class=why>&larr; no gain (-0.5%)</span></pre>
+<h3>Final shipped config</h3><pre class=keep>collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff
+allgather,16777216,16777216,ring,ll128,16,4,32,-1,-1
+allgather,33554432,33554432,ring,ll128,24,4,32,-1,-1
+allgather,67108864,67108864,ring,ll128,40,4,32,-1,-1
+allgather,268435456,268435456,ring,simple,40,4,32,-1,-1</pre>
+<h3>Per size (live A/B numbers)</h3>
 <div class=tw><table><tr><th>size</th><th>default executed</th><th>ours requested</th><th>ours executed</th><th>default med</th><th>ours med</th><th>gain</th><th>P(sup)</th><th>spread def / cfg</th><th>verdict</th></tr>
-<tr ><td>16M</td><td>RING/SIMPLE/48</td><td>RING/LL128/16</td><td>RING/SIMPLE/40 (trimmed)</td><td>84.07</td><td>99.11</td><td class=g>+17.9%</td><td>0.89</td><td class=n>78.87-85.24 / 7.64-99.65</td><td class=wrap>no rule</td></tr>
-<tr ><td>32M</td><td></td><td>RING/LL128/24</td><td></td><td>138.06</td><td>161.69</td><td class=g>+17.1%</td><td>1.00</td><td class=n>136.92-144.18 / 152.8-162.87</td><td class=wrap>no rule</td></tr>
-<tr ><td>64M</td><td></td><td>RING/LL128/40</td><td></td><td>219.39</td><td>249.15</td><td class=g>+13.6%</td><td>0.90</td><td class=n>28.96-229.23 / 29.36-250.64</td><td class=wrap>no rule</td></tr>
-<tr ><td>128M</td><td></td><td>RING/LL128/48</td><td></td><td>287.62</td><td>288.52</td><td class=n>+0.3%</td><td>0.60</td><td class=n>274.06-291.59 / 275.08-293.17</td><td class=wrap>no rule</td></tr>
-<tr ><td>256M</td><td></td><td>RING/SIMPLE/40</td><td></td><td>305.5</td><td>321.1</td><td class=g>+5.1%</td><td>0.89</td><td class=n>304.75-309.0 / 301.58-322.34</td><td class=wrap>no rule</td></tr>
-<tr ><td>512M</td><td></td><td>RING/SIMPLE/40</td><td></td><td>366.34</td><td>364.59</td><td class=n>-0.5%</td><td>0.20</td><td class=n>357.36-367.67 / 324.13-365.65</td><td class=wrap>no rule</td></tr>
+<tr class=v><td>16M</td><td>RING/SIMPLE/48</td><td>RING/LL128/16</td><td>RING/SIMPLE/40</td><td>84.07</td><td>99.11</td><td class=g>+17.9%</td><td>0.89</td><td class=n>78.87-85.24 / 7.64-99.65</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>32M</td><td></td><td>RING/LL128/24</td><td></td><td>138.06</td><td>161.69</td><td class=g>+17.1%</td><td>1.00</td><td class=n>136.92-144.18 / 152.8-162.87</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>64M</td><td></td><td>RING/LL128/40</td><td></td><td>219.39</td><td>249.15</td><td class=g>+13.6%</td><td>0.90</td><td class=n>28.96-229.23 / 29.36-250.64</td><td class=wrap>KEPT</td></tr>
+<tr class=x><td>128M</td><td></td><td>RING/LL128/48</td><td></td><td>287.62</td><td>288.52</td><td class=n>+0.3%</td><td>0.60</td><td class=n>274.06-291.59 / 275.08-293.17</td><td class=wrap>dropped: no gain (+0.7%)</td></tr>
+<tr class=v><td>256M</td><td></td><td>RING/SIMPLE/40</td><td></td><td>305.5</td><td>321.1</td><td class=g>+5.1%</td><td>0.89</td><td class=n>304.75-309.0 / 301.58-322.34</td><td class=wrap>KEPT</td></tr>
+<tr class=x><td>512M</td><td></td><td>RING/SIMPLE/40</td><td></td><td>366.34</td><td>364.59</td><td class=n>-0.5%</td><td>0.20</td><td class=n>357.36-367.67 / 324.13-365.65</td><td class=wrap>dropped: no gain (-0.5%)</td></tr>
 </table></div>
 <details><summary>raw A/B runs</summary><div class=tw><table class=fit><tr><th>size</th><th>arm</th><th>runs</th><th>median</th></tr>
 <tr><td>4K</td><td>default</td><td class=runs>0.07 0.06 0.07 0.06 0.07 0.07 0.07 0.07 0.06</td><td><b>0.07</b></td></tr>

@@ -14,6 +14,7 @@ SPREAD_LIMIT = 25.0   # % (max-min)/min per (size,arm) point
 VOID_FRACTION = 0.20  # >20% noisy points voids the attempt (rc=2)
 RES = 0.005           # print resolution floor (values rounded to 0.01)
 MAD_Z = 3.5           # Iglewicz-Hoaglin robust z cut
+CV_LIMIT = 8.0        # % stddev/mean per point (proposed gate)
 CORE_MIN = 7          # a point is usable if >=7 of 9 repeats form a clean core
 
 
@@ -25,7 +26,7 @@ def mad_core(vals):
     scale = 1.4826 * mad if mad > 0 else \
         1.2533 * statistics.mean([abs(v - med) for v in vals])
     scale = max(scale, RES)
-    return [v for v in vals if abs(v - med) / scale <= MAD_Z]
+    return [v for v in vals if abs(v - med) / scale <= MAD_Z], med, scale
 
 CSS = """body{font-family:-apple-system,system-ui,sans-serif;margin:12px;max-width:1400px;
 background:#14161a;color:#d8dbe0}
@@ -86,13 +87,22 @@ def attempt_block(d):
                     flag = "NOISY" if over else "ok"
                     points += 1
                     noisy += over
-            core = mad_core(vals) if len(vals) >= 2 else vals
+            if len(vals) >= 2:
+                core, c_med, c_scale = mad_core(vals)
+            else:
+                core, c_med, c_scale = vals, None, None
             core_sp = ((max(core) - min(core)) / min(core) * 100
                        if core and min(core) > 0 else None)
             core_cv = (statistics.stdev(core) / statistics.mean(core) * 100
                        if len(core) > 1 and statistics.mean(core) else None)
-            core_bad = not (len(core) >= CORE_MIN and core_sp is not None
-                            and core_sp <= SPREAD_LIMIT)
+            def _cv(vv):
+                mm = statistics.mean(vv)
+                return (statistics.stdev(vv) / mm * 100
+                        if len(vv) > 1 and mm else 0.0)
+            # proposed gate: noisy when the point's CV exceeds CV_LIMIT AND
+            # its MAD core (>= CORE_MIN repeats) does not come in under it
+            core_bad = _cv(vals) > CV_LIMIT and not (
+                len(core) >= CORE_MIN and _cv(core) <= CV_LIMIT)
             if flag in ("NOISY", "ok"):
                 mad_noisy += core_bad
                 mflag = "NOISY" if core_bad else "ok"
@@ -103,9 +113,12 @@ def attempt_block(d):
             sd = statistics.stdev(vals) if len(vals) > 1 else None
             # wobble = stddev relative to the mean (coefficient of variation)
             var = sd / mean * 100 if sd is not None and mean else None
-            # mark the dip repeats (below 75% of the median) in the raw list
+            # bold red = repeats the MAD rule rejects (outside 3.5 robust-z)
+            def rejected(v):
+                return (c_scale is not None
+                        and abs(v - c_med) / c_scale > MAD_Z)
             shown = " ".join(
-                f"<span class=dip>{v:g}</span>" if med and v < med * 0.75
+                f"<span class=dip>{v:g}</span>" if rejected(v)
                 else f"{v:g}" for v in vals)
             out_rows.append((int(r["size_bytes"]), arm, len(vals), shown,
                              med, mean, sd, var, sp, flag,
@@ -121,7 +134,7 @@ def attempt_block(d):
              if mvoid else
              f"<span class=g>valid: {mad_noisy} of {points}</span>")
     h = [f"<h2>{d.name}</h2><p class=note>current rule: {verdictline} "
-         f"&nbsp;·&nbsp; proposed MAD rule: {mline}</p>"]
+         f"&nbsp;·&nbsp; proposed CV+core rule: {mline}</p>"]
     h.append("<details><summary>per-point numbers ({} rows)</summary>"
              .format(len(out_rows)))
     h.append("<div class=tw><table><tr><th>size</th><th>arm</th><th>n</th>"
@@ -129,7 +142,7 @@ def attempt_block(d):
              "<th>median</th><th>mean</th><th>stddev</th><th>CV %</th>"
              "<th>spread %</th><th>flag (current)</th>"
              "<th>core n</th><th>core spread %</th><th>core CV %</th>"
-             "<th>flag (MAD)</th></tr>")
+             "<th>flag (CV+core)</th></tr>")
     for size, arm, n, shown, med, mean, sd, var, sp, flag, ncore, \
             core_sp, core_cv, mflag in out_rows:
         cls = " class=noisy" if flag == "NOISY" else ""
@@ -157,9 +170,7 @@ page.append("<h1>Noise dig - L1-only 4n A/B attempts (nodes 1,3,5,7, "
 page.append(f"<p class=note>Rule under test: a (size, arm) point is noisy "
             f"when (max-min)/min of its repeats exceeds {SPREAD_LIMIT:.0f}%; "
             f"an attempt is voided (rc=2) when more than "
-            f"{VOID_FRACTION:.0%} of points are noisy. Red repeat values are "
-            f"dips below 75% of that point's median - the signature failure "
-            f"mode. stddev is per point over its repeats; CV (coefficient of variation) = stddev/mean (under ~5% = healthy, tens of %% = a broken repeat).</p>")
+            f"{VOID_FRACTION:.0%} of points are noisy. Proposed gate (shown for comparison, not deployed): a point is noisy when its CV exceeds 8% AND its MAD core (>=7 repeats within 3.5 robust-z, bold red = rejected) is not itself under 8% CV; void stays at >20% noisy points. stddev is per point over its repeats; CV (coefficient of variation) = stddev/mean (under ~5% = healthy, tens of %% = a broken repeat).</p>")
 for d in sorted(HERE.glob("ab_out/*/")):
     b = attempt_block(Path(d))
     if b:

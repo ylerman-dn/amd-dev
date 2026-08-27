@@ -22,7 +22,7 @@ details{margin:8px 0}summary{cursor:pointer;color:#6ea8ff;font-size:13px}</style
 <p><a href='index.html'>&larr; all collectives</a></p>
 <h1>alltoall</h1>
 <p class=note>alltoall never reaches RCCL's collective tuner: it is decomposed into p2p send/recv tasks at enqueue, so NCCL_ALGO/NCCL_PROTO requests are no-ops, <code>-A 1</code> prints N/A, and the tuner plugin cannot apply per-size rules. The search therefore sweeps the channel request only ('P2P/-/N'), the deployable artifact is one global NCCL_MIN/MAX_NCHANNELS value, and the A/B validates that env setting against the untouched default. Executed channels are read from the debug logs' 'p2p channels' line.</p>
-<p class=note>1n: <span class=n>defaults win</span> &nbsp;·&nbsp; 2n: <span class=n>defaults win (search)</span> &nbsp;·&nbsp; 3n: <span class=n>defaults win</span> &nbsp;·&nbsp; 4n: <span class=warn>no live verdict</span> &nbsp;·&nbsp; 5n: <span class=n>defaults win (search)</span></p>
+<p class=note>1n: <span class=n>defaults win</span> &nbsp;·&nbsp; 2n: <span class=n>defaults win (search)</span> &nbsp;·&nbsp; 3n: <span class=n>defaults win</span> &nbsp;·&nbsp; 4n: <span class=n>defaults win</span> &nbsp;·&nbsp; 5n: <span class=n>defaults win (search)</span></p>
 <h2>1 node</h2>
 <p class=note>run <b>2026-08-26-1-a2a123</b> · search 21 runs vs grid 27 (&minus;22%), 7 configs, 4 min search · 9 A/B repeats/arm</p>
 <p class=warn>&#9888; candidate ch=40 A/B&#x27;d 2026-08-26: no rule survived - defaults win. 32K excluded by the scoped preflight (chronic 690% same-config scatter).</p>
@@ -184,27 +184,33 @@ details{margin:8px 0}summary{cursor:pointer;color:#6ea8ff;font-size:13px}</style
 </table></div></details>
 <h2>4 nodes</h2>
 <p class=note>run <b>2026-08-26-1-a2a45</b> · search 21 runs vs grid 27 (&minus;22%), 7 configs, 9 min search · 9 A/B repeats/arm</p>
-<p class=warn>&#9888; A/B voided (rc=2) in all 4 attempts on 2026-08-26 - transient fabric stalls at 4+ nodes (see stage5n NOISE-ANALYSIS.md). Numbers below are from the voided runs; no verdicts were issued.</p>
-<h3>Per size (live A/B numbers - run VOIDED, <span class=b>no verdicts issued</span>)</h3>
+<p class=warn>&#9888; verdict via cv-core replay (2026-08-27): the env-arm rule contains a -14.3% regression - defaults win at 4n too.</p>
+<h3>Search config &rarr; A/B verdicts</h3>
+<pre><span class=n># env-arm conf: deployed as NCCL_MIN_NCHANNELS/NCCL_MAX_NCHANNELS=32, not via the tuner plugin (alltoall runs on the p2p path).</span>
+<span class=n># picked from adaptive_report.json: median gain +0.52% over 18 sizes vs same-session defaults (landmined in search data, A/B decides).</span>
+<span class=n>collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff</span>
+<span class=drop>alltoall,4096,536870912,none,none,32,4,32,-1,-1</span>  <span class=why>&larr; regression -14.3%</span></pre>
+<p class=note>No config ships at this scale - RCCL's defaults won every size.</p>
+<h3>Per size (live A/B numbers)</h3>
 <div class=tw><table><tr><th>size</th><th>default executed</th><th>ours requested</th><th>ours executed</th><th>default med</th><th>ours med</th><th>gain</th><th>P(sup)</th><th>spread def / cfg</th><th>verdict</th></tr>
-<tr ><td>4K</td><td>P2P/-/32</td><td>P2P/-/24</td><td>P2P/-/32</td><td>0.07</td><td>0.06</td><td class=b>-14.3%</td><td>0.22</td><td class=n>0.04-0.07 / 0.02-0.06</td><td class=wrap>no rule</td></tr>
-<tr ><td>8K</td><td>P2P/-/32</td><td>P2P/-/24</td><td>P2P/-/32</td><td>0.11</td><td>0.13</td><td class=g>+18.2%</td><td>0.81</td><td class=n>0.01-0.13 / 0.12-0.13</td><td class=wrap>no rule</td></tr>
-<tr ><td>16K</td><td>P2P/-/32</td><td>P2P/-/40</td><td>P2P/-/32</td><td>0.26</td><td>0.26</td><td class=n>+0.0%</td><td>0.69</td><td class=n>0.23-0.27 / 0.24-0.27</td><td class=wrap>no rule</td></tr>
-<tr ><td>32K</td><td>P2P/-/32</td><td>P2P/-/48</td><td>P2P/-/32</td><td>0.52</td><td>0.51</td><td class=n>-1.9%</td><td>0.19</td><td class=n>0.51-0.54 / 0.41-0.52</td><td class=wrap>no rule</td></tr>
-<tr ><td>64K</td><td>P2P/-/32</td><td>P2P/-/24</td><td>P2P/-/32</td><td>1.04</td><td>1.07</td><td class=g>+2.9%</td><td>0.75</td><td class=n>0.99-1.07 / 0.92-1.09</td><td class=wrap>no rule</td></tr>
-<tr ><td>128K</td><td>P2P/-/32</td><td>P2P/-/40</td><td>P2P/-/32</td><td>2.03</td><td>2.0</td><td class=n>-1.5%</td><td>0.28</td><td class=n>1.94-2.16 / 1.55-2.06</td><td class=wrap>no rule</td></tr>
-<tr ><td>256K</td><td>P2P/-/32</td><td>P2P/-/40</td><td>P2P/-/32</td><td>4.18</td><td>4.17</td><td class=n>-0.2%</td><td>0.28</td><td class=n>4.17-4.26 / 3.5-4.21</td><td class=wrap>no rule</td></tr>
-<tr ><td>512K</td><td>P2P/-/32</td><td>P2P/-/32</td><td>P2P/-/32</td><td>8.07</td><td>8.11</td><td class=n>+0.5%</td><td>0.60</td><td class=n>5.83-8.27 / 4.22-8.29</td><td class=wrap>no rule</td></tr>
-<tr ><td>1M</td><td>P2P/-/32</td><td>P2P/-/40</td><td>P2P/-/32</td><td>14.22</td><td>13.98</td><td class=n>-1.7%</td><td>0.25</td><td class=n>7.61-14.4 / 12.34-14.14</td><td class=wrap>no rule</td></tr>
-<tr ><td>2M</td><td>P2P/-/32</td><td>P2P/-/24</td><td>P2P/-/32</td><td>19.55</td><td>20.21</td><td class=g>+3.4%</td><td>0.65</td><td class=n>13.95-20.36 / 19.07-20.42</td><td class=wrap>no rule</td></tr>
-<tr ><td>4M</td><td>P2P/-/32</td><td>P2P/-/24</td><td>P2P/-/32</td><td>25.21</td><td>24.95</td><td class=n>-1.0%</td><td>0.25</td><td class=n>21.9-25.36 / 23.74-25.32</td><td class=wrap>no rule</td></tr>
-<tr ><td>8M</td><td>P2P/-/32</td><td>P2P/-/32</td><td>P2P/-/32</td><td>41.32</td><td>41.85</td><td class=n>+1.3%</td><td>0.77</td><td class=n>39.65-42.0 / 41.24-42.24</td><td class=wrap>no rule</td></tr>
-<tr ><td>16M</td><td>P2P/-/32</td><td>P2P/-/16</td><td>P2P/-/32</td><td>45.91</td><td>46.17</td><td class=n>+0.6%</td><td>0.49</td><td class=n>43.57-47.86 / 39.38-47.87</td><td class=wrap>no rule</td></tr>
-<tr ><td>32M</td><td>P2P/-/32</td><td>P2P/-/40</td><td>P2P/-/32</td><td>48.8</td><td>50.01</td><td class=g>+2.5%</td><td>0.72</td><td class=n>44.99-52.18 / 47.03-52.22</td><td class=wrap>no rule</td></tr>
-<tr ><td>64M</td><td>P2P/-/32</td><td>P2P/-/24</td><td>P2P/-/32</td><td>43.33</td><td>56.36</td><td class=g>+30.1%</td><td>1.00</td><td class=n>32.42-47.17 / 54.25-56.94</td><td class=wrap>no rule</td></tr>
-<tr ><td>128M</td><td>P2P/-/32</td><td>P2P/-/24</td><td>P2P/-/32</td><td>44.74</td><td>58.54</td><td class=g>+30.8%</td><td>1.00</td><td class=n>39.54-49.69 / 58.21-58.8</td><td class=wrap>no rule</td></tr>
-<tr ><td>256M</td><td>P2P/-/32</td><td>P2P/-/24</td><td>P2P/-/32</td><td>47.55</td><td>59.96</td><td class=g>+26.1%</td><td>1.00</td><td class=n>45.9-50.1 / 56.84-60.19</td><td class=wrap>no rule</td></tr>
-<tr ><td>512M</td><td>P2P/-/32</td><td>P2P/-/40</td><td>P2P/-/32</td><td>53.87</td><td>59.69</td><td class=g>+10.8%</td><td>1.00</td><td class=n>52.52-54.78 / 59.05-61.02</td><td class=wrap>no rule</td></tr>
+<tr class=x><td>4K</td><td>P2P/-/32</td><td>P2P/-/24</td><td>P2P/-/32</td><td>0.07</td><td>0.06</td><td class=b>-14.3%</td><td>0.22</td><td class=n>0.04-0.07 / 0.02-0.06</td><td class=wrap>dropped: regression -14.3%</td></tr>
+<tr class=x><td>8K</td><td>P2P/-/32</td><td>P2P/-/24</td><td>P2P/-/32</td><td>0.11</td><td>0.13</td><td class=g>+18.2%</td><td>0.81</td><td class=n>0.01-0.13 / 0.12-0.13</td><td class=wrap>dropped: regression -14.3%</td></tr>
+<tr class=x><td>16K</td><td>P2P/-/32</td><td>P2P/-/40</td><td>P2P/-/32</td><td>0.26</td><td>0.26</td><td class=n>+0.0%</td><td>0.69</td><td class=n>0.23-0.27 / 0.24-0.27</td><td class=wrap>dropped: regression -14.3%</td></tr>
+<tr class=x><td>32K</td><td>P2P/-/32</td><td>P2P/-/48</td><td>P2P/-/32</td><td>0.52</td><td>0.51</td><td class=n>-1.9%</td><td>0.19</td><td class=n>0.51-0.54 / 0.41-0.52</td><td class=wrap>dropped: regression -14.3%</td></tr>
+<tr class=x><td>64K</td><td>P2P/-/32</td><td>P2P/-/24</td><td>P2P/-/32</td><td>1.04</td><td>1.07</td><td class=g>+2.9%</td><td>0.75</td><td class=n>0.99-1.07 / 0.92-1.09</td><td class=wrap>dropped: regression -14.3%</td></tr>
+<tr class=x><td>128K</td><td>P2P/-/32</td><td>P2P/-/40</td><td>P2P/-/32</td><td>2.03</td><td>2.0</td><td class=n>-1.5%</td><td>0.28</td><td class=n>1.94-2.16 / 1.55-2.06</td><td class=wrap>dropped: regression -14.3%</td></tr>
+<tr class=x><td>256K</td><td>P2P/-/32</td><td>P2P/-/40</td><td>P2P/-/32</td><td>4.18</td><td>4.17</td><td class=n>-0.2%</td><td>0.28</td><td class=n>4.17-4.26 / 3.5-4.21</td><td class=wrap>dropped: regression -14.3%</td></tr>
+<tr class=x><td>512K</td><td>P2P/-/32</td><td>P2P/-/32</td><td>P2P/-/32</td><td>8.07</td><td>8.11</td><td class=n>+0.5%</td><td>0.60</td><td class=n>5.83-8.27 / 4.22-8.29</td><td class=wrap>dropped: regression -14.3%</td></tr>
+<tr class=x><td>1M</td><td>P2P/-/32</td><td>P2P/-/40</td><td>P2P/-/32</td><td>14.22</td><td>13.98</td><td class=n>-1.7%</td><td>0.25</td><td class=n>7.61-14.4 / 12.34-14.14</td><td class=wrap>dropped: regression -14.3%</td></tr>
+<tr class=x><td>2M</td><td>P2P/-/32</td><td>P2P/-/24</td><td>P2P/-/32</td><td>19.55</td><td>20.21</td><td class=g>+3.4%</td><td>0.65</td><td class=n>13.95-20.36 / 19.07-20.42</td><td class=wrap>dropped: regression -14.3%</td></tr>
+<tr class=x><td>4M</td><td>P2P/-/32</td><td>P2P/-/24</td><td>P2P/-/32</td><td>25.21</td><td>24.95</td><td class=n>-1.0%</td><td>0.25</td><td class=n>21.9-25.36 / 23.74-25.32</td><td class=wrap>dropped: regression -14.3%</td></tr>
+<tr class=x><td>8M</td><td>P2P/-/32</td><td>P2P/-/32</td><td>P2P/-/32</td><td>41.32</td><td>41.85</td><td class=n>+1.3%</td><td>0.77</td><td class=n>39.65-42.0 / 41.24-42.24</td><td class=wrap>dropped: regression -14.3%</td></tr>
+<tr class=x><td>16M</td><td>P2P/-/32</td><td>P2P/-/16</td><td>P2P/-/32</td><td>45.91</td><td>46.17</td><td class=n>+0.6%</td><td>0.49</td><td class=n>43.57-47.86 / 39.38-47.87</td><td class=wrap>dropped: regression -14.3%</td></tr>
+<tr class=x><td>32M</td><td>P2P/-/32</td><td>P2P/-/40</td><td>P2P/-/32</td><td>48.8</td><td>50.01</td><td class=g>+2.5%</td><td>0.72</td><td class=n>44.99-52.18 / 47.03-52.22</td><td class=wrap>dropped: regression -14.3%</td></tr>
+<tr class=x><td>64M</td><td>P2P/-/32</td><td>P2P/-/24</td><td>P2P/-/32</td><td>43.33</td><td>56.36</td><td class=g>+30.1%</td><td>1.00</td><td class=n>32.42-47.17 / 54.25-56.94</td><td class=wrap>dropped: regression -14.3%</td></tr>
+<tr class=x><td>128M</td><td>P2P/-/32</td><td>P2P/-/24</td><td>P2P/-/32</td><td>44.74</td><td>58.54</td><td class=g>+30.8%</td><td>1.00</td><td class=n>39.54-49.69 / 58.21-58.8</td><td class=wrap>dropped: regression -14.3%</td></tr>
+<tr class=x><td>256M</td><td>P2P/-/32</td><td>P2P/-/24</td><td>P2P/-/32</td><td>47.55</td><td>59.96</td><td class=g>+26.1%</td><td>1.00</td><td class=n>45.9-50.1 / 56.84-60.19</td><td class=wrap>dropped: regression -14.3%</td></tr>
+<tr class=x><td>512M</td><td>P2P/-/32</td><td>P2P/-/40</td><td>P2P/-/32</td><td>53.87</td><td>59.69</td><td class=g>+10.8%</td><td>1.00</td><td class=n>52.52-54.78 / 59.05-61.02</td><td class=wrap>dropped: regression -14.3%</td></tr>
 </table></div>
 <details><summary>raw A/B runs</summary><div class=tw><table class=fit><tr><th>size</th><th>arm</th><th>runs</th><th>median</th></tr>
 <tr><td>4K</td><td>default</td><td class=runs>0.07 0.06 0.07 0.05 0.07 0.07 0.07 0.04 0.07</td><td><b>0.07</b></td></tr>
