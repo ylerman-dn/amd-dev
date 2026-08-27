@@ -1,0 +1,5 @@
+# Validated by validate_tuner_config.py: only rules that beat RCCL default
+# with P(sup) >= 0.95 over 9 repeats, gain > 2.0%,
+# and no size in range regressing more than 2.0%.
+# dropped: alltoall,4096,536870912,none,none,40,1,8,-1,-1   (P(sup) only 0.82, not reproducible)
+collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff

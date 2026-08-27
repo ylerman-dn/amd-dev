@@ -1,0 +1,710 @@
+<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><title>2026-08-24-1-stage2</title><style>body{font-family:-apple-system,system-ui,sans-serif;margin:12px;max-width:980px;
+background:#14161a;color:#d8dbe0}
+table{border-collapse:collapse;font-size:12.5px;width:100%;display:block;overflow-x:auto}
+th,td{border:1px solid #34383f;padding:3px 6px;text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+td.wrap{white-space:normal;max-width:220px;text-align:left}
+h1{font-size:20px;color:#f0f2f5}h2{font-size:16px;color:#e6e9ee}h3{font-size:14px;color:#e6e9ee}
+.g{color:#4ec96a;font-weight:600}.b{color:#ff6b6b}.n{color:#8a8f98}
+.v{background:#173321}.x{background:#331a1a}
+.note{color:#9aa0a8;font-size:13px}
+a{color:#6ea8ff;text-decoration:none}
+pre{background:#1b1e24;padding:8px;font-size:12px;overflow-x:auto;border-radius:6px;line-height:1.5}
+pre .keep{color:#4ec96a}pre .drop{color:#ff6b6b;text-decoration:line-through}
+pre .why{color:#8a8f98;text-decoration:none;font-style:italic}
+details{margin:8px 0}summary{cursor:pointer;color:#6ea8ff;font-size:13px}</style>
+<h1>2026-08-24-1-stage2 — adaptive end-to-end results</h1>
+<p class=note>'executed' columns come from RCCL's own debug-log record (channel{Lo..Hi}) - what actually ran, both arms. '(trimmed)' = RCCL used fewer channels than the rule applied. Verdicts: per size, P(sup) &ge; 0.95 over the interleaved pairs, gain &gt; 2%, no regression.</p>
+<h2>all reduce_1n</h2>
+<p class=note>search: <b>72 runs</b> vs full grid 81 (<b>&minus;11%</b>), 24 configs measured, 23 min. A/B: <b class=g>8 kept</b>, <b class=b>10 dropped</b>.</p>
+<h3>Config: search output &rarr; A/B verdicts</h3>
+<pre><span class=n>collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff</span>
+<span class=keep>allreduce,4096,4096,tree,ll,2,1,8,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=keep>allreduce,8192,8192,tree,ll,4,1,8,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=keep>allreduce,16384,16384,tree,ll,16,1,8,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=keep>allreduce,32768,32768,tree,ll,24,1,8,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=keep>allreduce,65536,65536,tree,ll,48,1,8,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=keep>allreduce,131072,131072,tree,ll,48,1,8,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=keep>allreduce,262144,262144,ring,ll,32,1,8,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=drop>allreduce,524288,524288,ring,ll,48,1,8,-1,-1</span>  <span class=why>&larr; not reproducible (P 0.89)</span>
+<span class=keep>allreduce,1048576,1048576,ring,ll,40,1,8,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=drop>allreduce,2097152,2097152,ring,simple,48,1,8,-1,-1</span>  <span class=why>&larr; no gain (-0.5%)</span>
+<span class=drop>allreduce,4194304,4194304,ring,simple,40,1,8,-1,-1</span>  <span class=why>&larr; no gain (-2.0%)</span>
+<span class=drop>allreduce,8388608,8388608,ring,simple,48,1,8,-1,-1</span>  <span class=why>&larr; no gain (-0.9%)</span>
+<span class=drop>allreduce,16777216,16777216,ring,simple,48,1,8,-1,-1</span>  <span class=why>&larr; regression -7.6%</span>
+<span class=drop>allreduce,33554432,33554432,ring,simple,40,1,8,-1,-1</span>  <span class=why>&larr; regression -6.9%</span>
+<span class=drop>allreduce,67108864,67108864,ring,simple,48,1,8,-1,-1</span>  <span class=why>&larr; regression -63.3%</span>
+<span class=drop>allreduce,134217728,134217728,ring,simple,48,1,8,-1,-1</span>  <span class=why>&larr; regression -64.3%</span>
+<span class=drop>allreduce,268435456,268435456,ring,simple,48,1,8,-1,-1</span>  <span class=why>&larr; regression -65.3%</span>
+<span class=drop>allreduce,536870912,536870912,ring,simple,48,1,8,-1,-1</span>  <span class=why>&larr; regression -65.7%</span></pre>
+<h3>Final shipped config</h3><pre class=keep>collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff
+allreduce,4096,4096,tree,ll,2,1,8,-1,-1
+allreduce,8192,8192,tree,ll,4,1,8,-1,-1
+allreduce,16384,16384,tree,ll,16,1,8,-1,-1
+allreduce,32768,32768,tree,ll,24,1,8,-1,-1
+allreduce,65536,131072,tree,ll,48,1,8,-1,-1
+allreduce,262144,262144,ring,ll,32,1,8,-1,-1
+allreduce,1048576,1048576,ring,ll,40,1,8,-1,-1</pre>
+<h3>Per size</h3>
+<table><tr><th>size</th><th>default executed</th><th>ours requested</th><th>ours executed</th><th>default med</th><th>ours med</th><th>gain</th><th>P(sup)</th><th>verdict</th></tr>
+<tr class=v><td>4K</td><td>TREE/LL/1</td><td>TREE/LL/2</td><td>TREE/LL/2</td><td>0.32</td><td>0.36</td><td class=g>+12.5%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>8K</td><td>TREE/LL/1</td><td>TREE/LL/4</td><td>TREE/LL/4</td><td>0.55</td><td>0.7</td><td class=g>+27.3%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>16K</td><td>TREE/LL/1</td><td>TREE/LL/16</td><td>TREE/LL/8 (trimmed)</td><td>0.86</td><td>1.27</td><td class=g>+47.7%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>32K</td><td>TREE/LL/2</td><td>TREE/LL/24</td><td>TREE/LL/16 (trimmed)</td><td>1.7</td><td>2.67</td><td class=g>+57.1%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>64K</td><td>TREE/LL/4</td><td>TREE/LL/48</td><td>TREE/LL/32 (trimmed)</td><td>3.27</td><td>5.2</td><td class=g>+59.0%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>128K</td><td>TREE/LL/8</td><td>TREE/LL/48</td><td>TREE/LL/32 (trimmed)</td><td>6.34</td><td>8.78</td><td class=g>+38.5%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>256K</td><td>TREE/LL/16</td><td>RING/LL/32</td><td>RING/LL/32</td><td>12.6</td><td>17.79</td><td class=g>+41.2%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=x><td>512K</td><td>RING/SIMPLE/16</td><td>RING/LL/48</td><td>RING/LL/43 (trimmed)</td><td>21.26</td><td>34.96</td><td class=g>+64.4%</td><td>0.89</td><td class=wrap>dropped: not reproducible (P 0.89)</td></tr>
+<tr class=v><td>1M</td><td>RING/SIMPLE/32</td><td>RING/LL/40</td><td>RING/LL/40</td><td>41.46</td><td>48.43</td><td class=g>+16.8%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=x><td>2M</td><td>RING/SIMPLE/52</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/43 (trimmed)</td><td>79.26</td><td>78.89</td><td class=n>-0.5%</td><td>0.20</td><td class=wrap>dropped: no gain (-0.5%)</td></tr>
+<tr class=x><td>4M</td><td>RING/SIMPLE/52</td><td>RING/SIMPLE/40</td><td>RING/SIMPLE/40</td><td>128.23</td><td>125.68</td><td class=n>-2.0%</td><td>0.00</td><td class=wrap>dropped: no gain (-2.0%)</td></tr>
+<tr class=x><td>8M</td><td>RING/SIMPLE/54</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/47 (trimmed)</td><td>197.47</td><td>195.63</td><td class=n>-0.9%</td><td>0.00</td><td class=wrap>dropped: no gain (-0.9%)</td></tr>
+<tr class=x><td>16M</td><td>RING/SIMPLE/56</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/48</td><td>269.03</td><td>248.67</td><td class=b>-7.6%</td><td>0.00</td><td class=wrap>dropped: regression -7.6%</td></tr>
+<tr class=x><td>32M</td><td>RING/SIMPLE/56</td><td>RING/SIMPLE/40</td><td>RING/SIMPLE/40</td><td>318.18</td><td>296.2</td><td class=b>-6.9%</td><td>0.00</td><td class=wrap>dropped: regression -6.9%</td></tr>
+<tr class=x><td>64M</td><td>RING/SIMPLE/222</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/48</td><td>354.49</td><td>129.97</td><td class=b>-63.3%</td><td>0.00</td><td class=wrap>dropped: regression -63.3%</td></tr>
+<tr class=x><td>128M</td><td>RING/SIMPLE/222</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/48</td><td>377.94</td><td>134.94</td><td class=b>-64.3%</td><td>0.00</td><td class=wrap>dropped: regression -64.3%</td></tr>
+<tr class=x><td>256M</td><td>RING/SIMPLE/223</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/48</td><td>389.03</td><td>135.03</td><td class=b>-65.3%</td><td>0.00</td><td class=wrap>dropped: regression -65.3%</td></tr>
+<tr class=x><td>512M</td><td>RING/SIMPLE/224</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/48</td><td>396.49</td><td>135.93</td><td class=b>-65.7%</td><td>0.00</td><td class=wrap>dropped: regression -65.7%</td></tr>
+</table>
+<details><summary>raw A/B runs (busbw per size, both arms)</summary><table><tr><th>size</th><th>arm</th><th>runs</th><th>median</th></tr>
+<tr><td>4K</td><td>default</td><td>0.33 0.32 0.33 0.31 0.33 0.32 0.32 0.33 0.32</td><td><b>0.32</b></td></tr>
+<tr><td>4K</td><td>config</td><td>0.36 0.35 0.34 0.36 0.35 0.37 0.38 0.35 0.36</td><td><b>0.36</b></td></tr>
+<tr><td>8K</td><td>default</td><td>0.56 0.54 0.55 0.56 0.56 0.55 0.55 0.56 0.55</td><td><b>0.55</b></td></tr>
+<tr><td>8K</td><td>config</td><td>0.7 0.71 0.7 0.71 0.7 0.71 0.65 0.7 0.68</td><td><b>0.7</b></td></tr>
+<tr><td>16K</td><td>default</td><td>0.86 0.86 0.86 0.86 0.87 0.86 0.84 0.86 0.86</td><td><b>0.86</b></td></tr>
+<tr><td>16K</td><td>config</td><td>1.28 1.25 1.33 1.24 1.27 1.28 1.26 1.26 1.35</td><td><b>1.27</b></td></tr>
+<tr><td>32K</td><td>default</td><td>1.71 1.7 1.7 1.68 1.71 1.71 1.7 1.71 1.7</td><td><b>1.7</b></td></tr>
+<tr><td>32K</td><td>config</td><td>2.7 2.67 2.68 2.69 2.67 2.72 2.59 2.67 2.58</td><td><b>2.67</b></td></tr>
+<tr><td>64K</td><td>default</td><td>3.27 3.25 3.27 3.22 3.24 3.26 3.27 3.27 3.27</td><td><b>3.27</b></td></tr>
+<tr><td>64K</td><td>config</td><td>5.2 5.17 5.17 5.16 5.23 5.25 5.2 5.19 5.27</td><td><b>5.2</b></td></tr>
+<tr><td>128K</td><td>default</td><td>6.36 6.3 6.28 6.26 6.37 6.38 6.4 6.31 6.34</td><td><b>6.34</b></td></tr>
+<tr><td>128K</td><td>config</td><td>8.5 8.29 8.87 9.05 8.78 9.0 8.61 8.86 8.65</td><td><b>8.78</b></td></tr>
+<tr><td>256K</td><td>default</td><td>12.54 12.55 12.62 12.41 12.53 12.67 12.62 12.6 12.71</td><td><b>12.6</b></td></tr>
+<tr><td>256K</td><td>config</td><td>17.5 17.84 17.82 17.67 17.71 17.48 17.79 17.81 17.94</td><td><b>17.79</b></td></tr>
+<tr><td>512K</td><td>default</td><td>21.31 21.26 21.0 21.02 21.36 21.13 21.28 21.16 21.3</td><td><b>21.26</b></td></tr>
+<tr><td>512K</td><td>config</td><td>9.98 35.08 34.61 34.51 34.86 35.01 34.98 34.96 35.11</td><td><b>34.96</b></td></tr>
+<tr><td>1M</td><td>default</td><td>41.62 41.45 41.51 41.6 41.46 41.2 41.31 41.39 41.75</td><td><b>41.46</b></td></tr>
+<tr><td>1M</td><td>config</td><td>48.49 48.47 48.02 47.68 47.65 48.52 48.43 48.49 48.42</td><td><b>48.43</b></td></tr>
+<tr><td>2M</td><td>default</td><td>79.5 79.63 78.58 79.26 79.24 79.43 79.22 79.11 79.7</td><td><b>79.26</b></td></tr>
+<tr><td>2M</td><td>config</td><td>78.65 78.89 78.61 78.81 78.9 79.23 78.73 78.97 79.49</td><td><b>78.89</b></td></tr>
+<tr><td>4M</td><td>default</td><td>128.7 128.26 127.36 127.42 128.23 128.54 127.97 128.18 128.32</td><td><b>128.23</b></td></tr>
+<tr><td>4M</td><td>config</td><td>125.49 126.03 125.43 125.62 125.68 126.31 125.25 126.09 126.29</td><td><b>125.68</b></td></tr>
+<tr><td>8M</td><td>default</td><td>197.99 197.38 196.55 197.16 197.46 197.99 197.5 197.47 197.47</td><td><b>197.47</b></td></tr>
+<tr><td>8M</td><td>config</td><td>194.9 196.04 195.13 195.11 195.74 195.04 195.63 195.81 195.75</td><td><b>195.63</b></td></tr>
+<tr><td>16M</td><td>default</td><td>269.29 268.25 268.13 268.39 269.03 269.1 269.18 269.03 268.48</td><td><b>269.03</b></td></tr>
+<tr><td>16M</td><td>config</td><td>248.91 248.28 249.3 246.98 248.12 248.67 249.3 249.5 246.83</td><td><b>248.67</b></td></tr>
+<tr><td>32M</td><td>default</td><td>318.18 316.71 317.7 317.25 318.18 318.96 318.14 318.22 318.42</td><td><b>318.18</b></td></tr>
+<tr><td>32M</td><td>config</td><td>296.2 296.22 295.8 295.57 296.57 296.9 295.44 296.29 296.2</td><td><b>296.2</b></td></tr>
+<tr><td>64M</td><td>default</td><td>355.66 355.92 353.83 354.49 355.25 355.46 353.64 353.75 353.79</td><td><b>354.49</b></td></tr>
+<tr><td>64M</td><td>config</td><td>130.03 129.89 130.0 130.2 129.79 129.97 130.07 129.93 129.57</td><td><b>129.97</b></td></tr>
+<tr><td>128M</td><td>default</td><td>377.99 378.47 377.66 378.11 378.44 377.94 377.78 376.87 377.5</td><td><b>377.94</b></td></tr>
+<tr><td>128M</td><td>config</td><td>134.94 134.75 135.16 134.99 134.84 134.54 134.97 135.01 134.62</td><td><b>134.94</b></td></tr>
+<tr><td>256M</td><td>default</td><td>388.61 389.89 390.16 389.03 390.17 389.24 388.99 388.97 388.25</td><td><b>389.03</b></td></tr>
+<tr><td>256M</td><td>config</td><td>135.06 134.99 135.03 135.25 134.78 134.99 135.26 135.09 134.93</td><td><b>135.03</b></td></tr>
+<tr><td>512M</td><td>default</td><td>396.58 396.49 396.49 396.76 396.63 396.3 396.24 396.34 396.44</td><td><b>396.49</b></td></tr>
+<tr><td>512M</td><td>config</td><td>135.89 135.93 136.14 136.08 135.87 135.91 136.08 136.1 135.79</td><td><b>135.93</b></td></tr>
+</table></details>
+<h2>all reduce_2n</h2>
+<p class=note>search: <b>120 runs</b> vs full grid 162 (<b>&minus;26%</b>), 40 configs measured, 34 min. A/B: <b class=g>3 kept</b>, <b class=b>15 dropped</b>.</p>
+<h3>Config: search output &rarr; A/B verdicts</h3>
+<pre><span class=n>collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff</span>
+<span class=drop>allreduce,4096,4096,tree,ll,2,2,16,-1,-1</span>  <span class=why>&larr; no gain (+0.0%)</span>
+<span class=drop>allreduce,8192,8192,tree,ll,4,2,16,-1,-1</span>  <span class=why>&larr; no gain (+0.0%)</span>
+<span class=drop>allreduce,16384,16384,tree,ll,24,2,16,-1,-1</span>  <span class=why>&larr; no gain (+0.0%)</span>
+<span class=drop>allreduce,32768,32768,tree,ll,32,2,16,-1,-1</span>  <span class=why>&larr; no gain (+0.0%)</span>
+<span class=drop>allreduce,65536,65536,tree,ll,40,2,16,-1,-1</span>  <span class=why>&larr; no gain (-0.4%)</span>
+<span class=drop>allreduce,131072,131072,tree,ll,40,2,16,-1,-1</span>  <span class=why>&larr; no gain (+0.2%)</span>
+<span class=keep>allreduce,262144,262144,tree,ll128,32,2,16,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=drop>allreduce,524288,524288,tree,ll128,32,2,16,-1,-1</span>  <span class=why>&larr; no gain (-0.8%)</span>
+<span class=drop>allreduce,1048576,1048576,tree,ll128,48,2,16,-1,-1</span>  <span class=why>&larr; no gain (-0.3%)</span>
+<span class=drop>allreduce,2097152,2097152,tree,ll128,48,2,16,-1,-1</span>  <span class=why>&larr; no gain (+0.1%)</span>
+<span class=drop>allreduce,4194304,4194304,tree,ll128,48,2,16,-1,-1</span>  <span class=why>&larr; no gain (-0.3%)</span>
+<span class=drop>allreduce,8388608,8388608,tree,ll128,48,2,16,-1,-1</span>  <span class=why>&larr; no gain (-0.0%)</span>
+<span class=drop>allreduce,16777216,16777216,tree,ll128,48,2,16,-1,-1</span>  <span class=why>&larr; no gain (+0.2%)</span>
+<span class=keep>allreduce,33554432,33554432,ring,ll128,40,2,16,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=drop>allreduce,67108864,67108864,ring,ll128,48,2,16,-1,-1</span>  <span class=why>&larr; no gain (-0.1%)</span>
+<span class=keep>allreduce,134217728,134217728,ring,simple,40,2,16,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=drop>allreduce,268435456,268435456,ring,simple,40,2,16,-1,-1</span>  <span class=why>&larr; no gain (-0.3%)</span>
+<span class=drop>allreduce,536870912,536870912,ring,simple,40,2,16,-1,-1</span>  <span class=why>&larr; no gain (-0.2%)</span></pre>
+<h3>Final shipped config</h3><pre class=keep>collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff
+allreduce,262144,262144,tree,ll128,32,2,16,-1,-1
+allreduce,33554432,33554432,ring,ll128,40,2,16,-1,-1
+allreduce,134217728,134217728,ring,simple,40,2,16,-1,-1</pre>
+<h3>Per size</h3>
+<table><tr><th>size</th><th>default executed</th><th>ours requested</th><th>ours executed</th><th>default med</th><th>ours med</th><th>gain</th><th>P(sup)</th><th>verdict</th></tr>
+<tr class=x><td>4K</td><td>TREE/LL/2</td><td>TREE/LL/2</td><td>TREE/LL/2</td><td>0.2</td><td>0.2</td><td class=n>+0.0%</td><td>0.33</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
+<tr class=x><td>8K</td><td>TREE/LL/4</td><td>TREE/LL/4</td><td>TREE/LL/4</td><td>0.39</td><td>0.39</td><td class=n>+0.0%</td><td>0.47</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
+<tr class=x><td>16K</td><td>TREE/LL/8</td><td>TREE/LL/24</td><td>TREE/LL/8 (trimmed)</td><td>0.77</td><td>0.77</td><td class=n>+0.0%</td><td>0.49</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
+<tr class=x><td>32K</td><td>TREE/LL/16</td><td>TREE/LL/32</td><td>TREE/LL/16 (trimmed)</td><td>1.47</td><td>1.47</td><td class=n>+0.0%</td><td>0.52</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
+<tr class=x><td>64K</td><td>TREE/LL/32</td><td>TREE/LL/40</td><td>TREE/LL/32 (trimmed)</td><td>2.77</td><td>2.76</td><td class=n>-0.4%</td><td>0.31</td><td class=wrap>dropped: no gain (-0.4%)</td></tr>
+<tr class=x><td>128K</td><td>TREE/LL/32</td><td>TREE/LL/40</td><td>TREE/LL/32 (trimmed)</td><td>4.85</td><td>4.86</td><td class=n>+0.2%</td><td>0.35</td><td class=wrap>dropped: no gain (+0.2%)</td></tr>
+<tr class=v><td>256K</td><td>TREE/LL/43</td><td>TREE/LL128/32</td><td>TREE/LL128/32</td><td>8.5</td><td>9.06</td><td class=g>+6.6%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=x><td>512K</td><td>TREE/LL128/32</td><td>TREE/LL128/32</td><td>TREE/LL128/32</td><td>16.68</td><td>16.54</td><td class=n>-0.8%</td><td>0.24</td><td class=wrap>dropped: no gain (-0.8%)</td></tr>
+<tr class=x><td>1M</td><td>TREE/LL128/43</td><td>TREE/LL128/48</td><td>TREE/LL128/43 (trimmed)</td><td>30.3</td><td>30.21</td><td class=n>-0.3%</td><td>0.23</td><td class=wrap>dropped: no gain (-0.3%)</td></tr>
+<tr class=x><td>2M</td><td>TREE/LL128/43</td><td>TREE/LL128/48</td><td>TREE/LL128/43 (trimmed)</td><td>54.38</td><td>54.44</td><td class=n>+0.1%</td><td>0.57</td><td class=wrap>dropped: no gain (+0.1%)</td></tr>
+<tr class=x><td>4M</td><td>TREE/LL128/47</td><td>TREE/LL128/48</td><td>TREE/LL128/47 (trimmed)</td><td>92.82</td><td>92.52</td><td class=n>-0.3%</td><td>0.32</td><td class=wrap>dropped: no gain (-0.3%)</td></tr>
+<tr class=x><td>8M</td><td>TREE/LL128/47</td><td>TREE/LL128/48</td><td>TREE/LL128/47 (trimmed)</td><td>143.96</td><td>143.9</td><td class=n>-0.0%</td><td>0.53</td><td class=wrap>dropped: no gain (-0.0%)</td></tr>
+<tr class=x><td>16M</td><td>TREE/LL128/48</td><td>TREE/LL128/48</td><td>TREE/LL128/48</td><td>193.29</td><td>193.59</td><td class=n>+0.2%</td><td>0.48</td><td class=wrap>dropped: no gain (+0.2%)</td></tr>
+<tr class=v><td>32M</td><td>TREE/LL128/48</td><td>RING/LL128/40</td><td>RING/LL128/40</td><td>222.03</td><td>246.1</td><td class=g>+10.8%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=x><td>64M</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>290.75</td><td>290.51</td><td class=n>-0.1%</td><td>0.41</td><td class=wrap>dropped: no gain (-0.1%)</td></tr>
+<tr class=v><td>128M</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/40</td><td>RING/SIMPLE/40</td><td>317.74</td><td>324.52</td><td class=g>+2.1%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=x><td>256M</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/40</td><td>RING/SIMPLE/40</td><td>369.63</td><td>368.35</td><td class=n>-0.3%</td><td>0.00</td><td class=wrap>dropped: no gain (-0.3%)</td></tr>
+<tr class=x><td>512M</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/40</td><td>RING/SIMPLE/40</td><td>374.55</td><td>373.66</td><td class=n>-0.2%</td><td>0.00</td><td class=wrap>dropped: no gain (-0.2%)</td></tr>
+</table>
+<details><summary>raw A/B runs (busbw per size, both arms)</summary><table><tr><th>size</th><th>arm</th><th>runs</th><th>median</th></tr>
+<tr><td>4K</td><td>default</td><td>0.2 0.2 0.2 0.2 0.19 0.2 0.2 0.2 0.2</td><td><b>0.2</b></td></tr>
+<tr><td>4K</td><td>config</td><td>0.19 0.2 0.19 0.19 0.2 0.18 0.2 0.2 0.2</td><td><b>0.2</b></td></tr>
+<tr><td>8K</td><td>default</td><td>0.39 0.37 0.38 0.39 0.38 0.39 0.38 0.39 0.39</td><td><b>0.39</b></td></tr>
+<tr><td>8K</td><td>config</td><td>0.4 0.37 0.39 0.39 0.38 0.39 0.36 0.36 0.39</td><td><b>0.39</b></td></tr>
+<tr><td>16K</td><td>default</td><td>0.77 0.78 0.76 0.76 0.75 0.78 0.75 0.78 0.78</td><td><b>0.77</b></td></tr>
+<tr><td>16K</td><td>config</td><td>0.1 0.77 0.76 0.77 0.77 0.77 0.77 0.78 0.78</td><td><b>0.77</b></td></tr>
+<tr><td>32K</td><td>default</td><td>1.45 1.46 1.47 1.49 1.48 1.42 1.5 1.48 1.47</td><td><b>1.47</b></td></tr>
+<tr><td>32K</td><td>config</td><td>1.49 1.47 1.46 1.48 1.46 1.47 1.47 1.49 1.47</td><td><b>1.47</b></td></tr>
+<tr><td>64K</td><td>default</td><td>2.8 2.69 2.77 2.8 2.71 2.8 2.77 2.81 2.77</td><td><b>2.77</b></td></tr>
+<tr><td>64K</td><td>config</td><td>2.76 2.76 2.74 2.75 2.74 2.77 2.72 2.79 2.79</td><td><b>2.76</b></td></tr>
+<tr><td>128K</td><td>default</td><td>4.85 4.85 4.9 4.85 4.89 4.91 4.85 4.92 4.82</td><td><b>4.85</b></td></tr>
+<tr><td>128K</td><td>config</td><td>4.81 4.84 4.86 4.89 4.81 4.86 4.84 4.89 4.86</td><td><b>4.86</b></td></tr>
+<tr><td>256K</td><td>default</td><td>8.44 8.42 8.53 8.51 8.42 8.54 8.5 8.49 8.55</td><td><b>8.5</b></td></tr>
+<tr><td>256K</td><td>config</td><td>9.07 9.08 8.98 9.0 9.05 9.06 9.09 8.96 9.13</td><td><b>9.06</b></td></tr>
+<tr><td>512K</td><td>default</td><td>16.44 16.58 16.59 16.8 16.62 16.75 16.68 16.72 16.69</td><td><b>16.68</b></td></tr>
+<tr><td>512K</td><td>config</td><td>16.07 16.39 16.42 16.65 16.65 16.53 16.62 16.54 16.71</td><td><b>16.54</b></td></tr>
+<tr><td>1M</td><td>default</td><td>30.18 30.58 30.63 30.27 30.33 30.3 30.21 30.42 30.22</td><td><b>30.3</b></td></tr>
+<tr><td>1M</td><td>config</td><td>30.22 29.89 30.13 30.15 30.3 29.98 30.39 30.29 30.21</td><td><b>30.21</b></td></tr>
+<tr><td>2M</td><td>default</td><td>54.68 54.97 54.77 54.55 53.54 54.02 49.97 54.31 54.38</td><td><b>54.38</b></td></tr>
+<tr><td>2M</td><td>config</td><td>54.74 54.18 54.74 54.68 54.41 54.0 54.6 54.4 54.44</td><td><b>54.44</b></td></tr>
+<tr><td>4M</td><td>default</td><td>92.61 93.62 92.69 93.06 92.82 91.75 93.64 93.27 92.49</td><td><b>92.82</b></td></tr>
+<tr><td>4M</td><td>config</td><td>92.28 92.72 92.26 92.8 92.51 92.45 93.49 92.76 92.52</td><td><b>92.52</b></td></tr>
+<tr><td>8M</td><td>default</td><td>144.03 137.35 144.38 142.64 143.96 144.65 142.7 139.56 145.17</td><td><b>143.96</b></td></tr>
+<tr><td>8M</td><td>config</td><td>142.73 142.55 142.58 141.68 143.9 144.56 144.64 145.03 144.42</td><td><b>143.9</b></td></tr>
+<tr><td>16M</td><td>default</td><td>191.19 192.23 195.38 194.9 193.79 194.32 191.6 193.29 193.19</td><td><b>193.29</b></td></tr>
+<tr><td>16M</td><td>config</td><td>193.59 193.86 192.53 191.11 193.47 194.31 193.87 194.33 191.21</td><td><b>193.59</b></td></tr>
+<tr><td>32M</td><td>default</td><td>221.57 224.84 222.03 221.7 219.8 225.16 225.15 223.36 220.35</td><td><b>222.03</b></td></tr>
+<tr><td>32M</td><td>config</td><td>245.24 246.53 245.02 246.33 246.54 246.15 246.1 245.26 237.32</td><td><b>246.1</b></td></tr>
+<tr><td>64M</td><td>default</td><td>290.75 291.79 290.29 290.56 290.33 292.21 290.83 290.24 291.21</td><td><b>290.75</b></td></tr>
+<tr><td>64M</td><td>config</td><td>289.58 291.69 290.51 289.98 289.3 291.94 292.2 291.47 289.96</td><td><b>290.51</b></td></tr>
+<tr><td>128M</td><td>default</td><td>283.94 317.74 318.24 319.23 314.05 318.55 87.92 319.03 317.07</td><td><b>317.74</b></td></tr>
+<tr><td>128M</td><td>config</td><td>324.52 324.07 324.02 325.38 324.69 325.13 325.74 322.59 323.6</td><td><b>324.52</b></td></tr>
+<tr><td>256M</td><td>default</td><td>369.23 369.78 369.29 369.43 370.29 369.63 369.36 369.95 370.4</td><td><b>369.63</b></td></tr>
+<tr><td>256M</td><td>config</td><td>368.49 368.19 368.35 368.15 367.99 368.63 366.18 368.64 368.74</td><td><b>368.35</b></td></tr>
+<tr><td>512M</td><td>default</td><td>374.45 374.49 375.32 374.29 375.05 374.39 375.0 374.55 374.93</td><td><b>374.55</b></td></tr>
+<tr><td>512M</td><td>config</td><td>373.74 373.83 373.62 373.66 373.38 373.69 373.44 373.86 372.95</td><td><b>373.66</b></td></tr>
+</table></details>
+<h2>all reduce_3n</h2>
+<p class=note>search: <b>120 runs</b> vs full grid 162 (<b>&minus;26%</b>), 40 configs measured, 41 min. A/B: <b class=g>5 kept</b>, <b class=b>13 dropped</b>.</p>
+<h3>Config: search output &rarr; A/B verdicts</h3>
+<pre><span class=n>collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff</span>
+<span class=drop>allreduce,4096,4096,tree,ll,2,3,24,-1,-1</span>  <span class=why>&larr; no gain (+0.0%)</span>
+<span class=drop>allreduce,8192,8192,tree,ll,4,3,24,-1,-1</span>  <span class=why>&larr; no gain (+0.0%)</span>
+<span class=drop>allreduce,16384,16384,tree,ll,8,3,24,-1,-1</span>  <span class=why>&larr; no gain (+0.0%)</span>
+<span class=drop>allreduce,32768,32768,tree,ll,16,3,24,-1,-1</span>  <span class=why>&larr; no gain (+0.0%)</span>
+<span class=drop>allreduce,65536,65536,tree,ll,40,3,24,-1,-1</span>  <span class=why>&larr; no gain (-0.7%)</span>
+<span class=keep>allreduce,131072,131072,tree,ll128,24,3,24,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=keep>allreduce,262144,262144,tree,ll128,32,3,24,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=drop>allreduce,524288,524288,tree,ll128,32,3,24,-1,-1</span>  <span class=why>&larr; no gain (-1.3%)</span>
+<span class=drop>allreduce,1048576,1048576,tree,ll128,48,3,24,-1,-1</span>  <span class=why>&larr; no gain (-1.1%)</span>
+<span class=drop>allreduce,2097152,2097152,tree,ll128,48,3,24,-1,-1</span>  <span class=why>&larr; no gain (-1.1%)</span>
+<span class=drop>allreduce,4194304,4194304,tree,ll128,48,3,24,-1,-1</span>  <span class=why>&larr; no gain (-1.2%)</span>
+<span class=drop>allreduce,8388608,8388608,tree,ll128,48,3,24,-1,-1</span>  <span class=why>&larr; no gain (+0.1%)</span>
+<span class=drop>allreduce,16777216,16777216,tree,ll128,48,3,24,-1,-1</span>  <span class=why>&larr; no gain (-0.6%)</span>
+<span class=keep>allreduce,33554432,33554432,ring,ll128,32,3,24,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=drop>allreduce,67108864,67108864,ring,ll128,40,3,24,-1,-1</span>  <span class=why>&larr; no gain (-0.4%)</span>
+<span class=keep>allreduce,134217728,134217728,ring,ll128,40,3,24,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=keep>allreduce,268435456,268435456,ring,simple,40,3,24,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=drop>allreduce,536870912,536870912,ring,simple,48,3,24,-1,-1</span>  <span class=why>&larr; no gain (-0.1%)</span></pre>
+<h3>Final shipped config</h3><pre class=keep>collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff
+allreduce,131072,131072,tree,ll128,24,3,24,-1,-1
+allreduce,262144,262144,tree,ll128,32,3,24,-1,-1
+allreduce,33554432,33554432,ring,ll128,32,3,24,-1,-1
+allreduce,134217728,134217728,ring,ll128,40,3,24,-1,-1
+allreduce,268435456,268435456,ring,simple,40,3,24,-1,-1</pre>
+<h3>Per size</h3>
+<table><tr><th>size</th><th>default executed</th><th>ours requested</th><th>ours executed</th><th>default med</th><th>ours med</th><th>gain</th><th>P(sup)</th><th>verdict</th></tr>
+<tr class=x><td>4K</td><td>TREE/LL/2</td><td>TREE/LL/2</td><td>TREE/LL/2</td><td>0.1</td><td>0.1</td><td class=n>+0.0%</td><td>0.50</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
+<tr class=x><td>8K</td><td>TREE/LL/4</td><td>TREE/LL/4</td><td>TREE/LL/4</td><td>0.2</td><td>0.2</td><td class=n>+0.0%</td><td>0.56</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
+<tr class=x><td>16K</td><td>TREE/LL/8</td><td>TREE/LL/8</td><td>TREE/LL/8</td><td>0.4</td><td>0.4</td><td class=n>+0.0%</td><td>0.60</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
+<tr class=x><td>32K</td><td>TREE/LL/16</td><td>TREE/LL/16</td><td>TREE/LL/16</td><td>0.78</td><td>0.78</td><td class=n>+0.0%</td><td>0.65</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
+<tr class=x><td>64K</td><td>TREE/LL/32</td><td>TREE/LL/40</td><td>TREE/LL/32 (trimmed)</td><td>1.48</td><td>1.47</td><td class=n>-0.7%</td><td>0.17</td><td class=wrap>dropped: no gain (-0.7%)</td></tr>
+<tr class=v><td>128K</td><td>TREE/LL/32</td><td>TREE/LL128/24</td><td>TREE/LL128/16 (trimmed)</td><td>2.63</td><td>2.72</td><td class=g>+3.4%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>256K</td><td>TREE/LL/43</td><td>TREE/LL128/32</td><td>TREE/LL128/32</td><td>4.69</td><td>5.19</td><td class=g>+10.7%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=x><td>512K</td><td>TREE/LL128/32</td><td>TREE/LL128/32</td><td>TREE/LL128/32</td><td>9.8</td><td>9.67</td><td class=n>-1.3%</td><td>0.00</td><td class=wrap>dropped: no gain (-1.3%)</td></tr>
+<tr class=x><td>1M</td><td>TREE/LL128/43</td><td>TREE/LL128/48</td><td>TREE/LL128/43 (trimmed)</td><td>18.1</td><td>17.9</td><td class=n>-1.1%</td><td>0.11</td><td class=wrap>dropped: no gain (-1.1%)</td></tr>
+<tr class=x><td>2M</td><td>TREE/LL128/43</td><td>TREE/LL128/48</td><td>TREE/LL128/43 (trimmed)</td><td>33.65</td><td>33.29</td><td class=n>-1.1%</td><td>0.17</td><td class=wrap>dropped: no gain (-1.1%)</td></tr>
+<tr class=x><td>4M</td><td>TREE/LL128/47</td><td>TREE/LL128/48</td><td>TREE/LL128/47 (trimmed)</td><td>59.96</td><td>59.23</td><td class=n>-1.2%</td><td>0.07</td><td class=wrap>dropped: no gain (-1.2%)</td></tr>
+<tr class=x><td>8M</td><td>TREE/LL128/47</td><td>TREE/LL128/48</td><td>TREE/LL128/47 (trimmed)</td><td>99.16</td><td>99.3</td><td class=n>+0.1%</td><td>0.62</td><td class=wrap>dropped: no gain (+0.1%)</td></tr>
+<tr class=x><td>16M</td><td>TREE/LL128/48</td><td>TREE/LL128/48</td><td>TREE/LL128/48</td><td>146.92</td><td>145.98</td><td class=n>-0.6%</td><td>0.14</td><td class=wrap>dropped: no gain (-0.6%)</td></tr>
+<tr class=v><td>32M</td><td>TREE/LL128/48</td><td>RING/LL128/32</td><td>RING/LL128/32</td><td>184.5</td><td>198.8</td><td class=g>+7.8%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=x><td>64M</td><td>RING/LL128/48</td><td>RING/LL128/40</td><td>RING/LL128/40</td><td>268.43</td><td>267.38</td><td class=n>-0.4%</td><td>0.22</td><td class=wrap>dropped: no gain (-0.4%)</td></tr>
+<tr class=v><td>128M</td><td>RING/LL128/48</td><td>RING/LL128/40</td><td>RING/LL128/40</td><td>243.08</td><td>271.34</td><td class=g>+11.6%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>256M</td><td>RING/LL128/48</td><td>RING/SIMPLE/40</td><td>RING/SIMPLE/40</td><td>294.59</td><td>346.18</td><td class=g>+17.5%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=x><td>512M</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/48</td><td>373.94</td><td>373.74</td><td class=n>-0.1%</td><td>0.27</td><td class=wrap>dropped: no gain (-0.1%)</td></tr>
+</table>
+<details><summary>raw A/B runs (busbw per size, both arms)</summary><table><tr><th>size</th><th>arm</th><th>runs</th><th>median</th></tr>
+<tr><td>4K</td><td>default</td><td>0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1</td><td><b>0.1</b></td></tr>
+<tr><td>4K</td><td>config</td><td>0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1</td><td><b>0.1</b></td></tr>
+<tr><td>8K</td><td>default</td><td>0.2 0.2 0.2 0.2 0.2 0.19 0.2 0.2 0.2</td><td><b>0.2</b></td></tr>
+<tr><td>8K</td><td>config</td><td>0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2</td><td><b>0.2</b></td></tr>
+<tr><td>16K</td><td>default</td><td>0.4 0.4 0.4 0.4 0.4 0.38 0.4 0.4 0.4</td><td><b>0.4</b></td></tr>
+<tr><td>16K</td><td>config</td><td>0.4 0.4 0.4 0.41 0.4 0.4 0.4 0.4 0.4</td><td><b>0.4</b></td></tr>
+<tr><td>32K</td><td>default</td><td>0.78 0.78 0.78 0.78 0.77 0.78 0.78 0.78 0.78</td><td><b>0.78</b></td></tr>
+<tr><td>32K</td><td>config</td><td>0.78 0.78 0.79 0.78 0.78 0.79 0.79 0.77 0.78</td><td><b>0.78</b></td></tr>
+<tr><td>64K</td><td>default</td><td>1.48 1.49 1.48 1.49 1.47 1.48 1.47 1.48 1.51</td><td><b>1.48</b></td></tr>
+<tr><td>64K</td><td>config</td><td>1.46 1.48 1.47 1.44 1.46 1.48 1.47 1.46 1.48</td><td><b>1.47</b></td></tr>
+<tr><td>128K</td><td>default</td><td>2.65 2.6 2.63 2.63 0.87 2.61 2.62 2.64 2.63</td><td><b>2.63</b></td></tr>
+<tr><td>128K</td><td>config</td><td>2.72 2.73 2.72 2.74 2.71 2.72 2.72 2.71 2.72</td><td><b>2.72</b></td></tr>
+<tr><td>256K</td><td>default</td><td>4.71 4.62 4.69 4.66 3.08 4.71 4.72 4.73 4.69</td><td><b>4.69</b></td></tr>
+<tr><td>256K</td><td>config</td><td>5.17 5.2 5.22 4.89 5.19 5.19 5.18 4.85 5.2</td><td><b>5.19</b></td></tr>
+<tr><td>512K</td><td>default</td><td>9.82 9.8 9.82 9.77 9.8 9.78 9.84 9.8 9.74</td><td><b>9.8</b></td></tr>
+<tr><td>512K</td><td>config</td><td>9.67 9.72 9.67 9.72 9.65 9.37 9.67 9.68 9.68</td><td><b>9.67</b></td></tr>
+<tr><td>1M</td><td>default</td><td>18.1 17.48 18.16 18.11 18.01 18.09 18.1 18.18 18.17</td><td><b>18.1</b></td></tr>
+<tr><td>1M</td><td>config</td><td>17.86 17.92 17.9 17.9 17.83 17.93 17.83 17.9 17.66</td><td><b>17.9</b></td></tr>
+<tr><td>2M</td><td>default</td><td>33.43 33.81 33.72 33.37 33.4 33.65 32.43 33.79 33.67</td><td><b>33.65</b></td></tr>
+<tr><td>2M</td><td>config</td><td>33.39 33.09 33.44 33.38 33.22 33.32 33.24 33.29 33.2</td><td><b>33.29</b></td></tr>
+<tr><td>4M</td><td>default</td><td>59.96 59.89 60.29 60.23 59.81 59.38 59.96 60.01 59.63</td><td><b>59.96</b></td></tr>
+<tr><td>4M</td><td>config</td><td>54.34 47.71 59.95 59.48 59.4 58.11 59.27 59.23 58.35</td><td><b>59.23</b></td></tr>
+<tr><td>8M</td><td>default</td><td>100.06 99.25 100.49 93.97 99.02 98.82 99.16 99.86 96.24</td><td><b>99.16</b></td></tr>
+<tr><td>8M</td><td>config</td><td>99.7 100.05 99.5 99.58 99.18 99.12 99.28 99.16 99.3</td><td><b>99.3</b></td></tr>
+<tr><td>16M</td><td>default</td><td>146.41 146.92 147.6 146.89 147.1 146.36 124.93 146.95 147.24</td><td><b>146.92</b></td></tr>
+<tr><td>16M</td><td>config</td><td>145.98 144.05 146.49 146.14 145.5 146.15 137.44 145.34 146.36</td><td><b>145.98</b></td></tr>
+<tr><td>32M</td><td>default</td><td>184.92 185.03 185.81 184.5 184.16 184.42 166.9 184.78 183.77</td><td><b>184.5</b></td></tr>
+<tr><td>32M</td><td>config</td><td>198.8 200.37 199.65 198.47 199.36 198.25 197.57 198.74 198.83</td><td><b>198.8</b></td></tr>
+<tr><td>64M</td><td>default</td><td>268.5 267.83 269.12 268.84 268.43 266.15 239.99 268.22 268.48</td><td><b>268.43</b></td></tr>
+<tr><td>64M</td><td>config</td><td>266.96 266.8 267.73 267.7 266.93 266.93 267.74 267.66 267.38</td><td><b>267.38</b></td></tr>
+<tr><td>128M</td><td>default</td><td>243.53 243.86 242.54 242.57 244.95 244.3 242.79 242.91 243.08</td><td><b>243.08</b></td></tr>
+<tr><td>128M</td><td>config</td><td>272.96 271.36 272.42 268.15 271.66 269.43 271.34 270.71 269.27</td><td><b>271.34</b></td></tr>
+<tr><td>256M</td><td>default</td><td>293.7 294.4 293.67 293.88 295.28 295.39 295.33 294.67 294.59</td><td><b>294.59</b></td></tr>
+<tr><td>256M</td><td>config</td><td>345.92 345.45 347.53 346.72 347.03 346.18 344.83 346.51 345.06</td><td><b>346.18</b></td></tr>
+<tr><td>512M</td><td>default</td><td>373.88 372.39 373.61 374.48 374.79 374.44 367.85 374.46 373.94</td><td><b>373.94</b></td></tr>
+<tr><td>512M</td><td>config</td><td>373.09 373.81 373.89 373.74 58.26 374.3 373.42 373.86 367.72</td><td><b>373.74</b></td></tr>
+</table></details>
+<h2>broadcast 1n</h2>
+<p class=note>search: <b>51 runs</b> vs full grid 54 (<b>&minus;6%</b>), 17 configs measured, 13 min. A/B: <b class=g>5 kept</b>, <b class=b>13 dropped</b>.</p>
+<h3>Config: search output &rarr; A/B verdicts</h3>
+<pre><span class=n>collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff</span>
+<span class=drop>broadcast,4096,4096,ring,ll,8,1,8,-1,-1</span>  <span class=why>&larr; regression -10.0%</span>
+<span class=drop>broadcast,8192,8192,ring,ll,1,1,8,-1,-1</span>  <span class=why>&larr; regression -15.2%</span>
+<span class=drop>broadcast,16384,16384,ring,ll,32,1,8,-1,-1</span>  <span class=why>&larr; regression -11.1%</span>
+<span class=drop>broadcast,32768,32768,ring,ll,16,1,8,-1,-1</span>  <span class=why>&larr; regression -16.0%</span>
+<span class=drop>broadcast,65536,65536,ring,ll,16,1,8,-1,-1</span>  <span class=why>&larr; not reproducible (P 0.79)</span>
+<span class=keep>broadcast,131072,131072,ring,ll,32,1,8,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=drop>broadcast,262144,262144,ring,ll,32,1,8,-1,-1</span>  <span class=why>&larr; not reproducible (P 0.78)</span>
+<span class=keep>broadcast,524288,524288,ring,ll,48,1,8,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=keep>broadcast,1048576,1048576,ring,ll,48,1,8,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=keep>broadcast,2097152,2097152,ring,ll,48,1,8,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=keep>broadcast,4194304,4194304,ring,ll,48,1,8,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=drop>broadcast,8388608,8388608,ring,ll,48,1,8,-1,-1</span>  <span class=why>&larr; regression -15.3%</span>
+<span class=drop>broadcast,16777216,16777216,ring,simple,48,1,8,-1,-1</span>  <span class=why>&larr; regression -26.8%</span>
+<span class=drop>broadcast,33554432,33554432,ring,simple,48,1,8,-1,-1</span>  <span class=why>&larr; regression -35.3%</span>
+<span class=drop>broadcast,67108864,67108864,ring,simple,48,1,8,-1,-1</span>  <span class=why>&larr; regression -30.5%</span>
+<span class=drop>broadcast,134217728,134217728,ring,simple,48,1,8,-1,-1</span>  <span class=why>&larr; regression -36.5%</span>
+<span class=drop>broadcast,268435456,268435456,ring,simple,48,1,8,-1,-1</span>  <span class=why>&larr; regression -32.8%</span>
+<span class=drop>broadcast,536870912,536870912,ring,simple,48,1,8,-1,-1</span>  <span class=why>&larr; regression -36.2%</span></pre>
+<h3>Final shipped config</h3><pre class=keep>collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff
+broadcast,131072,131072,ring,ll,32,1,8,-1,-1
+broadcast,524288,4194304,ring,ll,48,1,8,-1,-1</pre>
+<h3>Per size</h3>
+<table><tr><th>size</th><th>default executed</th><th>ours requested</th><th>ours executed</th><th>default med</th><th>ours med</th><th>gain</th><th>P(sup)</th><th>verdict</th></tr>
+<tr class=x><td>4K</td><td>RING/LL/1</td><td>RING/LL/8</td><td>RING/LL/1 (trimmed)</td><td>0.3</td><td>0.27</td><td class=b>-10.0%</td><td>0.20</td><td class=wrap>dropped: regression -10.0%</td></tr>
+<tr class=x><td>8K</td><td>RING/LL/1</td><td>RING/LL/1</td><td>RING/LL/1</td><td>0.66</td><td>0.56</td><td class=b>-15.2%</td><td>0.04</td><td class=wrap>dropped: regression -15.2%</td></tr>
+<tr class=x><td>16K</td><td>RING/LL/1</td><td>RING/LL/32</td><td>RING/LL/4 (trimmed)</td><td>1.08</td><td>0.96</td><td class=b>-11.1%</td><td>0.09</td><td class=wrap>dropped: regression -11.1%</td></tr>
+<tr class=x><td>32K</td><td>RING/LL/2</td><td>RING/LL/16</td><td>RING/LL/8 (trimmed)</td><td>2.25</td><td>1.89</td><td class=b>-16.0%</td><td>0.00</td><td class=wrap>dropped: regression -16.0%</td></tr>
+<tr class=x><td>64K</td><td>RING/LL/4</td><td>RING/LL/16</td><td>RING/LL/16</td><td>3.89</td><td>4.03</td><td class=g>+3.6%</td><td>0.79</td><td class=wrap>dropped: not reproducible (P 0.79)</td></tr>
+<tr class=v><td>128K</td><td>RING/LL/8</td><td>RING/LL/32</td><td>RING/LL/32</td><td>6.25</td><td>6.69</td><td class=g>+7.0%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=x><td>256K</td><td>RING/LL/16</td><td>RING/LL/32</td><td>RING/LL/32</td><td>13.08</td><td>13.87</td><td class=g>+6.0%</td><td>0.78</td><td class=wrap>dropped: not reproducible (P 0.78)</td></tr>
+<tr class=v><td>512K</td><td>RING/SIMPLE/16</td><td>RING/LL/48</td><td>RING/LL/43 (trimmed)</td><td>10.17</td><td>26.13</td><td class=g>+156.9%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>1M</td><td>RING/SIMPLE/32</td><td>RING/LL/48</td><td>RING/LL/43 (trimmed)</td><td>19.4</td><td>39.81</td><td class=g>+105.2%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>2M</td><td>RING/SIMPLE/64</td><td>RING/LL/48</td><td>RING/LL/47 (trimmed)</td><td>37.97</td><td>60.93</td><td class=g>+60.5%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>4M</td><td>RING/SIMPLE/86</td><td>RING/LL/48</td><td>RING/LL/47 (trimmed)</td><td>66.07</td><td>77.8</td><td class=g>+17.8%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=x><td>8M</td><td>RING/SIMPLE/103</td><td>RING/LL/48</td><td>RING/LL/48</td><td>107.84</td><td>91.39</td><td class=b>-15.3%</td><td>0.00</td><td class=wrap>dropped: regression -15.3%</td></tr>
+<tr class=x><td>16M</td><td>RING/SIMPLE/103</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/47 (trimmed)</td><td>164.4</td><td>120.26</td><td class=b>-26.8%</td><td>0.00</td><td class=wrap>dropped: regression -26.8%</td></tr>
+<tr class=x><td>32M</td><td>RING/SIMPLE/108</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/48</td><td>222.91</td><td>144.14</td><td class=b>-35.3%</td><td>0.00</td><td class=wrap>dropped: regression -35.3%</td></tr>
+<tr class=x><td>64M</td><td>RING/SIMPLE/111</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/48</td><td>250.25</td><td>173.96</td><td class=b>-30.5%</td><td>0.00</td><td class=wrap>dropped: regression -30.5%</td></tr>
+<tr class=x><td>128M</td><td>RING/SIMPLE/111</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/48</td><td>301.98</td><td>191.89</td><td class=b>-36.5%</td><td>0.00</td><td class=wrap>dropped: regression -36.5%</td></tr>
+<tr class=x><td>256M</td><td>RING/SIMPLE/112</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/48</td><td>315.48</td><td>212.1</td><td class=b>-32.8%</td><td>0.00</td><td class=wrap>dropped: regression -32.8%</td></tr>
+<tr class=x><td>512M</td><td>RING/SIMPLE/112</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/48</td><td>350.19</td><td>223.27</td><td class=b>-36.2%</td><td>0.00</td><td class=wrap>dropped: regression -36.2%</td></tr>
+</table>
+<details><summary>raw A/B runs (busbw per size, both arms)</summary><table><tr><th>size</th><th>arm</th><th>runs</th><th>median</th></tr>
+<tr><td>4K</td><td>default</td><td>0.35 0.3 0.31 0.28 0.33 0.29 0.31 0.29 0.28</td><td><b>0.3</b></td></tr>
+<tr><td>4K</td><td>config</td><td>0.27 0.26 0.31 0.27 0.23 0.27 0.3 0.3 0.28</td><td><b>0.27</b></td></tr>
+<tr><td>8K</td><td>default</td><td>0.66 0.64 0.66 0.6 0.71 0.66 0.65 0.61 0.66</td><td><b>0.66</b></td></tr>
+<tr><td>8K</td><td>config</td><td>0.56 0.53 0.62 0.57 0.56 0.61 0.54 0.55 0.58</td><td><b>0.56</b></td></tr>
+<tr><td>16K</td><td>default</td><td>1.16 1.09 1.08 1.05 1.05 1.1 1.06 1.04 1.08</td><td><b>1.08</b></td></tr>
+<tr><td>16K</td><td>config</td><td>0.9 0.96 1.1 0.89 0.99 0.96 0.98 0.96 0.93</td><td><b>0.96</b></td></tr>
+<tr><td>32K</td><td>default</td><td>2.25 2.19 2.25 2.08 2.27 2.29 2.1 2.25 2.27</td><td><b>2.25</b></td></tr>
+<tr><td>32K</td><td>config</td><td>1.85 1.93 1.93 2.0 1.86 1.83 1.89 2.06 1.77</td><td><b>1.89</b></td></tr>
+<tr><td>64K</td><td>default</td><td>3.95 3.85 3.91 3.87 3.89 3.87 3.9 3.66 3.91</td><td><b>3.89</b></td></tr>
+<tr><td>64K</td><td>config</td><td>3.94 4.06 4.2 4.03 3.98 4.03 3.79 4.24 3.76</td><td><b>4.03</b></td></tr>
+<tr><td>128K</td><td>default</td><td>6.19 6.32 6.25 5.91 6.23 6.36 6.27 6.18 6.3</td><td><b>6.25</b></td></tr>
+<tr><td>128K</td><td>config</td><td>6.69 6.69 7.45 6.64 6.6 6.77 6.68 6.79 6.42</td><td><b>6.69</b></td></tr>
+<tr><td>256K</td><td>default</td><td>13.21 12.98 13.08 13.05 13.1 12.98 12.8 13.1 13.27</td><td><b>13.08</b></td></tr>
+<tr><td>256K</td><td>config</td><td>14.35 13.87 14.3 13.59 14.04 14.42 12.59 13.47 12.47</td><td><b>13.87</b></td></tr>
+<tr><td>512K</td><td>default</td><td>10.22 10.17 10.19 10.16 10.17 10.14 10.18 10.17 10.23</td><td><b>10.17</b></td></tr>
+<tr><td>512K</td><td>config</td><td>25.5 24.36 26.28 26.65 26.08 26.26 26.25 26.13 26.08</td><td><b>26.13</b></td></tr>
+<tr><td>1M</td><td>default</td><td>19.37 19.42 19.39 19.4 19.4 19.4 19.41 19.38 19.43</td><td><b>19.4</b></td></tr>
+<tr><td>1M</td><td>config</td><td>39.17 41.34 38.27 38.93 39.81 41.29 41.58 38.89 39.99</td><td><b>39.81</b></td></tr>
+<tr><td>2M</td><td>default</td><td>37.97 37.98 37.98 37.94 37.89 37.99 37.95 37.95 38.06</td><td><b>37.97</b></td></tr>
+<tr><td>2M</td><td>config</td><td>60.93 60.49 60.81 61.17 60.67 61.27 60.23 61.13 60.96</td><td><b>60.93</b></td></tr>
+<tr><td>4M</td><td>default</td><td>66.16 65.97 65.9 66.26 66.08 66.07 66.05 65.97 66.12</td><td><b>66.07</b></td></tr>
+<tr><td>4M</td><td>config</td><td>77.88 78.01 77.6 77.8 77.56 77.6 77.83 77.99 77.58</td><td><b>77.8</b></td></tr>
+<tr><td>8M</td><td>default</td><td>108.26 107.95 107.36 107.56 107.76 108.02 107.84 107.82 108.21</td><td><b>107.84</b></td></tr>
+<tr><td>8M</td><td>config</td><td>91.59 91.44 91.33 91.2 91.48 91.18 91.23 91.58 91.39</td><td><b>91.39</b></td></tr>
+<tr><td>16M</td><td>default</td><td>164.61 164.07 163.5 164.18 164.4 164.49 163.97 165.01 164.61</td><td><b>164.4</b></td></tr>
+<tr><td>16M</td><td>config</td><td>120.26 120.31 120.42 120.43 120.19 120.07 120.25 120.27 120.24</td><td><b>120.26</b></td></tr>
+<tr><td>32M</td><td>default</td><td>223.23 222.91 222.83 222.22 223.33 222.68 222.86 223.67 223.15</td><td><b>222.91</b></td></tr>
+<tr><td>32M</td><td>config</td><td>143.54 144.47 144.22 144.14 143.85 143.71 143.83 144.58 144.17</td><td><b>144.14</b></td></tr>
+<tr><td>64M</td><td>default</td><td>250.25 249.58 250.25 250.11 250.59 249.84 250.4 250.72 250.46</td><td><b>250.25</b></td></tr>
+<tr><td>64M</td><td>config</td><td>173.21 173.96 174.66 174.51 173.76 174.17 173.95 174.34 173.62</td><td><b>173.96</b></td></tr>
+<tr><td>128M</td><td>default</td><td>302.22 301.2 302.08 301.75 301.81 301.37 302.21 302.46 301.98</td><td><b>301.98</b></td></tr>
+<tr><td>128M</td><td>config</td><td>190.98 192.22 191.89 191.42 191.58 192.18 192.68 192.56 191.11</td><td><b>191.89</b></td></tr>
+<tr><td>256M</td><td>default</td><td>315.69 315.1 315.6 315.31 315.46 315.28 315.7 315.79 315.48</td><td><b>315.48</b></td></tr>
+<tr><td>256M</td><td>config</td><td>211.22 212.1 212.01 212.67 212.2 212.34 213.48 211.65 210.61</td><td><b>212.1</b></td></tr>
+<tr><td>512M</td><td>default</td><td>350.6 349.55 350.26 350.04 350.02 349.51 350.2 350.52 350.19</td><td><b>350.19</b></td></tr>
+<tr><td>512M</td><td>config</td><td>222.62 223.13 223.66 223.27 223.55 223.51 224.61 222.96 222.15</td><td><b>223.27</b></td></tr>
+</table></details>
+<h2>broadcast 2n</h2>
+<p class=note>search: <b>69 runs</b> vs full grid 81 (<b>&minus;15%</b>), 23 configs measured, 17 min. A/B: <b class=g>0 kept</b>, <b class=b>0 dropped</b> <b class=b>(no A/B verdict)</b>.</p>
+<h2>broadcast 3n</h2>
+<p class=note>search: <b>66 runs</b> vs full grid 81 (<b>&minus;18%</b>), 22 configs measured, 18 min. A/B: <b class=g>6 kept</b>, <b class=b>12 dropped</b>.</p>
+<h3>Config: search output &rarr; A/B verdicts</h3>
+<pre><span class=n>collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff</span>
+<span class=drop>broadcast,4096,4096,ring,ll,1,3,24,-1,-1</span>  <span class=why>&larr; no gain (+0.0%)</span>
+<span class=drop>broadcast,8192,8192,ring,ll,1,3,24,-1,-1</span>  <span class=why>&larr; regression -3.3%</span>
+<span class=drop>broadcast,16384,16384,ring,ll128,8,3,24,-1,-1</span>  <span class=why>&larr; no gain (+1.9%)</span>
+<span class=keep>broadcast,32768,32768,ring,ll128,1,3,24,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=keep>broadcast,65536,65536,ring,ll128,1,3,24,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=keep>broadcast,131072,131072,ring,ll128,1,3,24,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=keep>broadcast,262144,262144,ring,ll128,1,3,24,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=keep>broadcast,524288,524288,ring,ll128,1,3,24,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=drop>broadcast,1048576,1048576,ring,ll128,32,3,24,-1,-1</span>  <span class=why>&larr; no gain (-1.9%)</span>
+<span class=drop>broadcast,2097152,2097152,ring,ll128,48,3,24,-1,-1</span>  <span class=why>&larr; no gain (-0.5%)</span>
+<span class=drop>broadcast,4194304,4194304,ring,ll128,24,3,24,-1,-1</span>  <span class=why>&larr; no gain (+0.7%)</span>
+<span class=drop>broadcast,8388608,8388608,ring,ll128,48,3,24,-1,-1</span>  <span class=why>&larr; no gain (-0.1%)</span>
+<span class=drop>broadcast,16777216,16777216,ring,ll128,40,3,24,-1,-1</span>  <span class=why>&larr; no gain (+0.7%)</span>
+<span class=drop>broadcast,33554432,33554432,ring,ll128,40,3,24,-1,-1</span>  <span class=why>&larr; no gain (-0.6%)</span>
+<span class=drop>broadcast,67108864,67108864,ring,ll128,40,3,24,-1,-1</span>  <span class=why>&larr; no gain (-0.6%)</span>
+<span class=drop>broadcast,134217728,134217728,ring,ll128,48,3,24,-1,-1</span>  <span class=why>&larr; no gain (-0.4%)</span>
+<span class=drop>broadcast,268435456,268435456,ring,ll128,48,3,24,-1,-1</span>  <span class=why>&larr; no gain (-0.3%)</span>
+<span class=keep>broadcast,536870912,536870912,ring,ll128,48,3,24,-1,-1</span>  <span class=why>&larr; kept</span></pre>
+<h3>Final shipped config</h3><pre class=keep>collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff
+broadcast,32768,524288,ring,ll128,1,3,24,-1,-1
+broadcast,536870912,536870912,ring,ll128,48,3,24,-1,-1</pre>
+<h3>Per size</h3>
+<table><tr><th>size</th><th>default executed</th><th>ours requested</th><th>ours executed</th><th>default med</th><th>ours med</th><th>gain</th><th>P(sup)</th><th>verdict</th></tr>
+<tr class=x><td>4K</td><td>RING/LL/1</td><td>RING/LL/1</td><td>RING/LL/1</td><td>0.15</td><td>0.15</td><td class=n>+0.0%</td><td>0.30</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
+<tr class=x><td>8K</td><td>RING/LL/1</td><td>RING/LL/1</td><td>RING/LL/1</td><td>0.3</td><td>0.29</td><td class=b>-3.3%</td><td>0.13</td><td class=wrap>dropped: regression -3.3%</td></tr>
+<tr class=x><td>16K</td><td>RING/LL/1</td><td>RING/LL128/8</td><td>RING/LL128/1 (trimmed)</td><td>0.53</td><td>0.54</td><td class=n>+1.9%</td><td>0.77</td><td class=wrap>dropped: no gain (+1.9%)</td></tr>
+<tr class=v><td>32K</td><td>RING/LL/1</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>0.92</td><td>1.06</td><td class=g>+15.2%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>64K</td><td>RING/LL128/4</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>0.81</td><td>2.01</td><td class=g>+148.1%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>128K</td><td>RING/LL128/8</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>1.59</td><td>3.36</td><td class=g>+111.3%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>256K</td><td>RING/LL128/16</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>3.12</td><td>5.23</td><td class=g>+67.6%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>512K</td><td>RING/LL128/32</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>5.97</td><td>7.22</td><td class=g>+20.9%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=x><td>1M</td><td>RING/LL128/32</td><td>RING/LL128/32</td><td>RING/LL128/32</td><td>10.55</td><td>10.35</td><td class=n>-1.9%</td><td>0.00</td><td class=wrap>dropped: no gain (-1.9%)</td></tr>
+<tr class=x><td>2M</td><td>RING/LL128/43</td><td>RING/LL128/48</td><td>RING/LL128/43 (trimmed)</td><td>18.49</td><td>18.39</td><td class=n>-0.5%</td><td>0.22</td><td class=wrap>dropped: no gain (-0.5%)</td></tr>
+<tr class=x><td>4M</td><td>RING/LL128/43</td><td>RING/LL128/24</td><td>RING/LL128/24</td><td>29.03</td><td>29.22</td><td class=n>+0.7%</td><td>1.00</td><td class=wrap>dropped: no gain (+0.7%)</td></tr>
+<tr class=x><td>8M</td><td>RING/LL128/47</td><td>RING/LL128/48</td><td>RING/LL128/47 (trimmed)</td><td>51.61</td><td>51.54</td><td class=n>-0.1%</td><td>0.43</td><td class=wrap>dropped: no gain (-0.1%)</td></tr>
+<tr class=x><td>16M</td><td>RING/LL128/47</td><td>RING/LL128/40</td><td>RING/LL128/40</td><td>83.9</td><td>84.5</td><td class=n>+0.7%</td><td>0.72</td><td class=wrap>dropped: no gain (+0.7%)</td></tr>
+<tr class=x><td>32M</td><td>RING/LL128/48</td><td>RING/LL128/40</td><td>RING/LL128/40</td><td>130.54</td><td>129.72</td><td class=n>-0.6%</td><td>0.22</td><td class=wrap>dropped: no gain (-0.6%)</td></tr>
+<tr class=x><td>64M</td><td>RING/LL128/48</td><td>RING/LL128/40</td><td>RING/LL128/40</td><td>183.6</td><td>182.58</td><td class=n>-0.6%</td><td>0.00</td><td class=wrap>dropped: no gain (-0.6%)</td></tr>
+<tr class=x><td>128M</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>232.66</td><td>231.77</td><td class=n>-0.4%</td><td>0.16</td><td class=wrap>dropped: no gain (-0.4%)</td></tr>
+<tr class=x><td>256M</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>269.33</td><td>268.5</td><td class=n>-0.3%</td><td>0.26</td><td class=wrap>dropped: no gain (-0.3%)</td></tr>
+<tr class=v><td>512M</td><td>RING/SIMPLE/48</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>264.81</td><td>292.62</td><td class=g>+10.5%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+</table>
+<details><summary>raw A/B runs (busbw per size, both arms)</summary><table><tr><th>size</th><th>arm</th><th>runs</th><th>median</th></tr>
+<tr><td>4K</td><td>default</td><td>0.15 0.16 0.15 0.03 0.15 0.15 0.16 0.15 0.15</td><td><b>0.15</b></td></tr>
+<tr><td>4K</td><td>config</td><td>0.15 0.14 0.15 0.14 0.14 0.14 0.15 0.15 0.15</td><td><b>0.15</b></td></tr>
+<tr><td>8K</td><td>default</td><td>0.29 0.3 0.3 0.3 0.3 0.29 0.29 0.3 0.3</td><td><b>0.3</b></td></tr>
+<tr><td>8K</td><td>config</td><td>0.29 0.29 0.28 0.29 0.29 0.29 0.29 0.29 0.27</td><td><b>0.29</b></td></tr>
+<tr><td>16K</td><td>default</td><td>0.54 0.54 0.53 0.53 0.52 0.54 0.52 0.52 0.54</td><td><b>0.53</b></td></tr>
+<tr><td>16K</td><td>config</td><td>0.55 0.53 0.55 0.54 0.53 0.54 0.55 0.55 0.53</td><td><b>0.54</b></td></tr>
+<tr><td>32K</td><td>default</td><td>0.92 0.92 0.92 0.91 0.92 0.93 0.92 0.92 0.92</td><td><b>0.92</b></td></tr>
+<tr><td>32K</td><td>config</td><td>1.08 1.08 1.07 1.06 1.08 1.06 1.03 1.06 1.01</td><td><b>1.06</b></td></tr>
+<tr><td>64K</td><td>default</td><td>0.81 0.82 0.82 0.81 0.82 0.81 0.81 0.82 0.81</td><td><b>0.81</b></td></tr>
+<tr><td>64K</td><td>config</td><td>2.01 2.01 1.99 2.0 2.03 2.02 2.01 2.01 1.87</td><td><b>2.01</b></td></tr>
+<tr><td>128K</td><td>default</td><td>1.59 1.59 1.59 1.59 1.58 1.59 1.58 1.58 1.59</td><td><b>1.59</b></td></tr>
+<tr><td>128K</td><td>config</td><td>3.38 3.32 3.37 3.33 3.39 3.41 3.3 3.36 3.28</td><td><b>3.36</b></td></tr>
+<tr><td>256K</td><td>default</td><td>3.12 3.13 3.12 3.08 3.12 3.13 2.96 3.13 3.12</td><td><b>3.12</b></td></tr>
+<tr><td>256K</td><td>config</td><td>5.22 5.26 5.25 5.23 4.97 5.26 5.21 5.22 5.27</td><td><b>5.23</b></td></tr>
+<tr><td>512K</td><td>default</td><td>5.95 5.95 5.97 5.95 5.99 5.98 5.98 5.95 5.98</td><td><b>5.97</b></td></tr>
+<tr><td>512K</td><td>config</td><td>6.71 7.28 6.79 7.27 7.22 7.24 7.22 7.24 6.98</td><td><b>7.22</b></td></tr>
+<tr><td>1M</td><td>default</td><td>10.57 10.57 10.56 10.55 10.54 10.53 10.55 10.46 10.5</td><td><b>10.55</b></td></tr>
+<tr><td>1M</td><td>config</td><td>10.36 10.35 10.35 10.35 10.38 10.38 10.29 10.33 10.0</td><td><b>10.35</b></td></tr>
+<tr><td>2M</td><td>default</td><td>18.39 18.64 18.4 18.6 18.49 18.55 18.43 18.49 18.57</td><td><b>18.49</b></td></tr>
+<tr><td>2M</td><td>config</td><td>19.37 18.47 18.39 18.44 18.39 18.29 18.4 18.32 17.82</td><td><b>18.39</b></td></tr>
+<tr><td>4M</td><td>default</td><td>29.05 29.05 29.06 28.83 29.03 28.94 29.08 28.96 28.96</td><td><b>29.03</b></td></tr>
+<tr><td>4M</td><td>config</td><td>29.21 29.09 29.23 29.32 29.22 29.38 29.24 29.19 29.12</td><td><b>29.22</b></td></tr>
+<tr><td>8M</td><td>default</td><td>51.66 50.98 51.61 51.38 54.33 51.49 51.79 51.47 51.7</td><td><b>51.61</b></td></tr>
+<tr><td>8M</td><td>config</td><td>51.54 51.55 50.78 51.4 51.53 52.31 51.54 51.72 51.41</td><td><b>51.54</b></td></tr>
+<tr><td>16M</td><td>default</td><td>83.65 83.9 83.83 83.9 84.0 84.0 83.98 83.98 83.11</td><td><b>83.9</b></td></tr>
+<tr><td>16M</td><td>config</td><td>84.5 84.3 84.53 84.94 84.9 83.81 84.94 81.12 83.73</td><td><b>84.5</b></td></tr>
+<tr><td>32M</td><td>default</td><td>130.9 129.06 131.1 130.5 131.05 129.98 131.11 128.68 130.54</td><td><b>130.54</b></td></tr>
+<tr><td>32M</td><td>config</td><td>130.28 130.11 129.4 129.72 129.52 92.32 129.83 129.78 129.64</td><td><b>129.72</b></td></tr>
+<tr><td>64M</td><td>default</td><td>183.6 183.92 183.6 183.55 183.65 183.54 183.55 183.68 183.27</td><td><b>183.6</b></td></tr>
+<tr><td>64M</td><td>config</td><td>182.72 183.07 183.1 181.94 182.37 182.54 182.58 182.65 182.49</td><td><b>182.58</b></td></tr>
+<tr><td>128M</td><td>default</td><td>232.64 233.16 232.7 232.64 231.84 232.9 232.47 232.66 233.08</td><td><b>232.66</b></td></tr>
+<tr><td>128M</td><td>config</td><td>231.35 227.3 232.8 232.65 231.89 232.55 231.55 204.44 231.77</td><td><b>231.77</b></td></tr>
+<tr><td>256M</td><td>default</td><td>269.33 268.62 269.68 269.48 268.33 268.0 269.34 268.99 270.25</td><td><b>269.33</b></td></tr>
+<tr><td>256M</td><td>config</td><td>268.5 269.29 267.79 268.43 268.76 268.15 269.62 267.93 268.56</td><td><b>268.5</b></td></tr>
+<tr><td>512M</td><td>default</td><td>264.81 264.12 264.26 265.18 264.67 264.97 265.11 264.65 265.06</td><td><b>264.81</b></td></tr>
+<tr><td>512M</td><td>config</td><td>292.65 294.06 292.5 292.62 292.51 293.36 289.07 292.7 291.85</td><td><b>292.62</b></td></tr>
+</table></details>
+<h2>reduce scatter_1n</h2>
+<p class=note>search: <b>48 runs</b> vs full grid 54 (<b>&minus;11%</b>), 16 configs measured, 12 min. A/B: <b class=g>0 kept</b>, <b class=b>18 dropped</b>.</p>
+<h3>Config: search output &rarr; A/B verdicts</h3>
+<pre><span class=n>collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff</span>
+<span class=drop>reducescatter,4096,4096,ring,ll,1,1,8,-1,-1</span>  <span class=why>&larr; regression -4.5%</span>
+<span class=drop>reducescatter,8192,8192,ring,ll,1,1,8,-1,-1</span>  <span class=why>&larr; no gain (+0.0%)</span>
+<span class=drop>reducescatter,16384,16384,ring,ll,40,1,8,-1,-1</span>  <span class=why>&larr; regression -10.0%</span>
+<span class=drop>reducescatter,32768,32768,ring,ll,2,1,8,-1,-1</span>  <span class=why>&larr; regression -6.1%</span>
+<span class=drop>reducescatter,65536,65536,ring,ll,24,1,8,-1,-1</span>  <span class=why>&larr; not reproducible (P 0.66)</span>
+<span class=drop>reducescatter,131072,131072,ring,ll,24,1,8,-1,-1</span>  <span class=why>&larr; no gain (-0.2%)</span>
+<span class=drop>reducescatter,262144,262144,ring,ll,24,1,8,-1,-1</span>  <span class=why>&larr; regression -7.0%</span>
+<span class=drop>reducescatter,524288,524288,ring,ll,48,1,8,-1,-1</span>  <span class=why>&larr; regression -6.1%</span>
+<span class=drop>reducescatter,1048576,1048576,ring,ll,40,1,8,-1,-1</span>  <span class=why>&larr; regression -2.6%</span>
+<span class=drop>reducescatter,2097152,2097152,ring,simple,32,1,8,-1,-1</span>  <span class=why>&larr; no gain (+0.3%)</span>
+<span class=drop>reducescatter,4194304,4194304,ring,simple,32,1,8,-1,-1</span>  <span class=why>&larr; no gain (+1.3%)</span>
+<span class=drop>reducescatter,8388608,8388608,ring,simple,48,1,8,-1,-1</span>  <span class=why>&larr; no gain (+0.3%)</span>
+<span class=drop>reducescatter,16777216,16777216,ring,simple,48,1,8,-1,-1</span>  <span class=why>&larr; regression -4.8%</span>
+<span class=drop>reducescatter,33554432,33554432,ring,simple,48,1,8,-1,-1</span>  <span class=why>&larr; regression -4.6%</span>
+<span class=drop>reducescatter,67108864,67108864,ring,simple,48,1,8,-1,-1</span>  <span class=why>&larr; regression -6.6%</span>
+<span class=drop>reducescatter,134217728,134217728,ring,simple,48,1,8,-1,-1</span>  <span class=why>&larr; regression -7.9%</span>
+<span class=drop>reducescatter,268435456,268435456,ring,simple,40,1,8,-1,-1</span>  <span class=why>&larr; regression -7.2%</span>
+<span class=drop>reducescatter,536870912,536870912,ring,simple,40,1,8,-1,-1</span>  <span class=why>&larr; regression -7.7%</span></pre>
+<h3>Final shipped config</h3><pre class=keep>collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff</pre>
+<h3>Per size</h3>
+<table><tr><th>size</th><th>default executed</th><th>ours requested</th><th>ours executed</th><th>default med</th><th>ours med</th><th>gain</th><th>P(sup)</th><th>verdict</th></tr>
+<tr class=x><td>4K</td><td>RING/LL/2</td><td>RING/LL/1</td><td>RING/LL/2 (trimmed)</td><td>0.22</td><td>0.21</td><td class=b>-4.5%</td><td>0.25</td><td class=wrap>dropped: regression -4.5%</td></tr>
+<tr class=x><td>8K</td><td>RING/LL/4</td><td>RING/LL/1</td><td>RING/LL/16 (trimmed)</td><td>0.45</td><td>0.45</td><td class=n>+0.0%</td><td>0.40</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
+<tr class=x><td>16K</td><td>RING/LL/8</td><td>RING/LL/40</td><td>RING/LL/16 (trimmed)</td><td>0.8</td><td>0.72</td><td class=b>-10.0%</td><td>0.00</td><td class=wrap>dropped: regression -10.0%</td></tr>
+<tr class=x><td>32K</td><td>RING/LL/16</td><td>RING/LL/2</td><td>RING/LL/22 (trimmed)</td><td>1.65</td><td>1.55</td><td class=b>-6.1%</td><td>0.14</td><td class=wrap>dropped: regression -6.1%</td></tr>
+<tr class=x><td>64K</td><td>RING/LL/32</td><td>RING/LL/24</td><td>RING/LL/43 (trimmed)</td><td>3.24</td><td>3.33</td><td class=g>+2.8%</td><td>0.66</td><td class=wrap>dropped: not reproducible (P 0.66)</td></tr>
+<tr class=x><td>128K</td><td>RING/LL/52</td><td>RING/LL/24</td><td>RING/LL/37 (trimmed)</td><td>5.67</td><td>5.66</td><td class=n>-0.2%</td><td>0.48</td><td class=wrap>dropped: no gain (-0.2%)</td></tr>
+<tr class=x><td>256K</td><td>RING/SIMPLE/43</td><td>RING/LL/24</td><td>RING/SIMPLE/32 (trimmed)</td><td>12.46</td><td>11.59</td><td class=b>-7.0%</td><td>0.05</td><td class=wrap>dropped: regression -7.0%</td></tr>
+<tr class=x><td>512K</td><td>RING/SIMPLE/52</td><td>RING/LL/48</td><td>RING/SIMPLE/32 (trimmed)</td><td>25.54</td><td>23.99</td><td class=b>-6.1%</td><td>0.00</td><td class=wrap>dropped: regression -6.1%</td></tr>
+<tr class=x><td>1M</td><td>RING/SIMPLE/52</td><td>RING/LL/40</td><td>RING/SIMPLE/47 (trimmed)</td><td>35.42</td><td>34.51</td><td class=b>-2.6%</td><td>0.13</td><td class=wrap>dropped: regression -2.6%</td></tr>
+<tr class=x><td>2M</td><td>RING/SIMPLE/54</td><td>RING/SIMPLE/32</td><td>RING/SIMPLE/47 (trimmed)</td><td>58.75</td><td>58.9</td><td class=n>+0.3%</td><td>0.54</td><td class=wrap>dropped: no gain (+0.3%)</td></tr>
+<tr class=x><td>4M</td><td>RING/SIMPLE/56</td><td>RING/SIMPLE/32</td><td>RING/SIMPLE/48 (trimmed)</td><td>94.66</td><td>95.86</td><td class=n>+1.3%</td><td>0.90</td><td class=wrap>dropped: no gain (+1.3%)</td></tr>
+<tr class=x><td>8M</td><td>RING/SIMPLE/56</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/48</td><td>148.45</td><td>148.84</td><td class=n>+0.3%</td><td>0.62</td><td class=wrap>dropped: no gain (+0.3%)</td></tr>
+<tr class=x><td>16M</td><td>RING/SIMPLE/56</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/48</td><td>220.91</td><td>210.23</td><td class=b>-4.8%</td><td>0.00</td><td class=wrap>dropped: regression -4.8%</td></tr>
+<tr class=x><td>32M</td><td>RING/SIMPLE/56</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/40 (trimmed)</td><td>282.42</td><td>269.4</td><td class=b>-4.6%</td><td>0.00</td><td class=wrap>dropped: regression -4.6%</td></tr>
+<tr class=x><td>64M</td><td>RING/SIMPLE/56</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/40 (trimmed)</td><td>329.81</td><td>308.17</td><td class=b>-6.6%</td><td>0.00</td><td class=wrap>dropped: regression -6.6%</td></tr>
+<tr class=x><td>128M</td><td></td><td>RING/SIMPLE/48</td><td></td><td>357.86</td><td>329.56</td><td class=b>-7.9%</td><td>0.00</td><td class=wrap>dropped: regression -7.9%</td></tr>
+<tr class=x><td>256M</td><td></td><td>RING/SIMPLE/40</td><td></td><td>363.36</td><td>337.19</td><td class=b>-7.2%</td><td>0.00</td><td class=wrap>dropped: regression -7.2%</td></tr>
+<tr class=x><td>512M</td><td></td><td>RING/SIMPLE/40</td><td></td><td>363.37</td><td>335.4</td><td class=b>-7.7%</td><td>0.00</td><td class=wrap>dropped: regression -7.7%</td></tr>
+</table>
+<details><summary>raw A/B runs (busbw per size, both arms)</summary><table><tr><th>size</th><th>arm</th><th>runs</th><th>median</th></tr>
+<tr><td>4K</td><td>default</td><td>0.23 0.22 0.23 0.21 0.23 0.22 0.23 0.21 0.21</td><td><b>0.22</b></td></tr>
+<tr><td>4K</td><td>config</td><td>0.22 0.22 0.21 0.2 0.22 0.2 0.2 0.23 0.2</td><td><b>0.21</b></td></tr>
+<tr><td>8K</td><td>default</td><td>0.45 0.46 0.46 0.44 0.47 0.45 0.43 0.46 0.45</td><td><b>0.45</b></td></tr>
+<tr><td>8K</td><td>config</td><td>0.42 0.44 0.46 0.44 0.46 0.43 0.45 0.47 0.45</td><td><b>0.45</b></td></tr>
+<tr><td>16K</td><td>default</td><td>0.82 0.84 0.79 0.88 0.82 0.78 0.76 0.8 0.76</td><td><b>0.8</b></td></tr>
+<tr><td>16K</td><td>config</td><td>0.75 0.67 0.63 0.72 0.75 0.72 0.74 0.74 0.72</td><td><b>0.72</b></td></tr>
+<tr><td>32K</td><td>default</td><td>1.59 1.67 1.66 1.7 1.7 1.65 1.61 1.65 1.6</td><td><b>1.65</b></td></tr>
+<tr><td>32K</td><td>config</td><td>1.53 1.62 1.6 1.47 1.67 1.51 1.55 1.54 1.55</td><td><b>1.55</b></td></tr>
+<tr><td>64K</td><td>default</td><td>3.24 3.25 3.22 3.27 3.29 3.24 3.26 3.22 3.22</td><td><b>3.24</b></td></tr>
+<tr><td>64K</td><td>config</td><td>3.33 3.33 3.34 3.14 3.29 3.35 3.21 3.33 2.98</td><td><b>3.33</b></td></tr>
+<tr><td>128K</td><td>default</td><td>5.78 5.92 5.54 5.45 5.67 5.95 5.73 5.52 5.63</td><td><b>5.67</b></td></tr>
+<tr><td>128K</td><td>config</td><td>5.66 5.55 5.37 5.92 5.78 6.05 5.52 5.81 5.44</td><td><b>5.66</b></td></tr>
+<tr><td>256K</td><td>default</td><td>12.93 12.3 12.82 13.0 12.46 12.6 12.32 12.07 12.27</td><td><b>12.46</b></td></tr>
+<tr><td>256K</td><td>config</td><td>11.59 11.82 11.27 11.62 11.22 11.1 11.64 12.39 10.64</td><td><b>11.59</b></td></tr>
+<tr><td>512K</td><td>default</td><td>25.54 25.54 25.39 25.77 25.82 25.44 25.82 25.53 25.86</td><td><b>25.54</b></td></tr>
+<tr><td>512K</td><td>config</td><td>24.73 20.78 24.21 23.08 23.02 22.14 24.52 24.77 23.99</td><td><b>23.99</b></td></tr>
+<tr><td>1M</td><td>default</td><td>37.21 36.36 35.34 35.42 36.93 35.16 34.85 34.99 37.74</td><td><b>35.42</b></td></tr>
+<tr><td>1M</td><td>config</td><td>33.37 33.32 34.51 36.17 35.34 34.43 34.07 34.53 35.06</td><td><b>34.51</b></td></tr>
+<tr><td>2M</td><td>default</td><td>58.54 58.62 58.55 59.25 59.05 58.8 59.27 58.68 58.75</td><td><b>58.75</b></td></tr>
+<tr><td>2M</td><td>config</td><td>59.16 58.87 58.94 58.26 58.66 58.9 59.22 59.08 58.58</td><td><b>58.9</b></td></tr>
+<tr><td>4M</td><td>default</td><td>94.55 94.89 94.52 94.66 94.61 94.72 94.86 94.65 95.2</td><td><b>94.66</b></td></tr>
+<tr><td>4M</td><td>config</td><td>96.13 95.39 95.88 95.35 94.53 95.89 95.86 96.23 95.62</td><td><b>95.86</b></td></tr>
+<tr><td>8M</td><td>default</td><td>148.31 148.15 147.43 148.45 149.05 147.12 148.87 148.46 149.63</td><td><b>148.45</b></td></tr>
+<tr><td>8M</td><td>config</td><td>148.34 148.23 148.2 148.84 149.17 148.9 149.82 149.58 148.14</td><td><b>148.84</b></td></tr>
+<tr><td>16M</td><td>default</td><td>222.01 220.64 220.91 222.44 220.76 220.84 222.45 221.48 220.04</td><td><b>220.91</b></td></tr>
+<tr><td>16M</td><td>config</td><td>210.24 211.01 211.25 201.57 210.7 209.59 210.23 210.06 210.1</td><td><b>210.23</b></td></tr>
+<tr><td>32M</td><td>default</td><td>282.1 282.42 280.95 282.7 283.11 282.15 282.96 282.55 282.17</td><td><b>282.42</b></td></tr>
+<tr><td>32M</td><td>config</td><td>269.71 269.54 269.27 268.78 269.42 269.63 269.4 269.19 267.96</td><td><b>269.4</b></td></tr>
+<tr><td>64M</td><td>default</td><td>329.81 330.2 329.03 330.14 329.59 329.18 330.24 329.74 330.24</td><td><b>329.81</b></td></tr>
+<tr><td>64M</td><td>config</td><td>308.1 308.27 308.22 307.48 307.52 308.17 308.43 308.6 308.01</td><td><b>308.17</b></td></tr>
+<tr><td>128M</td><td>default</td><td>358.15 358.14 357.64 357.45 358.16 357.48 358.3 357.63 357.86</td><td><b>357.86</b></td></tr>
+<tr><td>128M</td><td>config</td><td>329.7 329.22 329.36 329.37 329.24 329.56 329.73 329.66 329.57</td><td><b>329.56</b></td></tr>
+<tr><td>256M</td><td>default</td><td>362.98 363.48 363.43 363.16 362.84 362.92 363.49 363.5 363.36</td><td><b>363.36</b></td></tr>
+<tr><td>256M</td><td>config</td><td>337.63 337.19 337.16 319.17 336.68 337.9 337.36 337.52 336.8</td><td><b>337.19</b></td></tr>
+<tr><td>512M</td><td>default</td><td>363.35 363.21 363.3 363.19 363.4 363.51 363.5 363.42 363.37</td><td><b>363.37</b></td></tr>
+<tr><td>512M</td><td>config</td><td>335.49 335.27 335.25 335.31 335.55 335.45 335.4 335.77 334.97</td><td><b>335.4</b></td></tr>
+</table></details>
+<h2>reduce scatter_2n</h2>
+<p class=note>search: <b>72 runs</b> vs full grid 81 (<b>&minus;11%</b>), 24 configs measured, 21 min. A/B: <b class=g>6 kept</b>, <b class=b>12 dropped</b>.</p>
+<h3>Config: search output &rarr; A/B verdicts</h3>
+<pre><span class=n>collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff</span>
+<span class=drop>reducescatter,4096,4096,ring,ll,1,2,16,-1,-1</span>  <span class=why>&larr; no gain (+0.0%)</span>
+<span class=drop>reducescatter,8192,8192,ring,ll,2,2,16,-1,-1</span>  <span class=why>&larr; regression -5.3%</span>
+<span class=drop>reducescatter,16384,16384,ring,ll,1,2,16,-1,-1</span>  <span class=why>&larr; no gain (+0.0%)</span>
+<span class=drop>reducescatter,32768,32768,ring,ll,2,2,16,-1,-1</span>  <span class=why>&larr; not reproducible (P 0.90)</span>
+<span class=keep>reducescatter,65536,65536,ring,ll,2,2,16,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=drop>reducescatter,131072,131072,ring,ll,16,2,16,-1,-1</span>  <span class=why>&larr; no gain (-1.2%)</span>
+<span class=drop>reducescatter,262144,262144,ring,simple,16,2,16,-1,-1</span>  <span class=why>&larr; no gain (-1.9%)</span>
+<span class=drop>reducescatter,524288,524288,ring,ll,16,2,16,-1,-1</span>  <span class=why>&larr; no gain (+0.3%)</span>
+<span class=keep>reducescatter,1048576,1048576,ring,ll,32,2,16,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=drop>reducescatter,2097152,2097152,ring,ll,16,2,16,-1,-1</span>  <span class=why>&larr; no gain (+0.6%)</span>
+<span class=keep>reducescatter,4194304,4194304,ring,ll128,16,2,16,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=keep>reducescatter,8388608,8388608,ring,ll128,24,2,16,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=drop>reducescatter,16777216,16777216,ring,ll128,32,2,16,-1,-1</span>  <span class=why>&larr; no gain (-1.8%)</span>
+<span class=keep>reducescatter,33554432,33554432,ring,ll128,40,2,16,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=drop>reducescatter,67108864,67108864,ring,ll128,48,2,16,-1,-1</span>  <span class=why>&larr; no gain (-0.2%)</span>
+<span class=keep>reducescatter,134217728,134217728,ring,simple,40,2,16,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=drop>reducescatter,268435456,268435456,ring,simple,48,2,16,-1,-1</span>  <span class=why>&larr; no gain (+0.1%)</span>
+<span class=drop>reducescatter,536870912,536870912,ring,simple,48,2,16,-1,-1</span>  <span class=why>&larr; no gain (-0.1%)</span></pre>
+<h3>Final shipped config</h3><pre class=keep>collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff
+reducescatter,65536,65536,ring,ll,2,2,16,-1,-1
+reducescatter,1048576,1048576,ring,ll,32,2,16,-1,-1
+reducescatter,4194304,4194304,ring,ll128,16,2,16,-1,-1
+reducescatter,8388608,8388608,ring,ll128,24,2,16,-1,-1
+reducescatter,33554432,33554432,ring,ll128,40,2,16,-1,-1
+reducescatter,134217728,134217728,ring,simple,40,2,16,-1,-1</pre>
+<h3>Per size</h3>
+<table><tr><th>size</th><th>default executed</th><th>ours requested</th><th>ours executed</th><th>default med</th><th>ours med</th><th>gain</th><th>P(sup)</th><th>verdict</th></tr>
+<tr class=x><td>4K</td><td>RING/LL/8</td><td>RING/LL/1</td><td>RING/LL/2 (trimmed)</td><td>0.09</td><td>0.09</td><td class=n>+0.0%</td><td>0.50</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
+<tr class=x><td>8K</td><td>RING/LL/16</td><td>RING/LL/2</td><td>RING/LL/16 (trimmed)</td><td>0.19</td><td>0.18</td><td class=b>-5.3%</td><td>0.17</td><td class=wrap>dropped: regression -5.3%</td></tr>
+<tr class=x><td>16K</td><td>RING/LL/16</td><td>RING/LL/1</td><td>RING/SIMPLE/16 (trimmed)</td><td>0.37</td><td>0.37</td><td class=n>+0.0%</td><td>0.35</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
+<tr class=x><td>32K</td><td>RING/LL/16</td><td>RING/LL/2</td><td>RING/LL/16 (trimmed)</td><td>0.7</td><td>0.73</td><td class=g>+4.3%</td><td>0.90</td><td class=wrap>dropped: not reproducible (P 0.90)</td></tr>
+<tr class=v><td>64K</td><td>RING/LL/16</td><td>RING/LL/2</td><td>RING/LL/32 (trimmed)</td><td>1.3</td><td>1.42</td><td class=g>+9.2%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=x><td>128K</td><td>RING/LL128/32</td><td>RING/LL/16</td><td>RING/LL/16</td><td>2.46</td><td>2.43</td><td class=n>-1.2%</td><td>0.27</td><td class=wrap>dropped: no gain (-1.2%)</td></tr>
+<tr class=x><td>256K</td><td>RING/LL128/32</td><td>RING/SIMPLE/16</td><td>RING/LL128/16</td><td>4.86</td><td>4.77</td><td class=n>-1.9%</td><td>0.16</td><td class=wrap>dropped: no gain (-1.9%)</td></tr>
+<tr class=x><td>512K</td><td>RING/LL128/40</td><td>RING/LL/16</td><td>RING/LL128/24 (trimmed)</td><td>8.9</td><td>8.93</td><td class=n>+0.3%</td><td>0.48</td><td class=wrap>dropped: no gain (+0.3%)</td></tr>
+<tr class=v><td>1M</td><td>RING/LL128/32</td><td>RING/LL/32</td><td>RING/LL128/32</td><td>14.33</td><td>14.95</td><td class=g>+4.3%</td><td>0.95</td><td class=wrap>KEPT</td></tr>
+<tr class=x><td>2M</td><td>RING/LL128/48</td><td>RING/LL/16</td><td>RING/LL128/40 (trimmed)</td><td>24.63</td><td>24.78</td><td class=n>+0.6%</td><td>0.73</td><td class=wrap>dropped: no gain (+0.6%)</td></tr>
+<tr class=v><td>4M</td><td>RING/LL128/48</td><td>RING/LL128/16</td><td>RING/LL128/48 (trimmed)</td><td>40.49</td><td>51.21</td><td class=g>+26.5%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>8M</td><td>RING/LL128/48</td><td>RING/LL128/24</td><td>RING/SIMPLE/40 (trimmed)</td><td>70.42</td><td>90.25</td><td class=g>+28.2%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=x><td>16M</td><td>RING/SIMPLE/48</td><td>RING/LL128/32</td><td>RING/SIMPLE/48 (trimmed)</td><td>144.79</td><td>142.15</td><td class=n>-1.8%</td><td>0.11</td><td class=wrap>dropped: no gain (-1.8%)</td></tr>
+<tr class=v><td>32M</td><td>RING/SIMPLE/48</td><td>RING/LL128/40</td><td>RING/SIMPLE/48 (trimmed)</td><td>209.41</td><td>219.43</td><td class=g>+4.8%</td><td>0.99</td><td class=wrap>KEPT</td></tr>
+<tr class=x><td>64M</td><td></td><td>RING/LL128/48</td><td></td><td>269.71</td><td>269.09</td><td class=n>-0.2%</td><td>0.31</td><td class=wrap>dropped: no gain (-0.2%)</td></tr>
+<tr class=v><td>128M</td><td></td><td>RING/SIMPLE/40</td><td></td><td>292.41</td><td>313.72</td><td class=g>+7.3%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=x><td>256M</td><td></td><td>RING/SIMPLE/48</td><td></td><td>356.85</td><td>357.09</td><td class=n>+0.1%</td><td>0.57</td><td class=wrap>dropped: no gain (+0.1%)</td></tr>
+<tr class=x><td>512M</td><td></td><td>RING/SIMPLE/48</td><td></td><td>365.25</td><td>364.82</td><td class=n>-0.1%</td><td>0.23</td><td class=wrap>dropped: no gain (-0.1%)</td></tr>
+</table>
+<details><summary>raw A/B runs (busbw per size, both arms)</summary><table><tr><th>size</th><th>arm</th><th>runs</th><th>median</th></tr>
+<tr><td>4K</td><td>default</td><td>0.09 0.09 0.09 0.09 0.09 0.09 0.09 0.09 0.09</td><td><b>0.09</b></td></tr>
+<tr><td>4K</td><td>config</td><td>0.09 0.09 0.09 0.09 0.09 0.09 0.09 0.09 0.09</td><td><b>0.09</b></td></tr>
+<tr><td>8K</td><td>default</td><td>0.19 0.19 0.19 0.18 0.18 0.18 0.19 0.19 0.18</td><td><b>0.19</b></td></tr>
+<tr><td>8K</td><td>config</td><td>0.18 0.17 0.18 0.17 0.18 0.18 0.18 0.18 0.18</td><td><b>0.18</b></td></tr>
+<tr><td>16K</td><td>default</td><td>0.37 0.37 0.37 0.37 0.37 0.37 0.37 0.38 0.36</td><td><b>0.37</b></td></tr>
+<tr><td>16K</td><td>config</td><td>0.37 0.37 0.37 0.36 0.36 0.36 0.37 0.37 0.37</td><td><b>0.37</b></td></tr>
+<tr><td>32K</td><td>default</td><td>0.71 0.71 0.71 0.69 0.7 0.69 0.71 0.63 0.7</td><td><b>0.7</b></td></tr>
+<tr><td>32K</td><td>config</td><td>0.72 0.72 0.68 0.73 0.73 0.73 0.74 0.74 0.73</td><td><b>0.73</b></td></tr>
+<tr><td>64K</td><td>default</td><td>1.29 1.29 1.3 1.29 1.3 1.31 1.31 1.25 1.3</td><td><b>1.3</b></td></tr>
+<tr><td>64K</td><td>config</td><td>1.4 1.42 1.42 1.42 1.42 1.42 1.42 1.42 1.42</td><td><b>1.42</b></td></tr>
+<tr><td>128K</td><td>default</td><td>2.48 2.38 2.46 2.46 2.45 2.51 2.52 2.46 2.4</td><td><b>2.46</b></td></tr>
+<tr><td>128K</td><td>config</td><td>2.43 2.37 2.36 2.39 2.47 2.43 2.43 2.43 2.49</td><td><b>2.43</b></td></tr>
+<tr><td>256K</td><td>default</td><td>4.91 4.79 4.86 4.67 4.86 4.97 4.94 4.8 4.89</td><td><b>4.86</b></td></tr>
+<tr><td>256K</td><td>config</td><td>4.77 4.84 4.8 4.79 4.72 4.77 4.5 4.81 4.48</td><td><b>4.77</b></td></tr>
+<tr><td>512K</td><td>default</td><td>8.86 8.82 8.9 8.9 8.9 8.95 8.93 8.78 8.98</td><td><b>8.9</b></td></tr>
+<tr><td>512K</td><td>config</td><td>8.94 7.74 8.94 8.83 8.96 8.66 8.72 8.98 8.93</td><td><b>8.93</b></td></tr>
+<tr><td>1M</td><td>default</td><td>14.29 14.33 13.45 14.35 14.33 14.37 14.38 14.29 14.25</td><td><b>14.33</b></td></tr>
+<tr><td>1M</td><td>config</td><td>14.99 14.95 14.95 14.93 15.01 14.99 14.57 14.33 15.01</td><td><b>14.95</b></td></tr>
+<tr><td>2M</td><td>default</td><td>24.74 24.57 24.6 24.88 10.27 24.57 24.81 24.63 24.79</td><td><b>24.63</b></td></tr>
+<tr><td>2M</td><td>config</td><td>24.78 24.6 24.67 24.83 25.01 24.93 24.7 24.71 24.9</td><td><b>24.78</b></td></tr>
+<tr><td>4M</td><td>default</td><td>41.05 40.5 40.24 40.49 40.49 40.32 40.86 41.47 40.48</td><td><b>40.49</b></td></tr>
+<tr><td>4M</td><td>config</td><td>51.21 51.35 50.87 51.24 51.34 51.03 49.07 51.39 51.12</td><td><b>51.21</b></td></tr>
+<tr><td>8M</td><td>default</td><td>71.01 70.01 70.42 69.74 69.02 70.57 70.25 71.52 70.91</td><td><b>70.42</b></td></tr>
+<tr><td>8M</td><td>config</td><td>90.25 90.55 90.59 90.7 89.71 89.66 88.89 89.94 91.12</td><td><b>90.25</b></td></tr>
+<tr><td>16M</td><td>default</td><td>145.42 143.85 145.08 144.79 144.73 144.08 145.18 146.23 140.85</td><td><b>144.79</b></td></tr>
+<tr><td>16M</td><td>config</td><td>142.15 142.66 141.72 140.75 144.7 142.23 139.77 143.9 140.51</td><td><b>142.15</b></td></tr>
+<tr><td>32M</td><td>default</td><td>209.8 208.67 209.24 208.6 209.15 211.05 209.41 215.44 209.89</td><td><b>209.41</b></td></tr>
+<tr><td>32M</td><td>config</td><td>219.43 218.88 219.8 219.85 220.46 220.49 214.72 215.47 218.7</td><td><b>219.43</b></td></tr>
+<tr><td>64M</td><td>default</td><td>269.52 269.18 270.08 270.61 269.71 268.99 267.6 269.93 269.91</td><td><b>269.71</b></td></tr>
+<tr><td>64M</td><td>config</td><td>269.27 269.09 269.41 268.09 268.28 270.14 264.08 262.01 270.06</td><td><b>269.09</b></td></tr>
+<tr><td>128M</td><td>default</td><td>291.34 291.52 293.29 292.62 292.78 292.41 292.22 291.85 292.57</td><td><b>292.41</b></td></tr>
+<tr><td>128M</td><td>config</td><td>314.23 312.38 313.97 312.33 310.78 314.21 311.12 314.35 313.72</td><td><b>313.72</b></td></tr>
+<tr><td>256M</td><td>default</td><td>356.48 357.6 357.63 356.85 356.33 356.35 355.5 357.07 357.07</td><td><b>356.85</b></td></tr>
+<tr><td>256M</td><td>config</td><td>357.13 356.85 357.2 355.89 357.59 357.63 356.41 357.09 356.15</td><td><b>357.09</b></td></tr>
+<tr><td>512M</td><td>default</td><td>365.25 364.74 364.46 365.11 365.4 365.41 365.25 364.82 365.55</td><td><b>365.25</b></td></tr>
+<tr><td>512M</td><td>config</td><td>365.08 364.82 364.77 364.59 365.1 364.85 364.51 365.01 363.45</td><td><b>364.82</b></td></tr>
+</table></details>
+<h2>reduce scatter_3n</h2>
+<p class=note>search: <b>69 runs</b> vs full grid 81 (<b>&minus;15%</b>), 23 configs measured, 19 min. A/B: <b class=g>10 kept</b>, <b class=b>8 dropped</b>.</p>
+<h3>Config: search output &rarr; A/B verdicts</h3>
+<pre><span class=n>collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff</span>
+<span class=drop>reducescatter,3840,3840,ring,ll,1,3,24,-1,-1</span>  <span class=why>&larr; no gain (+0.0%)</span>
+<span class=drop>reducescatter,8064,8064,ring,ll,1,3,24,-1,-1</span>  <span class=why>&larr; no gain (+0.0%)</span>
+<span class=drop>reducescatter,16128,16128,ring,ll,1,3,24,-1,-1</span>  <span class=why>&larr; no gain (+0.0%)</span>
+<span class=drop>reducescatter,32640,32640,ring,ll,1,3,24,-1,-1</span>  <span class=why>&larr; no gain (+0.0%)</span>
+<span class=keep>reducescatter,65280,65280,ring,ll,2,3,24,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=keep>reducescatter,130944,130944,ring,ll,4,3,24,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=keep>reducescatter,261888,261888,ring,ll,8,3,24,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=keep>reducescatter,524160,524160,ring,ll128,4,3,24,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=keep>reducescatter,1048320,1048320,ring,ll128,4,3,24,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=keep>reducescatter,2097024,2097024,ring,ll128,8,3,24,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=keep>reducescatter,4194048,4194048,ring,ll128,16,3,24,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=keep>reducescatter,8388480,8388480,ring,ll128,16,3,24,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=drop>reducescatter,16776960,16776960,ring,ll128,24,3,24,-1,-1</span>  <span class=why>&larr; no gain (+1.2%)</span>
+<span class=keep>reducescatter,33554304,33554304,ring,ll128,32,3,24,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=drop>reducescatter,67108608,67108608,ring,ll128,40,3,24,-1,-1</span>  <span class=why>&larr; no gain (-0.6%)</span>
+<span class=keep>reducescatter,134217600,134217600,ring,ll128,40,3,24,-1,-1</span>  <span class=why>&larr; kept</span>
+<span class=drop>reducescatter,268435200,268435200,ring,simple,40,3,24,-1,-1</span>  <span class=why>&larr; no gain (-0.1%)</span>
+<span class=drop>reducescatter,536870784,536870784,ring,simple,48,3,24,-1,-1</span>  <span class=why>&larr; no gain (-0.0%)</span></pre>
+<h3>Final shipped config</h3><pre class=keep>collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff
+reducescatter,65280,65280,ring,ll,2,3,24,-1,-1
+reducescatter,130944,130944,ring,ll,4,3,24,-1,-1
+reducescatter,261888,261888,ring,ll,8,3,24,-1,-1
+reducescatter,524160,1048320,ring,ll128,4,3,24,-1,-1
+reducescatter,2097024,2097024,ring,ll128,8,3,24,-1,-1
+reducescatter,4194048,4194048,ring,ll128,16,3,24,-1,-1
+reducescatter,8388480,8388480,ring,ll128,16,3,24,-1,-1
+reducescatter,33554304,33554304,ring,ll128,32,3,24,-1,-1
+reducescatter,134217600,134217600,ring,ll128,40,3,24,-1,-1</pre>
+<h3>Per size</h3>
+<table><tr><th>size</th><th>default executed</th><th>ours requested</th><th>ours executed</th><th>default med</th><th>ours med</th><th>gain</th><th>P(sup)</th><th>verdict</th></tr>
+<tr class=x><td>3.8K</td><td></td><td>RING/LL/1</td><td></td><td>0.05</td><td>0.05</td><td class=n>+0.0%</td><td>0.50</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
+<tr class=x><td>7.9K</td><td></td><td>RING/LL/1</td><td></td><td>0.1</td><td>0.1</td><td class=n>+0.0%</td><td>0.56</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
+<tr class=x><td>15.8K</td><td></td><td>RING/LL/1</td><td></td><td>0.2</td><td>0.2</td><td class=n>+0.0%</td><td>0.51</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
+<tr class=x><td>31.9K</td><td></td><td>RING/LL/1</td><td></td><td>0.39</td><td>0.39</td><td class=n>+0.0%</td><td>0.44</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
+<tr class=v><td>63.8K</td><td></td><td>RING/LL/2</td><td></td><td>0.75</td><td>0.77</td><td class=g>+2.7%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>127.9K</td><td></td><td>RING/LL/4</td><td></td><td>1.25</td><td>1.5</td><td class=g>+20.0%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>255.8K</td><td></td><td>RING/LL/8</td><td></td><td>2.47</td><td>2.91</td><td class=g>+17.8%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>511.9K</td><td></td><td>RING/LL128/4</td><td></td><td>4.71</td><td>5.43</td><td class=g>+15.3%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>1023.8K</td><td></td><td>RING/LL128/4</td><td></td><td>8.24</td><td>10.43</td><td class=g>+26.6%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>2.0M</td><td></td><td>RING/LL128/8</td><td></td><td>13.465</td><td>20.02</td><td class=g>+48.7%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>4.0M</td><td></td><td>RING/LL128/16</td><td></td><td>27.34</td><td>37.17</td><td class=g>+36.0%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>8.0M</td><td></td><td>RING/LL128/16</td><td></td><td>45.96</td><td>64.41</td><td class=g>+40.1%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=x><td>16.0M</td><td></td><td>RING/LL128/24</td><td></td><td>107.205</td><td>108.48</td><td class=n>+1.2%</td><td>0.89</td><td class=wrap>dropped: no gain (+1.2%)</td></tr>
+<tr class=v><td>32.0M</td><td></td><td>RING/LL128/32</td><td></td><td>156.265</td><td>174.96</td><td class=g>+12.0%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=x><td>64.0M</td><td></td><td>RING/LL128/40</td><td></td><td>242.05</td><td>240.49</td><td class=n>-0.6%</td><td>0.19</td><td class=wrap>dropped: no gain (-0.6%)</td></tr>
+<tr class=v><td>128.0M</td><td></td><td>RING/LL128/40</td><td></td><td>237.24</td><td>254.48</td><td class=g>+7.3%</td><td>1.00</td><td class=wrap>KEPT</td></tr>
+<tr class=x><td>256.0M</td><td></td><td>RING/SIMPLE/40</td><td></td><td>337.7</td><td>337.41</td><td class=n>-0.1%</td><td>0.28</td><td class=wrap>dropped: no gain (-0.1%)</td></tr>
+<tr class=x><td>512.0M</td><td></td><td>RING/SIMPLE/48</td><td></td><td>366.865</td><td>366.7</td><td class=n>-0.0%</td><td>0.38</td><td class=wrap>dropped: no gain (-0.0%)</td></tr>
+</table>
+<details><summary>raw A/B runs (busbw per size, both arms)</summary><table><tr><th>size</th><th>arm</th><th>runs</th><th>median</th></tr>
+<tr><td>3.8K</td><td>default</td><td>0.05 0.05 0.05 0.05 0.05 0.05 0.05 0.05</td><td><b>0.05</b></td></tr>
+<tr><td>3.8K</td><td>config</td><td>0.05 0.05 0.05 0.05 0.05 0.05 0.05 0.05 0.05</td><td><b>0.05</b></td></tr>
+<tr><td>7.9K</td><td>default</td><td>0.1 0.1 0.1 0.09 0.1 0.1 0.1 0.1</td><td><b>0.1</b></td></tr>
+<tr><td>7.9K</td><td>config</td><td>0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1</td><td><b>0.1</b></td></tr>
+<tr><td>15.8K</td><td>default</td><td>0.19 0.19 0.2 0.2 0.2 0.2 0.2 0.2</td><td><b>0.2</b></td></tr>
+<tr><td>15.8K</td><td>config</td><td>0.2 0.2 0.19 0.2 0.2 0.2 0.2 0.2 0.19</td><td><b>0.2</b></td></tr>
+<tr><td>31.9K</td><td>default</td><td>0.39 0.39 0.39 0.39 0.39 0.39 0.39 0.39</td><td><b>0.39</b></td></tr>
+<tr><td>31.9K</td><td>config</td><td>0.39 0.39 0.39 0.39 0.39 0.39 0.39 0.38 0.39</td><td><b>0.39</b></td></tr>
+<tr><td>63.8K</td><td>default</td><td>0.75 0.75 0.74 0.74 0.75 0.74 0.75 0.75</td><td><b>0.75</b></td></tr>
+<tr><td>63.8K</td><td>config</td><td>0.77 0.77 0.76 0.77 0.77 0.77 0.77 0.77 0.77</td><td><b>0.77</b></td></tr>
+<tr><td>127.9K</td><td>default</td><td>1.24 1.27 1.26 1.25 1.25 1.24 1.26 1.23</td><td><b>1.25</b></td></tr>
+<tr><td>127.9K</td><td>config</td><td>1.5 1.49 1.5 1.52 1.5 1.52 1.51 1.5 1.5</td><td><b>1.5</b></td></tr>
+<tr><td>255.8K</td><td>default</td><td>2.45 2.48 2.48 2.47 2.48 2.37 2.47 2.41</td><td><b>2.47</b></td></tr>
+<tr><td>255.8K</td><td>config</td><td>2.93 2.88 2.89 2.91 2.91 2.91 2.92 2.89 2.84</td><td><b>2.91</b></td></tr>
+<tr><td>511.9K</td><td>default</td><td>4.67 4.75 4.74 4.75 4.71 4.6 4.71 4.68</td><td><b>4.71</b></td></tr>
+<tr><td>511.9K</td><td>config</td><td>5.43 5.43 5.4 5.45 5.46 5.41 5.42 5.39 5.45</td><td><b>5.43</b></td></tr>
+<tr><td>1023.8K</td><td>default</td><td>8.23 8.38 8.22 8.23 8.23 8.25 8.3 8.29</td><td><b>8.24</b></td></tr>
+<tr><td>1023.8K</td><td>config</td><td>10.47 10.43 10.39 10.42 10.44 10.55 10.56 10.43 10.42</td><td><b>10.43</b></td></tr>
+<tr><td>2.0M</td><td>default</td><td>13.4 13.52 13.55 13.31 13.56 13.41 13.57 13.32</td><td><b>13.465</b></td></tr>
+<tr><td>2.0M</td><td>config</td><td>20.04 20.07 19.96 20.01 20.05 20.06 19.96 20.02 20.0</td><td><b>20.02</b></td></tr>
+<tr><td>4.0M</td><td>default</td><td>26.34 27.26 27.5 27.31 27.49 27.38 27.37 26.63</td><td><b>27.34</b></td></tr>
+<tr><td>4.0M</td><td>config</td><td>36.94 36.31 37.15 37.64 37.6 37.74 37.85 34.93 37.17</td><td><b>37.17</b></td></tr>
+<tr><td>8.0M</td><td>default</td><td>45.58 45.87 46.0 46.65 46.34 46.16 45.92 45.12</td><td><b>45.96</b></td></tr>
+<tr><td>8.0M</td><td>config</td><td>64.67 64.68 64.12 64.03 64.57 64.41 64.19 64.13 64.79</td><td><b>64.41</b></td></tr>
+<tr><td>16.0M</td><td>default</td><td>107.35 107.3 107.1 108.03 107.11 105.65 107.29 107.12</td><td><b>107.205</b></td></tr>
+<tr><td>16.0M</td><td>config</td><td>108.48 106.55 108.31 108.34 108.75 108.5 107.96 108.95 108.53</td><td><b>108.48</b></td></tr>
+<tr><td>32.0M</td><td>default</td><td>156.56 155.61 158.2 154.84 155.97 158.34 157.05 155.71</td><td><b>156.265</b></td></tr>
+<tr><td>32.0M</td><td>config</td><td>175.32 174.46 174.66 175.0 174.96 171.6 174.48 175.4 175.2</td><td><b>174.96</b></td></tr>
+<tr><td>64.0M</td><td>default</td><td>241.66 242.36 241.44 243.77 242.86 239.28 242.41 241.74</td><td><b>242.05</b></td></tr>
+<tr><td>64.0M</td><td>config</td><td>240.9 240.48 240.21 241.98 240.31 241.79 238.37 240.49 240.99</td><td><b>240.49</b></td></tr>
+<tr><td>128.0M</td><td>default</td><td>236.64 35.19 238.14 238.9 238.04 237.35 237.13 235.81</td><td><b>237.24</b></td></tr>
+<tr><td>128.0M</td><td>config</td><td>254.07 254.05 254.54 254.73 253.91 253.97 254.48 255.59 254.61</td><td><b>254.48</b></td></tr>
+<tr><td>256.0M</td><td>default</td><td>337.31 337.1 337.34 337.52 337.88 338.9 338.89 338.53</td><td><b>337.7</b></td></tr>
+<tr><td>256.0M</td><td>config</td><td>336.27 337.03 338.27 337.9 337.7 336.23 337.41 335.95 337.47</td><td><b>337.41</b></td></tr>
+<tr><td>512.0M</td><td>default</td><td>367.53 366.96 367.03 360.19 367.66 366.77 366.77 366.2</td><td><b>366.865</b></td></tr>
+<tr><td>512.0M</td><td>config</td><td>367.07 366.89 366.66 366.61 363.82 366.62 367.1 366.7 366.7</td><td><b>366.7</b></td></tr>
+</table></details>
+<p class=note><a href='../index.html'>main results site</a></p>

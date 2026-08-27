@@ -1,0 +1,18 @@
+# Validated by validate_tuner_config.py: only rules that beat RCCL default
+# with P(sup) >= 0.95 over 7 repeats, gain > 2.0%,
+# and no size in range regressing more than 2.0%.
+# dropped: reducescatter,4096,16384,ring,ll,1,2,16,-1,-1   (best gain only +0.0%)
+# dropped: reducescatter,131072,131072,ring,simple,24,2,16,-1,-1   (best gain only -0.4%)
+# dropped: reducescatter,262144,262144,ring,ll,16,2,16,-1,-1   (best gain only -0.4%)
+# dropped: reducescatter,524288,524288,ring,ll,32,2,16,-1,-1   (best gain only -0.1%)
+# dropped: reducescatter,1048576,1048576,ring,simple,32,2,16,-1,-1   (P(sup) only 0.73, not reproducible)
+# dropped: reducescatter,2097152,2097152,ring,ll,16,2,16,-1,-1   (best gain only +0.3%)
+# dropped: reducescatter,4194304,4194304,ring,ll128,16,2,16,-1,-1   (P(sup) only 0.86, not reproducible)
+# dropped: reducescatter,8388608,8388608,ring,ll128,24,2,16,-1,-1   (P(sup) only 0.86, not reproducible)
+# dropped: reducescatter,16777216,16777216,ring,ll128,32,2,16,-1,-1   (best gain only -2.0%)
+# dropped: reducescatter,33554432,33554432,ring,ll128,40,2,16,-1,-1   (P(sup) only 0.71, not reproducible)
+# dropped: reducescatter,67108864,67108864,ring,ll128,48,2,16,-1,-1   (best gain only -0.2%)
+# dropped: reducescatter,536870912,536870912,ring,simple,48,2,16,-1,-1   (best gain only +0.1%)
+collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff
+reducescatter,32768,65536,ring,ll,2,2,16,-1,-1
+reducescatter,134217728,268435456,ring,simple,40,2,16,-1,-1

@@ -1,0 +1,22 @@
+# Validated by validate_tuner_config.py: only rules that beat RCCL default
+# with P(sup) >= 0.95 over 9 repeats, gain > 2.0%,
+# and no size in range regressing more than 2.0%.
+# dropped: reduce,4096,4096,ring,ll,40,1,8,-1,-1   (contains a regression of -8.6% (landmine))
+# dropped: reduce,8192,8192,ring,ll,1,1,8,-1,-1   (contains a regression of -11.6% (landmine))
+# dropped: reduce,16384,16384,ring,simple,8,1,8,-1,-1   (contains a regression of -8.0% (landmine))
+# dropped: reduce,32768,32768,ring,simple,32,1,8,-1,-1   (contains a regression of -14.0% (landmine))
+# dropped: reduce,65536,65536,ring,ll,32,1,8,-1,-1   (P(sup) only 0.78, not reproducible)
+# dropped: reduce,2097152,2097152,ring,ll,48,1,8,-1,-1   (P(sup) only 0.89, not reproducible)
+# dropped: reduce,8388608,8388608,ring,simple,48,1,8,-1,-1   (contains a regression of -15.2% (landmine))
+# dropped: reduce,16777216,16777216,ring,simple,48,1,8,-1,-1   (contains a regression of -22.0% (landmine))
+# dropped: reduce,33554432,33554432,ring,simple,48,1,8,-1,-1   (contains a regression of -25.2% (landmine))
+# dropped: reduce,67108864,67108864,ring,simple,48,1,8,-1,-1   (contains a regression of -21.9% (landmine))
+# dropped: reduce,134217728,134217728,ring,simple,48,1,8,-1,-1   (contains a regression of -25.2% (landmine))
+# dropped: reduce,268435456,268435456,ring,simple,48,1,8,-1,-1   (contains a regression of -18.4% (landmine))
+# dropped: reduce,536870912,536870912,ring,simple,48,1,8,-1,-1   (contains a regression of -19.9% (landmine))
+collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff
+reduce,131072,131072,ring,ll,48,1,8,-1,-1
+reduce,262144,262144,ring,ll,40,1,8,-1,-1
+reduce,524288,524288,ring,ll,48,1,8,-1,-1
+reduce,1048576,1048576,ring,ll,48,1,8,-1,-1
+reduce,4194304,4194304,ring,ll,48,1,8,-1,-1

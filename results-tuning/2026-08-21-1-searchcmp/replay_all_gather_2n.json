@@ -1,0 +1,92 @@
+{
+  "runs": 51,
+  "full_runs": 81,
+  "saving_pct": 37.0,
+  "configs": 17,
+  "full_configs": 27,
+  "alive_combos": [
+    [
+      "RING",
+      "LL128"
+    ],
+    [
+      "RING",
+      "SIMPLE"
+    ]
+  ],
+  "exact": 7,
+  "n_sizes": 7,
+  "worst_gap_pct": 0.0,
+  "rows": [
+    {
+      "size": 8388608,
+      "grid_cfg": "RING/LL128/24",
+      "grid_busbw": 93.54,
+      "adaptive_cfg": "RING/LL128/24",
+      "adaptive_busbw_fullmed": 93.54,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 16777216,
+      "grid_cfg": "RING/LL128/24",
+      "grid_busbw": 146.62,
+      "adaptive_cfg": "RING/LL128/24",
+      "adaptive_busbw_fullmed": 146.62,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 33554432,
+      "grid_cfg": "RING/LL128/40",
+      "grid_busbw": 224.73,
+      "adaptive_cfg": "RING/LL128/40",
+      "adaptive_busbw_fullmed": 224.73,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 67108864,
+      "grid_cfg": "RING/LL128/48",
+      "grid_busbw": 271.02,
+      "adaptive_cfg": "RING/LL128/48",
+      "adaptive_busbw_fullmed": 271.02,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 134217728,
+      "grid_cfg": "RING/SIMPLE/40",
+      "grid_busbw": 305.96,
+      "adaptive_cfg": "RING/SIMPLE/40",
+      "adaptive_busbw_fullmed": 305.96,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 268435456,
+      "grid_cfg": "RING/SIMPLE/48",
+      "grid_busbw": 357.64,
+      "adaptive_cfg": "RING/SIMPLE/48",
+      "adaptive_busbw_fullmed": 357.64,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    },
+    {
+      "size": 536870912,
+      "grid_cfg": "RING/SIMPLE/48",
+      "grid_busbw": 365.9,
+      "adaptive_cfg": "RING/SIMPLE/48",
+      "adaptive_busbw_fullmed": 365.9,
+      "exact": true,
+      "gap_pct": 0.0,
+      "ch_delta": 0
+    }
+  ]
+}
