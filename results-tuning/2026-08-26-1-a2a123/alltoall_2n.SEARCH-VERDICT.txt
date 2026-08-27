@@ -1,0 +1,1 @@
+defaults win at the search stage: best candidate ch=40 scored +0.00% median gain over 18 sizes vs the same-session default runs (/home/dn/ylerman/tasks/GPU-107/amd-dev-optuna/results-tuning/2026-08-26-1-a2a123/alltoall_2n/adaptive_report.json). No config to ship, nothing to A/B.

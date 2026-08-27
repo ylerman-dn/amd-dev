@@ -77,6 +77,7 @@ optimization_runs/**/*
 # cited by path from the SUMMARY files.
 results-tuning/**/*.log
 results-tuning/**/*.txt
+!results-tuning/**/*.SEARCH-VERDICT.txt
 results-tuning/**/PROGRESS
 results-tuning/**/*.db
 results-tuning/**/*.tgz
