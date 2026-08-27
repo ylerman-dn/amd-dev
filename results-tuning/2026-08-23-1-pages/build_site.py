@@ -22,9 +22,9 @@ KNOWN_ISSUES = {
         "failed preflight on intrinsic small-size (4-16K) scatter. RESOLVED "
         "2026-08-26 by the rule-scoped preflight: 4K/16K excluded as "
         "unmeasurable, every other size judged - 4 rules verified.",
-    ("broadcast", 4): "A/B window-limited on 2026-08-25 (~01:00Z): 4 preflight "
-        "refusals, mixed exporter-collapse + small-size jitter.",
-    ("reduce", 4): "A/B window-limited (4 refusals, same window).",
+    ("broadcast", 4): "still unverdicted after 10 voided attempts across 3 days "
+        "(rc=2/rc=3), including on the same-leaf L1 set - transient noise, "
+        "source unknown.",
     ("all_gather", 4): "A/B window-limited; one rc=2 void attempt quarantined.",
     ("reduce_scatter", 4): "A/B window-limited (4 refusals, same window).",
     ("alltoall", 1): "candidate ch=40 A/B'd 2026-08-26: no rule survived - "
