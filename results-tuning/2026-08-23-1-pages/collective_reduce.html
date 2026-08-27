@@ -50,63 +50,63 @@ reduce,262144,262144,ring,ll,40,1,8,-1,-1
 reduce,524288,1048576,ring,ll,48,1,8,-1,-1
 reduce,4194304,4194304,ring,ll,48,1,8,-1,-1</pre>
 <h3>Per size (live A/B numbers)</h3>
-<div class=tw><table><tr><th>size</th><th>default executed</th><th>ours requested</th><th>ours executed</th><th>default med</th><th>ours med</th><th>gain</th><th>P(sup)</th><th>spread def / cfg</th><th>verdict</th></tr>
-<tr class=x><td>4K</td><td>RING/LL/1</td><td>RING/LL/40</td><td>RING/LL/1 (trimmed)</td><td>0.35</td><td>0.32</td><td class=b>-8.6%</td><td>0.17</td><td class=n>0.3-0.37 / 0.3-0.34</td><td class=wrap>dropped: regression -8.6%</td></tr>
-<tr class=x><td>8K</td><td>RING/LL/1</td><td>RING/LL/1</td><td>RING/LL/1</td><td>0.69</td><td>0.61</td><td class=b>-11.6%</td><td>0.11</td><td class=n>0.63-0.75 / 0.53-0.65</td><td class=wrap>dropped: regression -11.6%</td></tr>
-<tr class=x><td>16K</td><td>RING/LL/1</td><td>RING/SIMPLE/8</td><td>RING/SIMPLE/1 (trimmed)</td><td>1.12</td><td>1.03</td><td class=b>-8.0%</td><td>0.07</td><td class=n>1.09-1.18 / 0.44-1.14</td><td class=wrap>dropped: regression -8.0%</td></tr>
-<tr class=x><td>32K</td><td>RING/LL/2</td><td>RING/SIMPLE/32</td><td>RING/SIMPLE/2 (trimmed)</td><td>2.29</td><td>1.97</td><td class=b>-14.0%</td><td>0.06</td><td class=n>2.13-2.41 / 1.71-2.19</td><td class=wrap>dropped: regression -14.0%</td></tr>
-<tr class=x><td>64K</td><td>RING/LL/4</td><td>RING/LL/32</td><td>RING/LL/16 (trimmed)</td><td>3.7</td><td>3.93</td><td class=g>+6.2%</td><td>0.78</td><td class=n>3.62-3.72 / 0.58-4.29</td><td class=wrap>dropped: not reproducible (P 0.78)</td></tr>
-<tr class=v><td>128K</td><td>RING/LL/8</td><td>RING/LL/48</td><td>RING/LL/32 (trimmed)</td><td>6.12</td><td>6.98</td><td class=g>+14.1%</td><td>1.00</td><td class=n>5.92-6.25 / 6.34-7.19</td><td class=wrap>KEPT</td></tr>
-<tr class=v><td>256K</td><td>RING/LL/16</td><td>RING/LL/40</td><td>RING/LL/32 (trimmed)</td><td>12.27</td><td>13.34</td><td class=g>+8.7%</td><td>1.00</td><td class=n>12.25-12.3 / 12.4-14.24</td><td class=wrap>KEPT</td></tr>
-<tr class=v><td>512K</td><td>RING/SIMPLE/16</td><td>RING/LL/48</td><td>RING/LL/43 (trimmed)</td><td>9.79</td><td>25.15</td><td class=g>+156.9%</td><td>1.00</td><td class=n>9.76-9.83 / 24.48-25.3</td><td class=wrap>KEPT</td></tr>
-<tr class=v><td>1M</td><td>RING/SIMPLE/32</td><td>RING/LL/48</td><td>RING/LL/43 (trimmed)</td><td>19.09</td><td>38.04</td><td class=g>+99.3%</td><td>1.00</td><td class=n>19.01-19.14 / 37.13-38.83</td><td class=wrap>KEPT</td></tr>
-<tr class=x><td>2M</td><td>RING/SIMPLE/64</td><td>RING/LL/48</td><td>RING/LL/47 (trimmed)</td><td>37.13</td><td>57.79</td><td class=g>+55.6%</td><td>0.89</td><td class=n>37.0-37.21 / 16.76-57.92</td><td class=wrap>dropped: not reproducible (P 0.89)</td></tr>
-<tr class=v><td>4M</td><td>RING/SIMPLE/86</td><td>RING/LL/48</td><td>RING/LL/47 (trimmed)</td><td>65.27</td><td>73.93</td><td class=g>+13.3%</td><td>1.00</td><td class=n>65.07-65.69 / 73.73-74.09</td><td class=wrap>KEPT</td></tr>
-<tr class=x><td>8M</td><td>RING/SIMPLE/103</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/47 (trimmed)</td><td>108.24</td><td>91.82</td><td class=b>-15.2%</td><td>0.00</td><td class=n>107.93-108.49 / 91.56-92.1</td><td class=wrap>dropped: regression -15.2%</td></tr>
-<tr class=x><td>16M</td><td>RING/SIMPLE/103</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/47 (trimmed)</td><td>162.71</td><td>126.98</td><td class=b>-22.0%</td><td>0.00</td><td class=n>162.49-163.21 / 118.79-127.42</td><td class=wrap>dropped: regression -22.0%</td></tr>
-<tr class=x><td>32M</td><td>RING/SIMPLE/108</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/48</td><td>211.48</td><td>158.09</td><td class=b>-25.2%</td><td>0.11</td><td class=n>16.93-211.86 / 157.35-158.68</td><td class=wrap>dropped: regression -25.2%</td></tr>
-<tr class=x><td>64M</td><td>RING/SIMPLE/111</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/48</td><td>244.99</td><td>191.22</td><td class=b>-21.9%</td><td>0.00</td><td class=n>244.7-245.48 / 36.51-191.57</td><td class=wrap>dropped: regression -21.9%</td></tr>
-<tr class=x><td>128M</td><td>RING/SIMPLE/111</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/48</td><td>284.11</td><td>212.52</td><td class=b>-25.2%</td><td>0.00</td><td class=n>283.93-284.38 / 195.84-213.06</td><td class=wrap>dropped: regression -25.2%</td></tr>
-<tr class=x><td>256M</td><td>RING/SIMPLE/112</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/48</td><td>287.71</td><td>234.79</td><td class=b>-18.4%</td><td>0.00</td><td class=n>287.34-287.97 / 234.11-235.66</td><td class=wrap>dropped: regression -18.4%</td></tr>
-<tr class=x><td>512M</td><td>RING/SIMPLE/112</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/48</td><td>291.81</td><td>233.68</td><td class=b>-19.9%</td><td>0.00</td><td class=n>291.57-292.72 / 233.2-234.74</td><td class=wrap>dropped: regression -19.9%</td></tr>
+<div class=tw><table><tr><th>size</th><th>default executed</th><th>ours requested</th><th>ours executed</th><th>default med</th><th>ours med</th><th>gain</th><th>P(sup)</th><th>noise gate def / cfg</th><th>verdict</th></tr>
+<tr class=x><td>4K</td><td>RING/LL/1</td><td>RING/LL/40</td><td>RING/LL/1 (trimmed)</td><td>0.35</td><td>0.32</td><td class=b>-8.6%</td><td>0.17</td><td class='wrap n'><span class=n>CV 6.3%</span> / <span class=n>CV 3.8%</span></td><td class=wrap>dropped: regression -8.6%</td></tr>
+<tr class=x><td>8K</td><td>RING/LL/1</td><td>RING/LL/1</td><td>RING/LL/1</td><td>0.69</td><td>0.61</td><td class=b>-11.6%</td><td>0.11</td><td class='wrap n'><span class=n>CV 6.3%</span> / <span class=n>CV 6.9%</span></td><td class=wrap>dropped: regression -11.6%</td></tr>
+<tr class=x><td>16K</td><td>RING/LL/1</td><td>RING/SIMPLE/8</td><td>RING/SIMPLE/1 (trimmed)</td><td>1.12</td><td>1.03</td><td class=b>-8.0%</td><td>0.07</td><td class='wrap n'><span class=n>CV 2.5%</span> / <span class=warn>CV 21.3% &rarr; core 8/9 CV 5.9% (dips discarded)</span></td><td class=wrap>dropped: regression -8.0%</td></tr>
+<tr class=x><td>32K</td><td>RING/LL/2</td><td>RING/SIMPLE/32</td><td>RING/SIMPLE/2 (trimmed)</td><td>2.29</td><td>1.97</td><td class=b>-14.0%</td><td>0.06</td><td class='wrap n'><span class=n>CV 4.4%</span> / <span class=b>CV 8.9%, no clean core - NOISY</span></td><td class=wrap>dropped: regression -14.0%</td></tr>
+<tr class=x><td>64K</td><td>RING/LL/4</td><td>RING/LL/32</td><td>RING/LL/16 (trimmed)</td><td>3.7</td><td>3.93</td><td class=g>+6.2%</td><td>0.78</td><td class='wrap n'><span class=n>CV 0.9%</span> / <span class=warn>CV 32.4% &rarr; core 8/9 CV 7.2% (dips discarded)</span></td><td class=wrap>dropped: not reproducible (P 0.78)</td></tr>
+<tr class=v><td>128K</td><td>RING/LL/8</td><td>RING/LL/48</td><td>RING/LL/32 (trimmed)</td><td>6.12</td><td>6.98</td><td class=g>+14.1%</td><td>1.00</td><td class='wrap n'><span class=n>CV 2.0%</span> / <span class=n>CV 4.3%</span></td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>256K</td><td>RING/LL/16</td><td>RING/LL/40</td><td>RING/LL/32 (trimmed)</td><td>12.27</td><td>13.34</td><td class=g>+8.7%</td><td>1.00</td><td class='wrap n'><span class=n>CV 0.1%</span> / <span class=n>CV 4.5%</span></td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>512K</td><td>RING/SIMPLE/16</td><td>RING/LL/48</td><td>RING/LL/43 (trimmed)</td><td>9.79</td><td>25.15</td><td class=g>+156.9%</td><td>1.00</td><td class='wrap n'><span class=n>CV 0.2%</span> / <span class=n>CV 1.0%</span></td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>1M</td><td>RING/SIMPLE/32</td><td>RING/LL/48</td><td>RING/LL/43 (trimmed)</td><td>19.09</td><td>38.04</td><td class=g>+99.3%</td><td>1.00</td><td class='wrap n'><span class=n>CV 0.2%</span> / <span class=n>CV 1.6%</span></td><td class=wrap>KEPT</td></tr>
+<tr class=x><td>2M</td><td>RING/SIMPLE/64</td><td>RING/LL/48</td><td>RING/LL/47 (trimmed)</td><td>37.13</td><td>57.79</td><td class=g>+55.6%</td><td>0.89</td><td class='wrap n'><span class=n>CV 0.2%</span> / <span class=warn>CV 25.7% &rarr; core 8/9 CV 0.3% (dips discarded)</span></td><td class=wrap>dropped: not reproducible (P 0.89)</td></tr>
+<tr class=v><td>4M</td><td>RING/SIMPLE/86</td><td>RING/LL/48</td><td>RING/LL/47 (trimmed)</td><td>65.27</td><td>73.93</td><td class=g>+13.3%</td><td>1.00</td><td class='wrap n'><span class=n>CV 0.3%</span> / <span class=n>CV 0.2%</span></td><td class=wrap>KEPT</td></tr>
+<tr class=x><td>8M</td><td>RING/SIMPLE/103</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/47 (trimmed)</td><td>108.24</td><td>91.82</td><td class=b>-15.2%</td><td>0.00</td><td class='wrap n'><span class=n>CV 0.2%</span> / <span class=n>CV 0.2%</span></td><td class=wrap>dropped: regression -15.2%</td></tr>
+<tr class=x><td>16M</td><td>RING/SIMPLE/103</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/47 (trimmed)</td><td>162.71</td><td>126.98</td><td class=b>-22.0%</td><td>0.00</td><td class='wrap n'><span class=n>CV 0.2%</span> / <span class=n>CV 2.2%</span></td><td class=wrap>dropped: regression -22.0%</td></tr>
+<tr class=x><td>32M</td><td>RING/SIMPLE/108</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/48</td><td>211.48</td><td>158.09</td><td class=b>-25.2%</td><td>0.11</td><td class='wrap n'><span class=warn>CV 34.2% &rarr; core 8/9 CV 0.1% (dips discarded)</span> / <span class=n>CV 0.2%</span></td><td class=wrap>dropped: regression -25.2%</td></tr>
+<tr class=x><td>64M</td><td>RING/SIMPLE/111</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/48</td><td>244.99</td><td>191.22</td><td class=b>-21.9%</td><td>0.00</td><td class='wrap n'><span class=n>CV 0.1%</span> / <span class=warn>CV 29.6% &rarr; core 8/9 CV 0.1% (dips discarded)</span></td><td class=wrap>dropped: regression -21.9%</td></tr>
+<tr class=x><td>128M</td><td>RING/SIMPLE/111</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/48</td><td>284.11</td><td>212.52</td><td class=b>-25.2%</td><td>0.00</td><td class='wrap n'><span class=n>CV 0.1%</span> / <span class=n>CV 2.7%</span></td><td class=wrap>dropped: regression -25.2%</td></tr>
+<tr class=x><td>256M</td><td>RING/SIMPLE/112</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/48</td><td>287.71</td><td>234.79</td><td class=b>-18.4%</td><td>0.00</td><td class='wrap n'><span class=n>CV 0.1%</span> / <span class=n>CV 0.2%</span></td><td class=wrap>dropped: regression -18.4%</td></tr>
+<tr class=x><td>512M</td><td>RING/SIMPLE/112</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/48</td><td>291.81</td><td>233.68</td><td class=b>-19.9%</td><td>0.00</td><td class='wrap n'><span class=n>CV 0.1%</span> / <span class=n>CV 0.2%</span></td><td class=wrap>dropped: regression -19.9%</td></tr>
 </table></div>
-<details><summary>raw A/B runs</summary><div class=tw><table class=fit><tr><th>size</th><th>arm</th><th>runs</th><th>median</th></tr>
-<tr><td>4K</td><td>default</td><td class=runs>0.32 0.3 0.35 0.33 0.37 0.35 0.34 0.36 0.35</td><td><b>0.35</b></td></tr>
-<tr><td>4K</td><td>config</td><td class=runs>0.3 0.32 0.33 0.31 0.31 0.31 0.32 0.34 0.32</td><td><b>0.32</b></td></tr>
-<tr><td>8K</td><td>default</td><td class=runs>0.72 0.67 0.75 0.74 0.69 0.63 0.64 0.65 0.7</td><td><b>0.69</b></td></tr>
-<tr><td>8K</td><td>config</td><td class=runs>0.58 0.65 0.61 0.59 0.53 0.58 0.65 0.65 0.64</td><td><b>0.61</b></td></tr>
-<tr><td>16K</td><td>default</td><td class=runs>1.14 1.12 1.15 1.18 1.17 1.12 1.09 1.12 1.12</td><td><b>1.12</b></td></tr>
-<tr><td>16K</td><td>config</td><td class=runs>0.97 0.94 1.06 1.03 0.44 1.04 1.06 1.14 1.01</td><td><b>1.03</b></td></tr>
-<tr><td>32K</td><td>default</td><td class=runs>2.41 2.2 2.28 2.32 2.39 2.29 2.16 2.13 2.37</td><td><b>2.29</b></td></tr>
-<tr><td>32K</td><td>config</td><td class=runs>2.14 1.71 1.98 1.97 1.85 1.78 2.18 2.19 1.9</td><td><b>1.97</b></td></tr>
-<tr><td>64K</td><td>default</td><td class=runs>3.65 3.7 3.72 3.7 3.69 3.66 3.7 3.62 3.71</td><td><b>3.7</b></td></tr>
-<tr><td>64K</td><td>config</td><td class=runs>3.93 0.58 4.24 4.15 3.45 3.76 4.29 4.21 3.89</td><td><b>3.93</b></td></tr>
-<tr><td>128K</td><td>default</td><td class=runs>5.92 6.21 6.22 6.12 6.25 6.02 6.11 5.99 6.23</td><td><b>6.12</b></td></tr>
-<tr><td>128K</td><td>config</td><td class=runs>6.98 7.11 7.19 6.96 6.34 6.48 7.02 6.89 7.18</td><td><b>6.98</b></td></tr>
-<tr><td>256K</td><td>default</td><td class=runs>12.27 12.28 12.27 12.27 12.27 12.28 12.27 12.25 12.3</td><td><b>12.27</b></td></tr>
-<tr><td>256K</td><td>config</td><td class=runs>13.79 13.39 14.0 12.87 12.4 12.81 13.34 14.24 13.24</td><td><b>13.34</b></td></tr>
-<tr><td>512K</td><td>default</td><td class=runs>9.82 9.78 9.82 9.81 9.79 9.78 9.83 9.76 9.79</td><td><b>9.79</b></td></tr>
-<tr><td>512K</td><td>config</td><td class=runs>25.26 25.17 24.96 25.3 24.48 25.17 25.07 25.15 25.1</td><td><b>25.15</b></td></tr>
-<tr><td>1M</td><td>default</td><td class=runs>19.09 19.09 19.12 19.14 19.09 19.01 19.08 19.03 19.05</td><td><b>19.09</b></td></tr>
-<tr><td>1M</td><td>config</td><td class=runs>38.83 38.1 37.37 37.13 38.73 37.39 38.28 37.71 38.04</td><td><b>38.04</b></td></tr>
-<tr><td>2M</td><td>default</td><td class=runs>37.18 37.07 37.21 37.21 37.14 37.13 37.03 37.09 37.0</td><td><b>37.13</b></td></tr>
-<tr><td>2M</td><td>config</td><td class=runs>57.79 57.82 57.39 57.59 16.76 57.9 57.5 57.92 57.8</td><td><b>57.79</b></td></tr>
-<tr><td>4M</td><td>default</td><td class=runs>65.17 65.27 65.69 65.69 65.26 65.49 65.07 65.2 65.31</td><td><b>65.27</b></td></tr>
-<tr><td>4M</td><td>config</td><td class=runs>73.93 73.73 73.96 73.82 74.09 73.96 73.73 73.79 73.94</td><td><b>73.93</b></td></tr>
-<tr><td>8M</td><td>default</td><td class=runs>108.49 108.39 108.49 108.24 108.12 108.33 108.18 108.05 107.93</td><td><b>108.24</b></td></tr>
-<tr><td>8M</td><td>config</td><td class=runs>91.96 91.58 91.64 91.56 91.88 91.57 91.82 91.98 92.1</td><td><b>91.82</b></td></tr>
-<tr><td>16M</td><td>default</td><td class=runs>163.21 162.81 163.16 162.55 162.64 162.52 162.87 162.71 162.49</td><td><b>162.71</b></td></tr>
-<tr><td>16M</td><td>config</td><td class=runs>126.98 118.79 127.02 126.89 127.1 126.52 126.73 127.42 127.37</td><td><b>126.98</b></td></tr>
-<tr><td>32M</td><td>default</td><td class=runs>16.93 211.73 211.86 211.63 211.52 211.28 211.48 211.45 211.1</td><td><b>211.48</b></td></tr>
-<tr><td>32M</td><td>config</td><td class=runs>158.09 158.16 157.35 157.97 157.87 158.1 157.51 158.68 158.2</td><td><b>158.09</b></td></tr>
-<tr><td>64M</td><td>default</td><td class=runs>245.06 244.79 244.86 245.48 244.7 245.01 245.09 244.99 244.73</td><td><b>244.99</b></td></tr>
-<tr><td>64M</td><td>config</td><td class=runs>191.5 191.16 191.43 191.57 191.22 191.24 36.51 191.15 191.03</td><td><b>191.22</b></td></tr>
-<tr><td>128M</td><td>default</td><td class=runs>284.11 284.3 284.1 284.24 284.1 284.38 284.09 284.37 283.93</td><td><b>284.11</b></td></tr>
-<tr><td>128M</td><td>config</td><td class=runs>212.86 195.84 213.06 212.75 212.2 212.52 212.41 212.71 212.52</td><td><b>212.52</b></td></tr>
-<tr><td>256M</td><td>default</td><td class=runs>287.35 287.44 287.72 287.97 287.73 287.73 287.58 287.71 287.34</td><td><b>287.71</b></td></tr>
-<tr><td>256M</td><td>config</td><td class=runs>235.66 234.84 234.89 234.65 234.15 234.11 234.87 234.47 234.79</td><td><b>234.79</b></td></tr>
-<tr><td>512M</td><td>default</td><td class=runs>291.93 291.67 291.65 292.11 291.66 292.72 291.57 292.34 291.81</td><td><b>291.81</b></td></tr>
-<tr><td>512M</td><td>config</td><td class=runs>233.78 233.96 233.68 234.56 234.74 233.2 233.62 233.62 233.6</td><td><b>233.68</b></td></tr>
+<details><summary>raw A/B runs</summary><div class=tw><table class=fit><tr><th>size</th><th>arm</th><th>runs</th><th>median</th><th>mean</th><th>stddev</th><th>CV %</th></tr>
+<tr><td>4K</td><td>default</td><td class=runs>0.32 0.3 0.35 0.33 0.37 0.35 0.34 0.36 0.35</td><td><b>0.35</b></td><td>0.3411</td><td>0.0215</td><td>6.3</td></tr>
+<tr><td>4K</td><td>config</td><td class=runs>0.3 0.32 0.33 0.31 0.31 0.31 0.32 0.34 0.32</td><td><b>0.32</b></td><td>0.3178</td><td>0.012</td><td>3.8</td></tr>
+<tr><td>8K</td><td>default</td><td class=runs>0.72 0.67 0.75 0.74 0.69 0.63 0.64 0.65 0.7</td><td><b>0.69</b></td><td>0.6878</td><td>0.0435</td><td>6.3</td></tr>
+<tr><td>8K</td><td>config</td><td class=runs>0.58 0.65 0.61 0.59 0.53 0.58 0.65 0.65 0.64</td><td><b>0.61</b></td><td>0.6089</td><td>0.0423</td><td>6.9</td></tr>
+<tr><td>16K</td><td>default</td><td class=runs>1.14 1.12 1.15 1.18 1.17 1.12 1.09 1.12 1.12</td><td><b>1.12</b></td><td>1.134</td><td>0.0283</td><td>2.5</td></tr>
+<tr><td>16K</td><td>config</td><td class=runs>0.97 0.94 1.06 1.03 0.44 1.04 1.06 1.14 1.01</td><td><b>1.03</b></td><td>0.9656</td><td>0.205</td><td>21.3</td></tr>
+<tr><td>32K</td><td>default</td><td class=runs>2.41 2.2 2.28 2.32 2.39 2.29 2.16 2.13 2.37</td><td><b>2.29</b></td><td>2.283</td><td>0.101</td><td>4.4</td></tr>
+<tr><td>32K</td><td>config</td><td class=runs>2.14 1.71 1.98 1.97 1.85 1.78 2.18 2.19 1.9</td><td><b>1.97</b></td><td>1.967</td><td>0.175</td><td>8.9</td></tr>
+<tr><td>64K</td><td>default</td><td class=runs>3.65 3.7 3.72 3.7 3.69 3.66 3.7 3.62 3.71</td><td><b>3.7</b></td><td>3.683</td><td>0.0328</td><td>0.9</td></tr>
+<tr><td>64K</td><td>config</td><td class=runs>3.93 0.58 4.24 4.15 3.45 3.76 4.29 4.21 3.89</td><td><b>3.93</b></td><td>3.611</td><td>1.17</td><td>32.4</td></tr>
+<tr><td>128K</td><td>default</td><td class=runs>5.92 6.21 6.22 6.12 6.25 6.02 6.11 5.99 6.23</td><td><b>6.12</b></td><td>6.119</td><td>0.119</td><td>2.0</td></tr>
+<tr><td>128K</td><td>config</td><td class=runs>6.98 7.11 7.19 6.96 6.34 6.48 7.02 6.89 7.18</td><td><b>6.98</b></td><td>6.906</td><td>0.3</td><td>4.3</td></tr>
+<tr><td>256K</td><td>default</td><td class=runs>12.27 12.28 12.27 12.27 12.27 12.28 12.27 12.25 12.3</td><td><b>12.27</b></td><td>12.27</td><td>0.0132</td><td>0.1</td></tr>
+<tr><td>256K</td><td>config</td><td class=runs>13.79 13.39 14.0 12.87 12.4 12.81 13.34 14.24 13.24</td><td><b>13.34</b></td><td>13.34</td><td>0.596</td><td>4.5</td></tr>
+<tr><td>512K</td><td>default</td><td class=runs>9.82 9.78 9.82 9.81 9.79 9.78 9.83 9.76 9.79</td><td><b>9.79</b></td><td>9.798</td><td>0.0233</td><td>0.2</td></tr>
+<tr><td>512K</td><td>config</td><td class=runs>25.26 25.17 24.96 25.3 24.48 25.17 25.07 25.15 25.1</td><td><b>25.15</b></td><td>25.07</td><td>0.244</td><td>1.0</td></tr>
+<tr><td>1M</td><td>default</td><td class=runs>19.09 19.09 19.12 19.14 19.09 19.01 19.08 19.03 19.05</td><td><b>19.09</b></td><td>19.08</td><td>0.0415</td><td>0.2</td></tr>
+<tr><td>1M</td><td>config</td><td class=runs>38.83 38.1 37.37 37.13 38.73 37.39 38.28 37.71 38.04</td><td><b>38.04</b></td><td>37.95</td><td>0.602</td><td>1.6</td></tr>
+<tr><td>2M</td><td>default</td><td class=runs>37.18 37.07 37.21 37.21 37.14 37.13 37.03 37.09 37.0</td><td><b>37.13</b></td><td>37.12</td><td>0.076</td><td>0.2</td></tr>
+<tr><td>2M</td><td>config</td><td class=runs>57.79 57.82 57.39 57.59 16.76 57.9 57.5 57.92 57.8</td><td><b>57.79</b></td><td>53.16</td><td>13.7</td><td>25.7</td></tr>
+<tr><td>4M</td><td>default</td><td class=runs>65.17 65.27 65.69 65.69 65.26 65.49 65.07 65.2 65.31</td><td><b>65.27</b></td><td>65.35</td><td>0.224</td><td>0.3</td></tr>
+<tr><td>4M</td><td>config</td><td class=runs>73.93 73.73 73.96 73.82 74.09 73.96 73.73 73.79 73.94</td><td><b>73.93</b></td><td>73.88</td><td>0.122</td><td>0.2</td></tr>
+<tr><td>8M</td><td>default</td><td class=runs>108.49 108.39 108.49 108.24 108.12 108.33 108.18 108.05 107.93</td><td><b>108.24</b></td><td>108.2</td><td>0.195</td><td>0.2</td></tr>
+<tr><td>8M</td><td>config</td><td class=runs>91.96 91.58 91.64 91.56 91.88 91.57 91.82 91.98 92.1</td><td><b>91.82</b></td><td>91.79</td><td>0.206</td><td>0.2</td></tr>
+<tr><td>16M</td><td>default</td><td class=runs>163.21 162.81 163.16 162.55 162.64 162.52 162.87 162.71 162.49</td><td><b>162.71</b></td><td>162.8</td><td>0.266</td><td>0.2</td></tr>
+<tr><td>16M</td><td>config</td><td class=runs>126.98 118.79 127.02 126.89 127.1 126.52 126.73 127.42 127.37</td><td><b>126.98</b></td><td>126.1</td><td>2.75</td><td>2.2</td></tr>
+<tr><td>32M</td><td>default</td><td class=runs>16.93 211.73 211.86 211.63 211.52 211.28 211.48 211.45 211.1</td><td><b>211.48</b></td><td>189.9</td><td>64.9</td><td>34.2</td></tr>
+<tr><td>32M</td><td>config</td><td class=runs>158.09 158.16 157.35 157.97 157.87 158.1 157.51 158.68 158.2</td><td><b>158.09</b></td><td>158</td><td>0.391</td><td>0.2</td></tr>
+<tr><td>64M</td><td>default</td><td class=runs>245.06 244.79 244.86 245.48 244.7 245.01 245.09 244.99 244.73</td><td><b>244.99</b></td><td>245</td><td>0.24</td><td>0.1</td></tr>
+<tr><td>64M</td><td>config</td><td class=runs>191.5 191.16 191.43 191.57 191.22 191.24 36.51 191.15 191.03</td><td><b>191.22</b></td><td>174.1</td><td>51.6</td><td>29.6</td></tr>
+<tr><td>128M</td><td>default</td><td class=runs>284.11 284.3 284.1 284.24 284.1 284.38 284.09 284.37 283.93</td><td><b>284.11</b></td><td>284.2</td><td>0.151</td><td>0.1</td></tr>
+<tr><td>128M</td><td>config</td><td class=runs>212.86 195.84 213.06 212.75 212.2 212.52 212.41 212.71 212.52</td><td><b>212.52</b></td><td>210.8</td><td>5.6</td><td>2.7</td></tr>
+<tr><td>256M</td><td>default</td><td class=runs>287.35 287.44 287.72 287.97 287.73 287.73 287.58 287.71 287.34</td><td><b>287.71</b></td><td>287.6</td><td>0.209</td><td>0.1</td></tr>
+<tr><td>256M</td><td>config</td><td class=runs>235.66 234.84 234.89 234.65 234.15 234.11 234.87 234.47 234.79</td><td><b>234.79</b></td><td>234.7</td><td>0.463</td><td>0.2</td></tr>
+<tr><td>512M</td><td>default</td><td class=runs>291.93 291.67 291.65 292.11 291.66 292.72 291.57 292.34 291.81</td><td><b>291.81</b></td><td>291.9</td><td>0.385</td><td>0.1</td></tr>
+<tr><td>512M</td><td>config</td><td class=runs>233.78 233.96 233.68 234.56 234.74 233.2 233.62 233.62 233.6</td><td><b>233.68</b></td><td>233.9</td><td>0.491</td><td>0.2</td></tr>
 </table></div></details>
 <h2>2 nodes</h2>
 <p class=note>run <b>2026-08-24-2-stage3a</b> · search 66 runs vs grid 81 (&minus;18%), 22 configs, 16 min search · 9 A/B repeats/arm</p>
@@ -135,63 +135,63 @@ reduce,32768,262144,ring,ll128,1,2,16,-1,-1
 reduce,268435456,268435456,ring,simple,40,2,16,-1,-1
 reduce,536870912,536870912,ring,simple,32,2,16,-1,-1</pre>
 <h3>Per size (live A/B numbers)</h3>
-<div class=tw><table><tr><th>size</th><th>default executed</th><th>ours requested</th><th>ours executed</th><th>default med</th><th>ours med</th><th>gain</th><th>P(sup)</th><th>spread def / cfg</th><th>verdict</th></tr>
-<tr class=x><td>4K</td><td>RING/LL/1</td><td>RING/LL/4</td><td>RING/LL/1 (trimmed)</td><td>0.26</td><td>0.26</td><td class=n>+0.0%</td><td>0.43</td><td class=n>0.25-0.27 / 0.24-0.27</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
-<tr class=x><td>8K</td><td>RING/LL/1</td><td>RING/LL/1</td><td>RING/LL/1</td><td>0.54</td><td>0.52</td><td class=b>-3.7%</td><td>0.01</td><td class=n>0.53-0.54 / 0.44-0.53</td><td class=wrap>dropped: regression -3.7%</td></tr>
-<tr class=x><td>16K</td><td>RING/LL/1</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>0.89</td><td>0.91</td><td class=g>+2.2%</td><td>0.81</td><td class=n>0.85-0.9 / 0.79-0.94</td><td class=wrap>dropped: not reproducible (P 0.81)</td></tr>
-<tr class=v><td>32K</td><td>RING/LL/1</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>1.42</td><td>1.81</td><td class=g>+27.5%</td><td>1.00</td><td class=n>1.41-1.43 / 1.68-1.94</td><td class=wrap>KEPT</td></tr>
-<tr class=v><td>64K</td><td>RING/LL/2</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>1.55</td><td>3.32</td><td class=g>+114.2%</td><td>1.00</td><td class=n>1.53-1.56 / 3.18-3.37</td><td class=wrap>KEPT</td></tr>
-<tr class=v><td>128K</td><td>RING/LL/4</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>2.13</td><td>4.96</td><td class=g>+132.9%</td><td>1.00</td><td class=n>2.11-2.15 / 4.72-5.04</td><td class=wrap>KEPT</td></tr>
-<tr class=v><td>256K</td><td>RING/LL128/16</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>4.96</td><td>6.94</td><td class=g>+39.9%</td><td>1.00</td><td class=n>2.86-5.06 / 6.89-7.01</td><td class=wrap>KEPT</td></tr>
-<tr class=x><td>512K</td><td>RING/LL128/32</td><td>RING/LL128/32</td><td>RING/LL128/32</td><td>9.7</td><td>9.53</td><td class=n>-1.8%</td><td>0.00</td><td class=n>9.59-9.84 / 9.34-9.58</td><td class=wrap>dropped: no gain (-1.8%)</td></tr>
-<tr class=x><td>1M</td><td>RING/LL128/32</td><td>RING/LL128/32</td><td>RING/LL128/32</td><td>16.88</td><td>16.21</td><td class=b>-4.0%</td><td>0.00</td><td class=n>16.77-17.0 / 15.43-16.37</td><td class=wrap>dropped: regression -4.0%</td></tr>
-<tr class=x><td>2M</td><td>RING/LL128/43</td><td>RING/LL128/48</td><td>RING/LL128/43 (trimmed)</td><td>28.65</td><td>28.09</td><td class=n>-2.0%</td><td>0.22</td><td class=n>26.75-28.8 / 27.95-28.15</td><td class=wrap>dropped: no gain (-2.0%)</td></tr>
-<tr class=x><td>4M</td><td>RING/LL128/43</td><td>RING/LL128/40</td><td>RING/LL128/37 (trimmed)</td><td>43.32</td><td>41.55</td><td class=b>-4.1%</td><td>0.00</td><td class=n>43.23-43.44 / 39.33-41.83</td><td class=wrap>dropped: regression -4.1%</td></tr>
-<tr class=x><td>8M</td><td>RING/LL128/47</td><td>RING/LL128/48</td><td>RING/LL128/47 (trimmed)</td><td>74.69</td><td>72.16</td><td class=b>-3.4%</td><td>0.00</td><td class=n>74.13-74.87 / 71.89-72.56</td><td class=wrap>dropped: regression -3.4%</td></tr>
-<tr class=x><td>16M</td><td>RING/LL128/47</td><td>RING/LL128/40</td><td>RING/LL128/40</td><td>114.59</td><td>110.52</td><td class=b>-3.6%</td><td>0.00</td><td class=n>114.38-115.27 / 109.4-110.97</td><td class=wrap>dropped: regression -3.6%</td></tr>
-<tr class=x><td>32M</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>164.16</td><td>161.38</td><td class=n>-1.7%</td><td>0.02</td><td class=n>162.51-164.66 / 156.94-163.33</td><td class=wrap>dropped: no gain (-1.7%)</td></tr>
-<tr class=x><td>64M</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>207.22</td><td>206.44</td><td class=n>-0.4%</td><td>0.33</td><td class=n>193.26-208.54 / 202.32-208.1</td><td class=wrap>dropped: no gain (-0.4%)</td></tr>
-<tr class=x><td>128M</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>243.08</td><td>242.38</td><td class=n>-0.3%</td><td>0.19</td><td class=n>238.28-243.78 / 241.62-243.42</td><td class=wrap>dropped: no gain (-0.3%)</td></tr>
-<tr class=v><td>256M</td><td>RING/LL128/48</td><td>RING/SIMPLE/40</td><td>RING/SIMPLE/40</td><td>265.54</td><td>279.33</td><td class=g>+5.2%</td><td>1.00</td><td class=n>263.63-266.15 / 278.59-280.75</td><td class=wrap>KEPT</td></tr>
-<tr class=v><td>512M</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/32</td><td>RING/SIMPLE/32</td><td>287.43</td><td>295.09</td><td class=g>+2.7%</td><td>1.00</td><td class=n>286.65-288.55 / 294.53-295.92</td><td class=wrap>KEPT</td></tr>
+<div class=tw><table><tr><th>size</th><th>default executed</th><th>ours requested</th><th>ours executed</th><th>default med</th><th>ours med</th><th>gain</th><th>P(sup)</th><th>noise gate def / cfg</th><th>verdict</th></tr>
+<tr class=x><td>4K</td><td>RING/LL/1</td><td>RING/LL/4</td><td>RING/LL/1 (trimmed)</td><td>0.26</td><td>0.26</td><td class=n>+0.0%</td><td>0.43</td><td class='wrap n'><span class=n>CV 2.8%</span> / <span class=n>CV 4.4%</span></td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
+<tr class=x><td>8K</td><td>RING/LL/1</td><td>RING/LL/1</td><td>RING/LL/1</td><td>0.54</td><td>0.52</td><td class=b>-3.7%</td><td>0.01</td><td class='wrap n'><span class=n>CV 0.8%</span> / <span class=n>CV 5.6%</span></td><td class=wrap>dropped: regression -3.7%</td></tr>
+<tr class=x><td>16K</td><td>RING/LL/1</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>0.89</td><td>0.91</td><td class=g>+2.2%</td><td>0.81</td><td class='wrap n'><span class=n>CV 2.3%</span> / <span class=n>CV 5.1%</span></td><td class=wrap>dropped: not reproducible (P 0.81)</td></tr>
+<tr class=v><td>32K</td><td>RING/LL/1</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>1.42</td><td>1.81</td><td class=g>+27.5%</td><td>1.00</td><td class='wrap n'><span class=n>CV 0.7%</span> / <span class=n>CV 3.9%</span></td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>64K</td><td>RING/LL/2</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>1.55</td><td>3.32</td><td class=g>+114.2%</td><td>1.00</td><td class='wrap n'><span class=n>CV 0.7%</span> / <span class=n>CV 2.0%</span></td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>128K</td><td>RING/LL/4</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>2.13</td><td>4.96</td><td class=g>+132.9%</td><td>1.00</td><td class='wrap n'><span class=n>CV 0.5%</span> / <span class=n>CV 1.9%</span></td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>256K</td><td>RING/LL128/16</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>4.96</td><td>6.94</td><td class=g>+39.9%</td><td>1.00</td><td class='wrap n'><span class=warn>CV 14.9% &rarr; core 8/9 CV 1.2% (dips discarded)</span> / <span class=n>CV 0.5%</span></td><td class=wrap>KEPT</td></tr>
+<tr class=x><td>512K</td><td>RING/LL128/32</td><td>RING/LL128/32</td><td>RING/LL128/32</td><td>9.7</td><td>9.53</td><td class=n>-1.8%</td><td>0.00</td><td class='wrap n'><span class=n>CV 0.8%</span> / <span class=n>CV 0.9%</span></td><td class=wrap>dropped: no gain (-1.8%)</td></tr>
+<tr class=x><td>1M</td><td>RING/LL128/32</td><td>RING/LL128/32</td><td>RING/LL128/32</td><td>16.88</td><td>16.21</td><td class=b>-4.0%</td><td>0.00</td><td class='wrap n'><span class=n>CV 0.5%</span> / <span class=n>CV 1.8%</span></td><td class=wrap>dropped: regression -4.0%</td></tr>
+<tr class=x><td>2M</td><td>RING/LL128/43</td><td>RING/LL128/48</td><td>RING/LL128/43 (trimmed)</td><td>28.65</td><td>28.09</td><td class=n>-2.0%</td><td>0.22</td><td class='wrap n'><span class=n>CV 2.4%</span> / <span class=n>CV 0.3%</span></td><td class=wrap>dropped: no gain (-2.0%)</td></tr>
+<tr class=x><td>4M</td><td>RING/LL128/43</td><td>RING/LL128/40</td><td>RING/LL128/37 (trimmed)</td><td>43.32</td><td>41.55</td><td class=b>-4.1%</td><td>0.00</td><td class='wrap n'><span class=n>CV 0.2%</span> / <span class=n>CV 1.8%</span></td><td class=wrap>dropped: regression -4.1%</td></tr>
+<tr class=x><td>8M</td><td>RING/LL128/47</td><td>RING/LL128/48</td><td>RING/LL128/47 (trimmed)</td><td>74.69</td><td>72.16</td><td class=b>-3.4%</td><td>0.00</td><td class='wrap n'><span class=n>CV 0.3%</span> / <span class=n>CV 0.3%</span></td><td class=wrap>dropped: regression -3.4%</td></tr>
+<tr class=x><td>16M</td><td>RING/LL128/47</td><td>RING/LL128/40</td><td>RING/LL128/40</td><td>114.59</td><td>110.52</td><td class=b>-3.6%</td><td>0.00</td><td class='wrap n'><span class=n>CV 0.2%</span> / <span class=n>CV 0.4%</span></td><td class=wrap>dropped: regression -3.6%</td></tr>
+<tr class=x><td>32M</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>164.16</td><td>161.38</td><td class=n>-1.7%</td><td>0.02</td><td class='wrap n'><span class=n>CV 0.4%</span> / <span class=n>CV 1.1%</span></td><td class=wrap>dropped: no gain (-1.7%)</td></tr>
+<tr class=x><td>64M</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>207.22</td><td>206.44</td><td class=n>-0.4%</td><td>0.33</td><td class='wrap n'><span class=n>CV 2.3%</span> / <span class=n>CV 1.1%</span></td><td class=wrap>dropped: no gain (-0.4%)</td></tr>
+<tr class=x><td>128M</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>243.08</td><td>242.38</td><td class=n>-0.3%</td><td>0.19</td><td class='wrap n'><span class=n>CV 0.7%</span> / <span class=n>CV 0.2%</span></td><td class=wrap>dropped: no gain (-0.3%)</td></tr>
+<tr class=v><td>256M</td><td>RING/LL128/48</td><td>RING/SIMPLE/40</td><td>RING/SIMPLE/40</td><td>265.54</td><td>279.33</td><td class=g>+5.2%</td><td>1.00</td><td class='wrap n'><span class=n>CV 0.3%</span> / <span class=n>CV 0.3%</span></td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>512M</td><td>RING/SIMPLE/48</td><td>RING/SIMPLE/32</td><td>RING/SIMPLE/32</td><td>287.43</td><td>295.09</td><td class=g>+2.7%</td><td>1.00</td><td class='wrap n'><span class=n>CV 0.2%</span> / <span class=n>CV 0.2%</span></td><td class=wrap>KEPT</td></tr>
 </table></div>
-<details><summary>raw A/B runs</summary><div class=tw><table class=fit><tr><th>size</th><th>arm</th><th>runs</th><th>median</th></tr>
-<tr><td>4K</td><td>default</td><td class=runs>0.25 0.26 0.26 0.27 0.25 0.25 0.25 0.26 0.26</td><td><b>0.26</b></td></tr>
-<tr><td>4K</td><td>config</td><td class=runs>0.24 0.26 0.27 0.26 0.26 0.24 0.25 0.24 0.26</td><td><b>0.26</b></td></tr>
-<tr><td>8K</td><td>default</td><td class=runs>0.54 0.54 0.54 0.54 0.53 0.53 0.54 0.54 0.54</td><td><b>0.54</b></td></tr>
-<tr><td>8K</td><td>config</td><td class=runs>0.52 0.53 0.52 0.52 0.51 0.44 0.51 0.48 0.52</td><td><b>0.52</b></td></tr>
-<tr><td>16K</td><td>default</td><td class=runs>0.88 0.89 0.89 0.85 0.89 0.9 0.85 0.86 0.9</td><td><b>0.89</b></td></tr>
-<tr><td>16K</td><td>config</td><td class=runs>0.93 0.91 0.79 0.93 0.91 0.93 0.88 0.94 0.9</td><td><b>0.91</b></td></tr>
-<tr><td>32K</td><td>default</td><td class=runs>1.41 1.42 1.43 1.41 1.41 1.43 1.42 1.43 1.41</td><td><b>1.42</b></td></tr>
-<tr><td>32K</td><td>config</td><td class=runs>1.85 1.94 1.68 1.79 1.75 1.81 1.82 1.79 1.82</td><td><b>1.81</b></td></tr>
-<tr><td>64K</td><td>default</td><td class=runs>1.54 1.55 1.54 1.55 1.56 1.54 1.56 1.56 1.53</td><td><b>1.55</b></td></tr>
-<tr><td>64K</td><td>config</td><td class=runs>3.32 3.37 3.34 3.23 3.25 3.32 3.37 3.18 3.31</td><td><b>3.32</b></td></tr>
-<tr><td>128K</td><td>default</td><td class=runs>2.13 2.13 2.13 2.12 2.13 2.12 2.11 2.15 2.12</td><td><b>2.13</b></td></tr>
-<tr><td>128K</td><td>config</td><td class=runs>4.92 4.89 5.04 4.99 4.88 4.96 4.97 4.72 4.97</td><td><b>4.96</b></td></tr>
-<tr><td>256K</td><td>default</td><td class=runs>5.01 4.98 2.86 4.95 5.06 4.89 5.02 4.96 4.89</td><td><b>4.96</b></td></tr>
-<tr><td>256K</td><td>config</td><td class=runs>6.93 6.97 6.96 6.9 6.89 7.01 6.97 6.94 6.92</td><td><b>6.94</b></td></tr>
-<tr><td>512K</td><td>default</td><td class=runs>9.68 9.67 9.59 9.7 9.82 9.64 9.75 9.74 9.84</td><td><b>9.7</b></td></tr>
-<tr><td>512K</td><td>config</td><td class=runs>9.34 9.53 9.58 9.54 9.54 9.58 9.45 9.4 9.44</td><td><b>9.53</b></td></tr>
-<tr><td>1M</td><td>default</td><td class=runs>16.98 16.92 17.0 16.83 16.88 16.77 16.85 16.79 16.94</td><td><b>16.88</b></td></tr>
-<tr><td>1M</td><td>config</td><td class=runs>16.36 16.2 16.37 16.21 15.43 16.37 16.11 16.31 16.19</td><td><b>16.21</b></td></tr>
-<tr><td>2M</td><td>default</td><td class=runs>28.8 28.54 28.76 28.52 28.79 27.88 28.65 26.75 28.72</td><td><b>28.65</b></td></tr>
-<tr><td>2M</td><td>config</td><td class=runs>27.97 27.96 28.1 27.96 28.12 28.09 27.95 28.15 28.12</td><td><b>28.09</b></td></tr>
-<tr><td>4M</td><td>default</td><td class=runs>43.32 43.33 43.3 43.28 43.44 43.26 43.38 43.37 43.23</td><td><b>43.32</b></td></tr>
-<tr><td>4M</td><td>config</td><td class=runs>41.83 41.55 41.61 41.41 41.59 41.37 41.5 41.69 39.33</td><td><b>41.55</b></td></tr>
-<tr><td>8M</td><td>default</td><td class=runs>74.8 74.87 74.77 74.69 74.69 74.45 74.13 74.8 74.42</td><td><b>74.69</b></td></tr>
-<tr><td>8M</td><td>config</td><td class=runs>72.18 72.29 72.16 71.89 72.18 71.97 72.0 72.56 72.02</td><td><b>72.16</b></td></tr>
-<tr><td>16M</td><td>default</td><td class=runs>114.49 114.38 114.9 114.74 115.27 114.64 114.44 114.45 114.59</td><td><b>114.59</b></td></tr>
-<tr><td>16M</td><td>config</td><td class=runs>110.52 110.05 110.97 109.4 110.25 110.75 110.74 110.66 110.23</td><td><b>110.52</b></td></tr>
-<tr><td>32M</td><td>default</td><td class=runs>164.66 163.45 164.55 164.05 164.16 164.32 163.86 164.27 162.51</td><td><b>164.16</b></td></tr>
-<tr><td>32M</td><td>config</td><td class=runs>163.33 160.54 162.68 162.14 161.6 161.25 160.81 156.94 161.38</td><td><b>161.38</b></td></tr>
-<tr><td>64M</td><td>default</td><td class=runs>207.22 208.28 205.23 208.54 205.07 207.12 193.26 207.91 208.31</td><td><b>207.22</b></td></tr>
-<tr><td>64M</td><td>config</td><td class=runs>202.87 207.91 207.68 206.44 206.71 203.79 202.32 203.65 208.1</td><td><b>206.44</b></td></tr>
-<tr><td>128M</td><td>default</td><td class=runs>243.08 243.56 243.05 243.78 242.88 242.9 238.28 243.18 243.08</td><td><b>243.08</b></td></tr>
-<tr><td>128M</td><td>config</td><td class=runs>243.42 242.39 242.68 241.89 241.62 242.17 242.58 242.38 242.15</td><td><b>242.38</b></td></tr>
-<tr><td>256M</td><td>default</td><td class=runs>265.55 266.15 264.9 265.75 265.16 265.6 263.63 265.54 265.53</td><td><b>265.54</b></td></tr>
-<tr><td>256M</td><td>config</td><td class=runs>279.35 280.03 280.4 278.92 278.86 280.75 278.59 278.91 279.33</td><td><b>279.33</b></td></tr>
-<tr><td>512M</td><td>default</td><td class=runs>288.55 287.16 288.11 286.65 287.02 287.23 287.43 287.48 287.7</td><td><b>287.43</b></td></tr>
-<tr><td>512M</td><td>config</td><td class=runs>295.48 295.92 295.09 294.76 295.7 295.01 295.4 294.53 295.07</td><td><b>295.09</b></td></tr>
+<details><summary>raw A/B runs</summary><div class=tw><table class=fit><tr><th>size</th><th>arm</th><th>runs</th><th>median</th><th>mean</th><th>stddev</th><th>CV %</th></tr>
+<tr><td>4K</td><td>default</td><td class=runs>0.25 0.26 0.26 0.27 0.25 0.25 0.25 0.26 0.26</td><td><b>0.26</b></td><td>0.2567</td><td>0.00707</td><td>2.8</td></tr>
+<tr><td>4K</td><td>config</td><td class=runs>0.24 0.26 0.27 0.26 0.26 0.24 0.25 0.24 0.26</td><td><b>0.26</b></td><td>0.2533</td><td>0.0112</td><td>4.4</td></tr>
+<tr><td>8K</td><td>default</td><td class=runs>0.54 0.54 0.54 0.54 0.53 0.53 0.54 0.54 0.54</td><td><b>0.54</b></td><td>0.5378</td><td>0.00441</td><td>0.8</td></tr>
+<tr><td>8K</td><td>config</td><td class=runs>0.52 0.53 0.52 0.52 0.51 0.44 0.51 0.48 0.52</td><td><b>0.52</b></td><td>0.5056</td><td>0.0283</td><td>5.6</td></tr>
+<tr><td>16K</td><td>default</td><td class=runs>0.88 0.89 0.89 0.85 0.89 0.9 0.85 0.86 0.9</td><td><b>0.89</b></td><td>0.8789</td><td>0.0203</td><td>2.3</td></tr>
+<tr><td>16K</td><td>config</td><td class=runs>0.93 0.91 0.79 0.93 0.91 0.93 0.88 0.94 0.9</td><td><b>0.91</b></td><td>0.9022</td><td>0.046</td><td>5.1</td></tr>
+<tr><td>32K</td><td>default</td><td class=runs>1.41 1.42 1.43 1.41 1.41 1.43 1.42 1.43 1.41</td><td><b>1.42</b></td><td>1.419</td><td>0.00928</td><td>0.7</td></tr>
+<tr><td>32K</td><td>config</td><td class=runs>1.85 1.94 1.68 1.79 1.75 1.81 1.82 1.79 1.82</td><td><b>1.81</b></td><td>1.806</td><td>0.0706</td><td>3.9</td></tr>
+<tr><td>64K</td><td>default</td><td class=runs>1.54 1.55 1.54 1.55 1.56 1.54 1.56 1.56 1.53</td><td><b>1.55</b></td><td>1.548</td><td>0.0109</td><td>0.7</td></tr>
+<tr><td>64K</td><td>config</td><td class=runs>3.32 3.37 3.34 3.23 3.25 3.32 3.37 3.18 3.31</td><td><b>3.32</b></td><td>3.299</td><td>0.0653</td><td>2.0</td></tr>
+<tr><td>128K</td><td>default</td><td class=runs>2.13 2.13 2.13 2.12 2.13 2.12 2.11 2.15 2.12</td><td><b>2.13</b></td><td>2.127</td><td>0.0112</td><td>0.5</td></tr>
+<tr><td>128K</td><td>config</td><td class=runs>4.92 4.89 5.04 4.99 4.88 4.96 4.97 4.72 4.97</td><td><b>4.96</b></td><td>4.927</td><td>0.0922</td><td>1.9</td></tr>
+<tr><td>256K</td><td>default</td><td class=runs>5.01 4.98 2.86 4.95 5.06 4.89 5.02 4.96 4.89</td><td><b>4.96</b></td><td>4.736</td><td>0.706</td><td>14.9</td></tr>
+<tr><td>256K</td><td>config</td><td class=runs>6.93 6.97 6.96 6.9 6.89 7.01 6.97 6.94 6.92</td><td><b>6.94</b></td><td>6.943</td><td>0.0381</td><td>0.5</td></tr>
+<tr><td>512K</td><td>default</td><td class=runs>9.68 9.67 9.59 9.7 9.82 9.64 9.75 9.74 9.84</td><td><b>9.7</b></td><td>9.714</td><td>0.0816</td><td>0.8</td></tr>
+<tr><td>512K</td><td>config</td><td class=runs>9.34 9.53 9.58 9.54 9.54 9.58 9.45 9.4 9.44</td><td><b>9.53</b></td><td>9.489</td><td>0.0848</td><td>0.9</td></tr>
+<tr><td>1M</td><td>default</td><td class=runs>16.98 16.92 17.0 16.83 16.88 16.77 16.85 16.79 16.94</td><td><b>16.88</b></td><td>16.88</td><td>0.0814</td><td>0.5</td></tr>
+<tr><td>1M</td><td>config</td><td class=runs>16.36 16.2 16.37 16.21 15.43 16.37 16.11 16.31 16.19</td><td><b>16.21</b></td><td>16.17</td><td>0.294</td><td>1.8</td></tr>
+<tr><td>2M</td><td>default</td><td class=runs>28.8 28.54 28.76 28.52 28.79 27.88 28.65 26.75 28.72</td><td><b>28.65</b></td><td>28.38</td><td>0.674</td><td>2.4</td></tr>
+<tr><td>2M</td><td>config</td><td class=runs>27.97 27.96 28.1 27.96 28.12 28.09 27.95 28.15 28.12</td><td><b>28.09</b></td><td>28.05</td><td>0.084</td><td>0.3</td></tr>
+<tr><td>4M</td><td>default</td><td class=runs>43.32 43.33 43.3 43.28 43.44 43.26 43.38 43.37 43.23</td><td><b>43.32</b></td><td>43.32</td><td>0.0654</td><td>0.2</td></tr>
+<tr><td>4M</td><td>config</td><td class=runs>41.83 41.55 41.61 41.41 41.59 41.37 41.5 41.69 39.33</td><td><b>41.55</b></td><td>41.32</td><td>0.759</td><td>1.8</td></tr>
+<tr><td>8M</td><td>default</td><td class=runs>74.8 74.87 74.77 74.69 74.69 74.45 74.13 74.8 74.42</td><td><b>74.69</b></td><td>74.62</td><td>0.242</td><td>0.3</td></tr>
+<tr><td>8M</td><td>config</td><td class=runs>72.18 72.29 72.16 71.89 72.18 71.97 72.0 72.56 72.02</td><td><b>72.16</b></td><td>72.14</td><td>0.202</td><td>0.3</td></tr>
+<tr><td>16M</td><td>default</td><td class=runs>114.49 114.38 114.9 114.74 115.27 114.64 114.44 114.45 114.59</td><td><b>114.59</b></td><td>114.7</td><td>0.283</td><td>0.2</td></tr>
+<tr><td>16M</td><td>config</td><td class=runs>110.52 110.05 110.97 109.4 110.25 110.75 110.74 110.66 110.23</td><td><b>110.52</b></td><td>110.4</td><td>0.477</td><td>0.4</td></tr>
+<tr><td>32M</td><td>default</td><td class=runs>164.66 163.45 164.55 164.05 164.16 164.32 163.86 164.27 162.51</td><td><b>164.16</b></td><td>164</td><td>0.66</td><td>0.4</td></tr>
+<tr><td>32M</td><td>config</td><td class=runs>163.33 160.54 162.68 162.14 161.6 161.25 160.81 156.94 161.38</td><td><b>161.38</b></td><td>161.2</td><td>1.82</td><td>1.1</td></tr>
+<tr><td>64M</td><td>default</td><td class=runs>207.22 208.28 205.23 208.54 205.07 207.12 193.26 207.91 208.31</td><td><b>207.22</b></td><td>205.7</td><td>4.82</td><td>2.3</td></tr>
+<tr><td>64M</td><td>config</td><td class=runs>202.87 207.91 207.68 206.44 206.71 203.79 202.32 203.65 208.1</td><td><b>206.44</b></td><td>205.5</td><td>2.32</td><td>1.1</td></tr>
+<tr><td>128M</td><td>default</td><td class=runs>243.08 243.56 243.05 243.78 242.88 242.9 238.28 243.18 243.08</td><td><b>243.08</b></td><td>242.6</td><td>1.66</td><td>0.7</td></tr>
+<tr><td>128M</td><td>config</td><td class=runs>243.42 242.39 242.68 241.89 241.62 242.17 242.58 242.38 242.15</td><td><b>242.38</b></td><td>242.4</td><td>0.515</td><td>0.2</td></tr>
+<tr><td>256M</td><td>default</td><td class=runs>265.55 266.15 264.9 265.75 265.16 265.6 263.63 265.54 265.53</td><td><b>265.54</b></td><td>265.3</td><td>0.721</td><td>0.3</td></tr>
+<tr><td>256M</td><td>config</td><td class=runs>279.35 280.03 280.4 278.92 278.86 280.75 278.59 278.91 279.33</td><td><b>279.33</b></td><td>279.5</td><td>0.759</td><td>0.3</td></tr>
+<tr><td>512M</td><td>default</td><td class=runs>288.55 287.16 288.11 286.65 287.02 287.23 287.43 287.48 287.7</td><td><b>287.43</b></td><td>287.5</td><td>0.576</td><td>0.2</td></tr>
+<tr><td>512M</td><td>config</td><td class=runs>295.48 295.92 295.09 294.76 295.7 295.01 295.4 294.53 295.07</td><td><b>295.09</b></td><td>295.2</td><td>0.446</td><td>0.2</td></tr>
 </table></div></details>
 <h2>3 nodes</h2>
 <p class=note>run <b>2026-08-24-2-stage3a</b> · search 69 runs vs grid 81 (&minus;15%), 23 configs, 18 min search · 9 A/B repeats/arm</p>
@@ -220,63 +220,63 @@ reduce,32768,524288,ring,ll128,1,3,24,-1,-1
 reduce,4194304,4194304,ring,ll128,24,3,24,-1,-1
 reduce,536870912,536870912,ring,ll128,48,3,24,-1,-1</pre>
 <h3>Per size (live A/B numbers)</h3>
-<div class=tw><table><tr><th>size</th><th>default executed</th><th>ours requested</th><th>ours executed</th><th>default med</th><th>ours med</th><th>gain</th><th>P(sup)</th><th>spread def / cfg</th><th>verdict</th></tr>
-<tr class=x><td>4K</td><td>RING/LL/1</td><td>RING/LL/1</td><td>RING/LL/1</td><td>0.15</td><td>0.15</td><td class=n>+0.0%</td><td>0.39</td><td class=n>0.14-0.15 / 0.14-0.15</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
-<tr class=x><td>8K</td><td>RING/LL/1</td><td>RING/LL/1</td><td>RING/LL/1</td><td>0.29</td><td>0.29</td><td class=n>+0.0%</td><td>0.39</td><td class=n>0.28-0.29 / 0.28-0.29</td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
-<tr class=x><td>16K</td><td>RING/LL/1</td><td>RING/LL128/24</td><td>RING/LL128/1 (trimmed)</td><td>0.53</td><td>0.54</td><td class=n>+1.9%</td><td>0.85</td><td class=n>0.51-0.54 / 0.52-0.57</td><td class=wrap>dropped: no gain (+1.9%)</td></tr>
-<tr class=v><td>32K</td><td>RING/LL/1</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>0.91</td><td>1.07</td><td class=g>+17.6%</td><td>1.00</td><td class=n>0.9-0.91 / 1.04-1.09</td><td class=wrap>KEPT</td></tr>
-<tr class=v><td>64K</td><td>RING/LL/1</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>1.37</td><td>1.97</td><td class=g>+43.8%</td><td>1.00</td><td class=n>1.36-1.39 / 1.81-2.0</td><td class=wrap>KEPT</td></tr>
-<tr class=v><td>128K</td><td>RING/LL/2</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>1.57</td><td>3.3</td><td class=g>+110.2%</td><td>1.00</td><td class=n>1.54-1.58 / 3.26-3.36</td><td class=wrap>KEPT</td></tr>
-<tr class=v><td>256K</td><td>RING/LL/5</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>2.42</td><td>5.11</td><td class=g>+111.2%</td><td>1.00</td><td class=n>2.41-2.44 / 2.47-5.15</td><td class=wrap>KEPT</td></tr>
-<tr class=v><td>512K</td><td>RING/LL128/32</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>5.81</td><td>6.94</td><td class=g>+19.4%</td><td>1.00</td><td class=n>1.81-5.9 / 6.89-7.03</td><td class=wrap>KEPT</td></tr>
-<tr class=x><td>1M</td><td>RING/LL128/32</td><td>RING/LL128/32</td><td>RING/LL128/32</td><td>10.3</td><td>10.27</td><td class=n>-0.3%</td><td>0.26</td><td class=n>10.27-11.17 / 10.19-10.32</td><td class=wrap>dropped: no gain (-0.3%)</td></tr>
-<tr class=x><td>2M</td><td>RING/LL128/43</td><td>RING/LL128/48</td><td>RING/LL128/43 (trimmed)</td><td>17.98</td><td>17.93</td><td class=n>-0.3%</td><td>0.31</td><td class=n>17.13-18.13 / 17.85-18.0</td><td class=wrap>dropped: no gain (-0.3%)</td></tr>
-<tr class=v><td>4M</td><td>RING/LL128/43</td><td>RING/LL128/24</td><td>RING/LL128/24</td><td>27.73</td><td>28.52</td><td class=g>+2.8%</td><td>0.96</td><td class=n>27.66-27.87 / 27.77-29.65</td><td class=wrap>KEPT</td></tr>
-<tr class=x><td>8M</td><td>RING/LL128/47</td><td>RING/LL128/32</td><td>RING/LL128/32</td><td>49.74</td><td>49.69</td><td class=n>-0.1%</td><td>0.40</td><td class=n>49.55-49.9 / 48.94-50.82</td><td class=wrap>dropped: no gain (-0.1%)</td></tr>
-<tr class=x><td>16M</td><td>RING/LL128/47</td><td>RING/LL128/40</td><td>RING/LL128/40</td><td>81.81</td><td>81.92</td><td class=n>+0.1%</td><td>0.63</td><td class=n>79.69-82.11 / 79.84-82.59</td><td class=wrap>dropped: no gain (+0.1%)</td></tr>
-<tr class=x><td>32M</td><td>RING/LL128/48</td><td>RING/LL128/40</td><td>RING/LL128/40</td><td>127.88</td><td>126.13</td><td class=n>-1.4%</td><td>0.00</td><td class=n>127.65-128.17 / 125.26-126.77</td><td class=wrap>dropped: no gain (-1.4%)</td></tr>
-<tr class=x><td>64M</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>177.83</td><td>177.78</td><td class=n>-0.0%</td><td>0.49</td><td class=n>177.15-178.08 / 176.17-178.35</td><td class=wrap>dropped: no gain (-0.0%)</td></tr>
-<tr class=x><td>128M</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>220.61</td><td>220.38</td><td class=n>-0.1%</td><td>0.24</td><td class=n>220.42-221.72 / 210.78-221.6</td><td class=wrap>dropped: no gain (-0.1%)</td></tr>
-<tr class=x><td>256M</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>250.65</td><td>250.2</td><td class=n>-0.2%</td><td>0.23</td><td class=n>250.13-251.25 / 249.41-250.89</td><td class=wrap>dropped: no gain (-0.2%)</td></tr>
-<tr class=v><td>512M</td><td>RING/SIMPLE/48</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>256.88</td><td>275.76</td><td class=g>+7.3%</td><td>1.00</td><td class=n>256.1-257.39 / 266.35-276.73</td><td class=wrap>KEPT</td></tr>
+<div class=tw><table><tr><th>size</th><th>default executed</th><th>ours requested</th><th>ours executed</th><th>default med</th><th>ours med</th><th>gain</th><th>P(sup)</th><th>noise gate def / cfg</th><th>verdict</th></tr>
+<tr class=x><td>4K</td><td>RING/LL/1</td><td>RING/LL/1</td><td>RING/LL/1</td><td>0.15</td><td>0.15</td><td class=n>+0.0%</td><td>0.39</td><td class='wrap n'><span class=n>CV 2.2%</span> / <span class=n>CV 3.4%</span></td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
+<tr class=x><td>8K</td><td>RING/LL/1</td><td>RING/LL/1</td><td>RING/LL/1</td><td>0.29</td><td>0.29</td><td class=n>+0.0%</td><td>0.39</td><td class='wrap n'><span class=n>CV 1.5%</span> / <span class=n>CV 1.8%</span></td><td class=wrap>dropped: no gain (+0.0%)</td></tr>
+<tr class=x><td>16K</td><td>RING/LL/1</td><td>RING/LL128/24</td><td>RING/LL128/1 (trimmed)</td><td>0.53</td><td>0.54</td><td class=n>+1.9%</td><td>0.85</td><td class='wrap n'><span class=n>CV 1.7%</span> / <span class=n>CV 3.1%</span></td><td class=wrap>dropped: no gain (+1.9%)</td></tr>
+<tr class=v><td>32K</td><td>RING/LL/1</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>0.91</td><td>1.07</td><td class=g>+17.6%</td><td>1.00</td><td class='wrap n'><span class=n>CV 0.6%</span> / <span class=n>CV 1.4%</span></td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>64K</td><td>RING/LL/1</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>1.37</td><td>1.97</td><td class=g>+43.8%</td><td>1.00</td><td class='wrap n'><span class=n>CV 0.6%</span> / <span class=n>CV 3.1%</span></td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>128K</td><td>RING/LL/2</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>1.57</td><td>3.3</td><td class=g>+110.2%</td><td>1.00</td><td class='wrap n'><span class=n>CV 0.8%</span> / <span class=n>CV 1.0%</span></td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>256K</td><td>RING/LL/5</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>2.42</td><td>5.11</td><td class=g>+111.2%</td><td>1.00</td><td class='wrap n'><span class=n>CV 0.4%</span> / <span class=warn>CV 18.3% &rarr; core 8/9 CV 0.6% (dips discarded)</span></td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>512K</td><td>RING/LL128/32</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>5.81</td><td>6.94</td><td class=g>+19.4%</td><td>1.00</td><td class='wrap n'><span class=warn>CV 24.9% &rarr; core 8/9 CV 1.5% (dips discarded)</span> / <span class=n>CV 0.5%</span></td><td class=wrap>KEPT</td></tr>
+<tr class=x><td>1M</td><td>RING/LL128/32</td><td>RING/LL128/32</td><td>RING/LL128/32</td><td>10.3</td><td>10.27</td><td class=n>-0.3%</td><td>0.26</td><td class='wrap n'><span class=n>CV 2.8%</span> / <span class=n>CV 0.5%</span></td><td class=wrap>dropped: no gain (-0.3%)</td></tr>
+<tr class=x><td>2M</td><td>RING/LL128/43</td><td>RING/LL128/48</td><td>RING/LL128/43 (trimmed)</td><td>17.98</td><td>17.93</td><td class=n>-0.3%</td><td>0.31</td><td class='wrap n'><span class=n>CV 1.7%</span> / <span class=n>CV 0.3%</span></td><td class=wrap>dropped: no gain (-0.3%)</td></tr>
+<tr class=v><td>4M</td><td>RING/LL128/43</td><td>RING/LL128/24</td><td>RING/LL128/24</td><td>27.73</td><td>28.52</td><td class=g>+2.8%</td><td>0.96</td><td class='wrap n'><span class=n>CV 0.3%</span> / <span class=n>CV 1.7%</span></td><td class=wrap>KEPT</td></tr>
+<tr class=x><td>8M</td><td>RING/LL128/47</td><td>RING/LL128/32</td><td>RING/LL128/32</td><td>49.74</td><td>49.69</td><td class=n>-0.1%</td><td>0.40</td><td class='wrap n'><span class=n>CV 0.3%</span> / <span class=n>CV 1.0%</span></td><td class=wrap>dropped: no gain (-0.1%)</td></tr>
+<tr class=x><td>16M</td><td>RING/LL128/47</td><td>RING/LL128/40</td><td>RING/LL128/40</td><td>81.81</td><td>81.92</td><td class=n>+0.1%</td><td>0.63</td><td class='wrap n'><span class=n>CV 0.9%</span> / <span class=n>CV 1.2%</span></td><td class=wrap>dropped: no gain (+0.1%)</td></tr>
+<tr class=x><td>32M</td><td>RING/LL128/48</td><td>RING/LL128/40</td><td>RING/LL128/40</td><td>127.88</td><td>126.13</td><td class=n>-1.4%</td><td>0.00</td><td class='wrap n'><span class=n>CV 0.1%</span> / <span class=n>CV 0.3%</span></td><td class=wrap>dropped: no gain (-1.4%)</td></tr>
+<tr class=x><td>64M</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>177.83</td><td>177.78</td><td class=n>-0.0%</td><td>0.49</td><td class='wrap n'><span class=n>CV 0.2%</span> / <span class=n>CV 0.4%</span></td><td class=wrap>dropped: no gain (-0.0%)</td></tr>
+<tr class=x><td>128M</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>220.61</td><td>220.38</td><td class=n>-0.1%</td><td>0.24</td><td class='wrap n'><span class=n>CV 0.2%</span> / <span class=n>CV 1.5%</span></td><td class=wrap>dropped: no gain (-0.1%)</td></tr>
+<tr class=x><td>256M</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>250.65</td><td>250.2</td><td class=n>-0.2%</td><td>0.23</td><td class='wrap n'><span class=n>CV 0.2%</span> / <span class=n>CV 0.2%</span></td><td class=wrap>dropped: no gain (-0.2%)</td></tr>
+<tr class=v><td>512M</td><td>RING/SIMPLE/48</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>256.88</td><td>275.76</td><td class=g>+7.3%</td><td>1.00</td><td class='wrap n'><span class=n>CV 0.2%</span> / <span class=n>CV 1.2%</span></td><td class=wrap>KEPT</td></tr>
 </table></div>
-<details><summary>raw A/B runs</summary><div class=tw><table class=fit><tr><th>size</th><th>arm</th><th>runs</th><th>median</th></tr>
-<tr><td>4K</td><td>default</td><td class=runs>0.15 0.15 0.14 0.15 0.15 0.15 0.15 0.15 0.15</td><td><b>0.15</b></td></tr>
-<tr><td>4K</td><td>config</td><td class=runs>0.15 0.14 0.15 0.15 0.15 0.15 0.15 0.14 0.14</td><td><b>0.15</b></td></tr>
-<tr><td>8K</td><td>default</td><td class=runs>0.29 0.29 0.28 0.28 0.29 0.29 0.29 0.29 0.29</td><td><b>0.29</b></td></tr>
-<tr><td>8K</td><td>config</td><td class=runs>0.29 0.28 0.28 0.28 0.29 0.29 0.29 0.29 0.28</td><td><b>0.29</b></td></tr>
-<tr><td>16K</td><td>default</td><td class=runs>0.52 0.53 0.53 0.53 0.54 0.52 0.53 0.51 0.52</td><td><b>0.53</b></td></tr>
-<tr><td>16K</td><td>config</td><td class=runs>0.57 0.54 0.52 0.53 0.54 0.57 0.54 0.54 0.54</td><td><b>0.54</b></td></tr>
-<tr><td>32K</td><td>default</td><td class=runs>0.91 0.9 0.9 0.91 0.91 0.91 0.91 0.9 0.91</td><td><b>0.91</b></td></tr>
-<tr><td>32K</td><td>config</td><td class=runs>1.09 1.06 1.04 1.06 1.08 1.07 1.08 1.07 1.07</td><td><b>1.07</b></td></tr>
-<tr><td>64K</td><td>default</td><td class=runs>1.37 1.36 1.37 1.37 1.39 1.38 1.38 1.37 1.37</td><td><b>1.37</b></td></tr>
-<tr><td>64K</td><td>config</td><td class=runs>1.93 1.97 1.95 2.0 1.99 2.0 2.0 1.81 1.97</td><td><b>1.97</b></td></tr>
-<tr><td>128K</td><td>default</td><td class=runs>1.57 1.58 1.58 1.58 1.57 1.56 1.57 1.57 1.54</td><td><b>1.57</b></td></tr>
-<tr><td>128K</td><td>config</td><td class=runs>3.36 3.3 3.26 3.26 3.28 3.32 3.33 3.31 3.28</td><td><b>3.3</b></td></tr>
-<tr><td>256K</td><td>default</td><td class=runs>2.41 2.43 2.43 2.42 2.42 2.42 2.42 2.44 2.44</td><td><b>2.42</b></td></tr>
-<tr><td>256K</td><td>config</td><td class=runs>2.47 5.06 5.07 5.13 5.11 5.11 5.15 5.13 5.09</td><td><b>5.11</b></td></tr>
-<tr><td>512K</td><td>default</td><td class=runs>5.85 5.64 5.74 5.73 5.9 5.84 5.81 5.86 1.81</td><td><b>5.81</b></td></tr>
-<tr><td>512K</td><td>config</td><td class=runs>6.94 6.92 6.95 6.94 6.95 7.03 6.89 6.93 6.94</td><td><b>6.94</b></td></tr>
-<tr><td>1M</td><td>default</td><td class=runs>11.17 10.3 10.3 10.31 10.28 10.28 10.29 10.31 10.27</td><td><b>10.3</b></td></tr>
-<tr><td>1M</td><td>config</td><td class=runs>10.32 10.27 10.2 10.31 10.26 10.22 10.3 10.19 10.27</td><td><b>10.27</b></td></tr>
-<tr><td>2M</td><td>default</td><td class=runs>18.0 18.04 17.9 17.96 18.13 17.13 17.98 18.05 17.96</td><td><b>17.98</b></td></tr>
-<tr><td>2M</td><td>config</td><td class=runs>17.97 17.9 18.0 17.9 17.97 17.93 17.85 17.97 17.92</td><td><b>17.93</b></td></tr>
-<tr><td>4M</td><td>default</td><td class=runs>27.82 27.66 27.87 27.73 27.71 27.83 27.72 27.73 27.7</td><td><b>27.73</b></td></tr>
-<tr><td>4M</td><td>config</td><td class=runs>27.77 28.47 28.58 29.65 28.52 28.61 28.52 28.6 28.43</td><td><b>28.52</b></td></tr>
-<tr><td>8M</td><td>default</td><td class=runs>49.9 49.74 49.55 49.74 49.59 49.86 49.85 49.89 49.66</td><td><b>49.74</b></td></tr>
-<tr><td>8M</td><td>config</td><td class=runs>49.69 49.76 49.61 48.94 49.68 50.82 49.8 49.8 49.45</td><td><b>49.69</b></td></tr>
-<tr><td>16M</td><td>default</td><td class=runs>81.41 81.83 81.65 82.11 81.83 81.99 81.81 81.58 79.69</td><td><b>81.81</b></td></tr>
-<tr><td>16M</td><td>config</td><td class=runs>80.34 81.92 82.29 81.78 82.34 82.31 79.84 82.59 81.53</td><td><b>81.92</b></td></tr>
-<tr><td>32M</td><td>default</td><td class=runs>128.17 127.94 128.12 127.65 127.88 127.91 127.82 127.65 127.73</td><td><b>127.88</b></td></tr>
-<tr><td>32M</td><td>config</td><td class=runs>126.1 125.26 125.84 126.13 126.46 125.98 126.77 126.3 126.37</td><td><b>126.13</b></td></tr>
-<tr><td>64M</td><td>default</td><td class=runs>177.83 177.45 177.15 177.84 177.41 178.08 177.94 177.9 177.71</td><td><b>177.83</b></td></tr>
-<tr><td>64M</td><td>config</td><td class=runs>177.26 176.39 176.17 177.91 178.27 178.35 177.17 178.1 177.78</td><td><b>177.78</b></td></tr>
-<tr><td>128M</td><td>default</td><td class=runs>220.73 221.72 220.61 220.81 220.46 220.59 220.42 221.05 220.47</td><td><b>220.61</b></td></tr>
-<tr><td>128M</td><td>config</td><td class=runs>210.78 220.29 220.38 221.09 220.2 219.7 221.6 220.47 220.45</td><td><b>220.38</b></td></tr>
-<tr><td>256M</td><td>default</td><td class=runs>250.28 251.25 250.72 250.4 250.93 250.13 250.16 251.09 250.65</td><td><b>250.65</b></td></tr>
-<tr><td>256M</td><td>config</td><td class=runs>250.69 250.35 249.41 250.89 250.0 249.42 250.3 250.2 249.57</td><td><b>250.2</b></td></tr>
-<tr><td>512M</td><td>default</td><td class=runs>256.83 256.88 257.21 257.12 256.84 256.1 256.45 257.39 257.25</td><td><b>256.88</b></td></tr>
-<tr><td>512M</td><td>config</td><td class=runs>276.35 276.69 275.52 276.73 275.32 275.36 276.66 266.35 275.76</td><td><b>275.76</b></td></tr>
+<details><summary>raw A/B runs</summary><div class=tw><table class=fit><tr><th>size</th><th>arm</th><th>runs</th><th>median</th><th>mean</th><th>stddev</th><th>CV %</th></tr>
+<tr><td>4K</td><td>default</td><td class=runs>0.15 0.15 0.14 0.15 0.15 0.15 0.15 0.15 0.15</td><td><b>0.15</b></td><td>0.1489</td><td>0.00333</td><td>2.2</td></tr>
+<tr><td>4K</td><td>config</td><td class=runs>0.15 0.14 0.15 0.15 0.15 0.15 0.15 0.14 0.14</td><td><b>0.15</b></td><td>0.1467</td><td>0.005</td><td>3.4</td></tr>
+<tr><td>8K</td><td>default</td><td class=runs>0.29 0.29 0.28 0.28 0.29 0.29 0.29 0.29 0.29</td><td><b>0.29</b></td><td>0.2878</td><td>0.00441</td><td>1.5</td></tr>
+<tr><td>8K</td><td>config</td><td class=runs>0.29 0.28 0.28 0.28 0.29 0.29 0.29 0.29 0.28</td><td><b>0.29</b></td><td>0.2856</td><td>0.00527</td><td>1.8</td></tr>
+<tr><td>16K</td><td>default</td><td class=runs>0.52 0.53 0.53 0.53 0.54 0.52 0.53 0.51 0.52</td><td><b>0.53</b></td><td>0.5256</td><td>0.00882</td><td>1.7</td></tr>
+<tr><td>16K</td><td>config</td><td class=runs>0.57 0.54 0.52 0.53 0.54 0.57 0.54 0.54 0.54</td><td><b>0.54</b></td><td>0.5433</td><td>0.0166</td><td>3.1</td></tr>
+<tr><td>32K</td><td>default</td><td class=runs>0.91 0.9 0.9 0.91 0.91 0.91 0.91 0.9 0.91</td><td><b>0.91</b></td><td>0.9067</td><td>0.005</td><td>0.6</td></tr>
+<tr><td>32K</td><td>config</td><td class=runs>1.09 1.06 1.04 1.06 1.08 1.07 1.08 1.07 1.07</td><td><b>1.07</b></td><td>1.069</td><td>0.0145</td><td>1.4</td></tr>
+<tr><td>64K</td><td>default</td><td class=runs>1.37 1.36 1.37 1.37 1.39 1.38 1.38 1.37 1.37</td><td><b>1.37</b></td><td>1.373</td><td>0.00866</td><td>0.6</td></tr>
+<tr><td>64K</td><td>config</td><td class=runs>1.93 1.97 1.95 2.0 1.99 2.0 2.0 1.81 1.97</td><td><b>1.97</b></td><td>1.958</td><td>0.0606</td><td>3.1</td></tr>
+<tr><td>128K</td><td>default</td><td class=runs>1.57 1.58 1.58 1.58 1.57 1.56 1.57 1.57 1.54</td><td><b>1.57</b></td><td>1.569</td><td>0.0127</td><td>0.8</td></tr>
+<tr><td>128K</td><td>config</td><td class=runs>3.36 3.3 3.26 3.26 3.28 3.32 3.33 3.31 3.28</td><td><b>3.3</b></td><td>3.3</td><td>0.0335</td><td>1.0</td></tr>
+<tr><td>256K</td><td>default</td><td class=runs>2.41 2.43 2.43 2.42 2.42 2.42 2.42 2.44 2.44</td><td><b>2.42</b></td><td>2.426</td><td>0.0101</td><td>0.4</td></tr>
+<tr><td>256K</td><td>config</td><td class=runs>2.47 5.06 5.07 5.13 5.11 5.11 5.15 5.13 5.09</td><td><b>5.11</b></td><td>4.813</td><td>0.879</td><td>18.3</td></tr>
+<tr><td>512K</td><td>default</td><td class=runs>5.85 5.64 5.74 5.73 5.9 5.84 5.81 5.86 1.81</td><td><b>5.81</b></td><td>5.353</td><td>1.33</td><td>24.9</td></tr>
+<tr><td>512K</td><td>config</td><td class=runs>6.94 6.92 6.95 6.94 6.95 7.03 6.89 6.93 6.94</td><td><b>6.94</b></td><td>6.943</td><td>0.0374</td><td>0.5</td></tr>
+<tr><td>1M</td><td>default</td><td class=runs>11.17 10.3 10.3 10.31 10.28 10.28 10.29 10.31 10.27</td><td><b>10.3</b></td><td>10.39</td><td>0.293</td><td>2.8</td></tr>
+<tr><td>1M</td><td>config</td><td class=runs>10.32 10.27 10.2 10.31 10.26 10.22 10.3 10.19 10.27</td><td><b>10.27</b></td><td>10.26</td><td>0.0474</td><td>0.5</td></tr>
+<tr><td>2M</td><td>default</td><td class=runs>18.0 18.04 17.9 17.96 18.13 17.13 17.98 18.05 17.96</td><td><b>17.98</b></td><td>17.91</td><td>0.298</td><td>1.7</td></tr>
+<tr><td>2M</td><td>config</td><td class=runs>17.97 17.9 18.0 17.9 17.97 17.93 17.85 17.97 17.92</td><td><b>17.93</b></td><td>17.93</td><td>0.0472</td><td>0.3</td></tr>
+<tr><td>4M</td><td>default</td><td class=runs>27.82 27.66 27.87 27.73 27.71 27.83 27.72 27.73 27.7</td><td><b>27.73</b></td><td>27.75</td><td>0.0703</td><td>0.3</td></tr>
+<tr><td>4M</td><td>config</td><td class=runs>27.77 28.47 28.58 29.65 28.52 28.61 28.52 28.6 28.43</td><td><b>28.52</b></td><td>28.57</td><td>0.48</td><td>1.7</td></tr>
+<tr><td>8M</td><td>default</td><td class=runs>49.9 49.74 49.55 49.74 49.59 49.86 49.85 49.89 49.66</td><td><b>49.74</b></td><td>49.75</td><td>0.131</td><td>0.3</td></tr>
+<tr><td>8M</td><td>config</td><td class=runs>49.69 49.76 49.61 48.94 49.68 50.82 49.8 49.8 49.45</td><td><b>49.69</b></td><td>49.73</td><td>0.49</td><td>1.0</td></tr>
+<tr><td>16M</td><td>default</td><td class=runs>81.41 81.83 81.65 82.11 81.83 81.99 81.81 81.58 79.69</td><td><b>81.81</b></td><td>81.54</td><td>0.726</td><td>0.9</td></tr>
+<tr><td>16M</td><td>config</td><td class=runs>80.34 81.92 82.29 81.78 82.34 82.31 79.84 82.59 81.53</td><td><b>81.92</b></td><td>81.66</td><td>0.955</td><td>1.2</td></tr>
+<tr><td>32M</td><td>default</td><td class=runs>128.17 127.94 128.12 127.65 127.88 127.91 127.82 127.65 127.73</td><td><b>127.88</b></td><td>127.9</td><td>0.186</td><td>0.1</td></tr>
+<tr><td>32M</td><td>config</td><td class=runs>126.1 125.26 125.84 126.13 126.46 125.98 126.77 126.3 126.37</td><td><b>126.13</b></td><td>126.1</td><td>0.429</td><td>0.3</td></tr>
+<tr><td>64M</td><td>default</td><td class=runs>177.83 177.45 177.15 177.84 177.41 178.08 177.94 177.9 177.71</td><td><b>177.83</b></td><td>177.7</td><td>0.302</td><td>0.2</td></tr>
+<tr><td>64M</td><td>config</td><td class=runs>177.26 176.39 176.17 177.91 178.27 178.35 177.17 178.1 177.78</td><td><b>177.78</b></td><td>177.5</td><td>0.798</td><td>0.4</td></tr>
+<tr><td>128M</td><td>default</td><td class=runs>220.73 221.72 220.61 220.81 220.46 220.59 220.42 221.05 220.47</td><td><b>220.61</b></td><td>220.8</td><td>0.411</td><td>0.2</td></tr>
+<tr><td>128M</td><td>config</td><td class=runs>210.78 220.29 220.38 221.09 220.2 219.7 221.6 220.47 220.45</td><td><b>220.38</b></td><td>219.4</td><td>3.29</td><td>1.5</td></tr>
+<tr><td>256M</td><td>default</td><td class=runs>250.28 251.25 250.72 250.4 250.93 250.13 250.16 251.09 250.65</td><td><b>250.65</b></td><td>250.6</td><td>0.409</td><td>0.2</td></tr>
+<tr><td>256M</td><td>config</td><td class=runs>250.69 250.35 249.41 250.89 250.0 249.42 250.3 250.2 249.57</td><td><b>250.2</b></td><td>250.1</td><td>0.538</td><td>0.2</td></tr>
+<tr><td>512M</td><td>default</td><td class=runs>256.83 256.88 257.21 257.12 256.84 256.1 256.45 257.39 257.25</td><td><b>256.88</b></td><td>256.9</td><td>0.412</td><td>0.2</td></tr>
+<tr><td>512M</td><td>config</td><td class=runs>276.35 276.69 275.52 276.73 275.32 275.36 276.66 266.35 275.76</td><td><b>275.76</b></td><td>275</td><td>3.28</td><td>1.2</td></tr>
 </table></div></details>
 <h2>4 nodes</h2>
 <p class=note>run <b>2026-08-24-1-stage4n</b> · search 75 runs vs grid 81 (&minus;7%), 25 configs, 20 min search · 9 A/B repeats/arm</p>
@@ -304,122 +304,122 @@ reduce,536870912,536870912,ring,ll128,48,3,24,-1,-1</pre>
 reduce,65536,524288,ring,ll128,1,4,32,-1,-1
 reduce,4194304,4194304,ring,ll128,24,4,32,-1,-1</pre>
 <h3>Per size (live A/B numbers)</h3>
-<div class=tw><table><tr><th>size</th><th>default executed</th><th>ours requested</th><th>ours executed</th><th>default med</th><th>ours med</th><th>gain</th><th>P(sup)</th><th>spread def / cfg</th><th>verdict</th></tr>
-<tr class=x><td>4K</td><td>RING/LL/1</td><td>RING/LL/2</td><td>RING/LL/1</td><td>0.23</td><td>0.21</td><td class=b>-8.7%</td><td>0.30</td><td class=n>0.01-0.23 / 0.06-0.23</td><td class=wrap>dropped: preflight: every size in range unmeasura</td></tr>
-<tr class=x><td>8K</td><td>RING/LL/1</td><td>RING/LL128/8</td><td>RING/LL128/1</td><td>0.45</td><td>0.43</td><td class=b>-4.4%</td><td>0.29</td><td class=n>0.33-0.46 / 0.3-0.45</td><td class=wrap>dropped: preflight: every size in range unmeasura</td></tr>
-<tr class=x><td>16K</td><td>RING/LL/1</td><td>RING/LL128/4</td><td>RING/LL128/1</td><td>0.76</td><td>0.78</td><td class=g>+2.6%</td><td>0.74</td><td class=n>0.55-0.8 / 0.63-0.86</td><td class=wrap>dropped: no gain (+1.3%)</td></tr>
-<tr class=x><td>32K</td><td>RING/LL/1</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>1.23</td><td>1.48</td><td class=g>+20.3%</td><td>0.72</td><td class=n>1.01-1.25 / 0.8-1.64</td><td class=wrap>dropped: not reproducible (P 0.67)</td></tr>
-<tr class=v><td>64K</td><td>RING/LL/1</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>1.72</td><td>2.75</td><td class=g>+59.9%</td><td>1.00</td><td class=n>1.48-1.75 / 2.29-2.94</td><td class=wrap>KEPT</td></tr>
-<tr class=v><td>128K</td><td>RING/LL/2</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>1.53</td><td>4.24</td><td class=g>+177.1%</td><td>1.00</td><td class=n>1.45-1.54 / 3.62-4.5</td><td class=wrap>KEPT</td></tr>
-<tr class=v><td>256K</td><td>RING/LL/4</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>2.07</td><td>6.27</td><td class=g>+202.9%</td><td>1.00</td><td class=n>2.0-2.1 / 5.53-6.35</td><td class=wrap>KEPT</td></tr>
-<tr class=v><td>512K</td><td>RING/LL128/32</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>5.04</td><td>7.92</td><td class=g>+57.1%</td><td>1.00</td><td class=n>4.88-5.19 / 7.32-8.17</td><td class=wrap>KEPT</td></tr>
-<tr class=x><td>1M</td><td>RING/LL128/32</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>8.83</td><td>8.84</td><td class=n>+0.1%</td><td>0.67</td><td class=n>8.46-8.94 / 8.79-9.35</td><td class=wrap>dropped: no gain (-0.3%)</td></tr>
-<tr class=x><td>2M</td><td>RING/LL128/43</td><td>RING/LL128/48</td><td>RING/LL128/43</td><td>15.41</td><td>15.58</td><td class=n>+1.1%</td><td>0.81</td><td class=n>14.75-15.61 / 15.0-15.82</td><td class=wrap>dropped: no gain (+1.1%)</td></tr>
-<tr class=v><td>4M</td><td>RING/LL128/43</td><td>RING/LL128/24</td><td>RING/LL128/24</td><td>23.53</td><td>24.28</td><td class=g>+3.2%</td><td>1.00</td><td class=n>22.98-23.72 / 24.08-24.33</td><td class=wrap>KEPT</td></tr>
-<tr class=x><td>8M</td><td>RING/LL128/47</td><td>RING/LL128/32</td><td>RING/LL128/32</td><td>42.98</td><td>42.66</td><td class=n>-0.7%</td><td>0.22</td><td class=n>42.42-43.19 / 37.68-43.01</td><td class=wrap>dropped: no gain (-0.7%)</td></tr>
-<tr class=x><td>16M</td><td>RING/LL128/47</td><td>RING/LL128/40</td><td>RING/LL128/40</td><td>71.73</td><td>72.3</td><td class=n>+0.8%</td><td>0.79</td><td class=n>63.88-71.93 / 68.97-73.58</td><td class=wrap>dropped: no gain (+0.9%)</td></tr>
-<tr class=x><td>32M</td><td>RING/LL128/48</td><td>RING/LL128/40</td><td>RING/LL128/40</td><td>112.91</td><td>114.65</td><td class=n>+1.5%</td><td>0.88</td><td class=n>109.82-114.31 / 113.13-114.96</td><td class=wrap>dropped: no gain (+1.6%)</td></tr>
-<tr class=x><td>64M</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>163.65</td><td>163.91</td><td class=n>+0.2%</td><td>0.62</td><td class=n>145.75-164.24 / 161.71-165.12</td><td class=wrap>dropped: no gain (+0.1%)</td></tr>
-<tr class=x><td>128M</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>209.01</td><td>209.18</td><td class=n>+0.1%</td><td>0.61</td><td class=n>208.3-209.66 / 207.96-209.74</td><td class=wrap>dropped: no gain (+0.1%)</td></tr>
-<tr class=x><td>256M</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>244.26</td><td>243.94</td><td class=n>-0.1%</td><td>0.51</td><td class=n>243.12-244.88 / 243.2-244.99</td><td class=wrap>dropped: no gain (-0.1%)</td></tr>
-<tr class=x><td>512M</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>272.31</td><td>271.75</td><td class=n>-0.2%</td><td>0.14</td><td class=n>271.72-272.85 / 271.48-272.34</td><td class=wrap>dropped: no gain (-0.2%)</td></tr>
+<div class=tw><table><tr><th>size</th><th>default executed</th><th>ours requested</th><th>ours executed</th><th>default med</th><th>ours med</th><th>gain</th><th>P(sup)</th><th>noise gate def / cfg</th><th>verdict</th></tr>
+<tr class=x><td>4K</td><td>RING/LL/1</td><td>RING/LL/2</td><td>RING/LL/1</td><td>0.23</td><td>0.21</td><td class=b>-8.7%</td><td>0.30</td><td class='wrap n'><span class=b>CV 37.4%, no clean core - NOISY</span> / <span class=b>CV 28.6%, no clean core - NOISY</span></td><td class=wrap>dropped: preflight: every size in range unmeasura</td></tr>
+<tr class=x><td>8K</td><td>RING/LL/1</td><td>RING/LL128/8</td><td>RING/LL128/1</td><td>0.45</td><td>0.43</td><td class=b>-4.4%</td><td>0.29</td><td class='wrap n'><span class=b>CV 14.3%, no clean core - NOISY</span> / <span class=b>CV 15.8%, no clean core - NOISY</span></td><td class=wrap>dropped: preflight: every size in range unmeasura</td></tr>
+<tr class=x><td>16K</td><td>RING/LL/1</td><td>RING/LL128/4</td><td>RING/LL128/1</td><td>0.76</td><td>0.78</td><td class=g>+2.6%</td><td>0.74</td><td class='wrap n'><span class=warn>CV 12.4% &rarr; core 7/9 CV 4.2% (dips discarded)</span> / <span class=b>CV 10.2%, no clean core - NOISY</span></td><td class=wrap>dropped: no gain (+1.3%)</td></tr>
+<tr class=x><td>32K</td><td>RING/LL/1</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>1.23</td><td>1.48</td><td class=g>+20.3%</td><td>0.72</td><td class='wrap n'><span class=warn>CV 8.0% &rarr; core 7/9 CV 1.0% (dips discarded)</span> / <span class=b>CV 21.1%, no clean core - NOISY</span></td><td class=wrap>dropped: not reproducible (P 0.67)</td></tr>
+<tr class=v><td>64K</td><td>RING/LL/1</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>1.72</td><td>2.75</td><td class=g>+59.9%</td><td>1.00</td><td class='wrap n'><span class=n>CV 7.3%</span> / <span class=b>CV 8.5%, no clean core - NOISY</span></td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>128K</td><td>RING/LL/2</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>1.53</td><td>4.24</td><td class=g>+177.1%</td><td>1.00</td><td class='wrap n'><span class=n>CV 1.9%</span> / <span class=n>CV 7.8%</span></td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>256K</td><td>RING/LL/4</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>2.07</td><td>6.27</td><td class=g>+202.9%</td><td>1.00</td><td class='wrap n'><span class=n>CV 1.8%</span> / <span class=n>CV 6.1%</span></td><td class=wrap>KEPT</td></tr>
+<tr class=v><td>512K</td><td>RING/LL128/32</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>5.04</td><td>7.92</td><td class=g>+57.1%</td><td>1.00</td><td class='wrap n'><span class=n>CV 2.2%</span> / <span class=n>CV 4.7%</span></td><td class=wrap>KEPT</td></tr>
+<tr class=x><td>1M</td><td>RING/LL128/32</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>8.83</td><td>8.84</td><td class=n>+0.1%</td><td>0.67</td><td class='wrap n'><span class=n>CV 1.6%</span> / <span class=n>CV 2.9%</span></td><td class=wrap>dropped: no gain (-0.3%)</td></tr>
+<tr class=x><td>2M</td><td>RING/LL128/43</td><td>RING/LL128/48</td><td>RING/LL128/43</td><td>15.41</td><td>15.58</td><td class=n>+1.1%</td><td>0.81</td><td class='wrap n'><span class=n>CV 2.0%</span> / <span class=n>CV 1.5%</span></td><td class=wrap>dropped: no gain (+1.1%)</td></tr>
+<tr class=v><td>4M</td><td>RING/LL128/43</td><td>RING/LL128/24</td><td>RING/LL128/24</td><td>23.53</td><td>24.28</td><td class=g>+3.2%</td><td>1.00</td><td class='wrap n'><span class=n>CV 1.1%</span> / <span class=n>CV 0.4%</span></td><td class=wrap>KEPT</td></tr>
+<tr class=x><td>8M</td><td>RING/LL128/47</td><td>RING/LL128/32</td><td>RING/LL128/32</td><td>42.98</td><td>42.66</td><td class=n>-0.7%</td><td>0.22</td><td class='wrap n'><span class=n>CV 0.6%</span> / <span class=n>CV 4.0%</span></td><td class=wrap>dropped: no gain (-0.7%)</td></tr>
+<tr class=x><td>16M</td><td>RING/LL128/47</td><td>RING/LL128/40</td><td>RING/LL128/40</td><td>71.73</td><td>72.3</td><td class=n>+0.8%</td><td>0.79</td><td class='wrap n'><span class=n>CV 3.8%</span> / <span class=n>CV 2.0%</span></td><td class=wrap>dropped: no gain (+0.9%)</td></tr>
+<tr class=x><td>32M</td><td>RING/LL128/48</td><td>RING/LL128/40</td><td>RING/LL128/40</td><td>112.91</td><td>114.65</td><td class=n>+1.5%</td><td>0.88</td><td class='wrap n'><span class=n>CV 1.2%</span> / <span class=n>CV 0.5%</span></td><td class=wrap>dropped: no gain (+1.6%)</td></tr>
+<tr class=x><td>64M</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>163.65</td><td>163.91</td><td class=n>+0.2%</td><td>0.62</td><td class='wrap n'><span class=n>CV 3.7%</span> / <span class=n>CV 0.6%</span></td><td class=wrap>dropped: no gain (+0.1%)</td></tr>
+<tr class=x><td>128M</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>209.01</td><td>209.18</td><td class=n>+0.1%</td><td>0.61</td><td class='wrap n'><span class=n>CV 0.2%</span> / <span class=n>CV 0.3%</span></td><td class=wrap>dropped: no gain (+0.1%)</td></tr>
+<tr class=x><td>256M</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>244.26</td><td>243.94</td><td class=n>-0.1%</td><td>0.51</td><td class='wrap n'><span class=n>CV 0.2%</span> / <span class=n>CV 0.3%</span></td><td class=wrap>dropped: no gain (-0.1%)</td></tr>
+<tr class=x><td>512M</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>272.31</td><td>271.75</td><td class=n>-0.2%</td><td>0.14</td><td class='wrap n'><span class=n>CV 0.1%</span> / <span class=n>CV 0.1%</span></td><td class=wrap>dropped: no gain (-0.2%)</td></tr>
 </table></div>
-<details><summary>raw A/B runs</summary><div class=tw><table class=fit><tr><th>size</th><th>arm</th><th>runs</th><th>median</th></tr>
-<tr><td>4K</td><td>default</td><td class=runs>0.23 0.16 0.23 0.22 0.01 0.22 0.23 0.23 0.23</td><td><b>0.23</b></td></tr>
-<tr><td>4K</td><td>config</td><td class=runs>0.21 0.22 0.06 0.22 0.17 0.21 0.23 0.22 0.16</td><td><b>0.21</b></td></tr>
-<tr><td>8K</td><td>default</td><td class=runs>0.33 0.45 0.45 0.44 0.45 0.45 0.46 0.34 0.33</td><td><b>0.45</b></td></tr>
-<tr><td>8K</td><td>config</td><td class=runs>0.33 0.44 0.45 0.44 0.4 0.3 0.44 0.43 0.31</td><td><b>0.43</b></td></tr>
-<tr><td>16K</td><td>default</td><td class=runs>0.76 0.78 0.77 0.55 0.74 0.7 0.59 0.8 0.77</td><td><b>0.76</b></td></tr>
-<tr><td>16K</td><td>config</td><td class=runs>0.78 0.83 0.82 0.78 0.65 0.77 0.86 0.63 0.79</td><td><b>0.78</b></td></tr>
-<tr><td>32K</td><td>default</td><td class=runs>1.03 1.01 1.23 1.25 1.24 1.21 1.24 1.24 1.23</td><td><b>1.23</b></td></tr>
-<tr><td>32K</td><td>config</td><td class=runs>1.64 1.54 1.16 1.64 1.26 1.64 0.8 1.48 1.19</td><td><b>1.48</b></td></tr>
-<tr><td>64K</td><td>default</td><td class=runs>1.72 1.72 1.48 1.73 1.75 1.7 1.49 1.73 1.49</td><td><b>1.72</b></td></tr>
-<tr><td>64K</td><td>config</td><td class=runs>2.31 2.86 2.75 2.7 2.94 2.77 2.29 2.78 2.61</td><td><b>2.75</b></td></tr>
-<tr><td>128K</td><td>default</td><td class=runs>1.54 1.53 1.52 1.53 1.51 1.45 1.54 1.53 1.5</td><td><b>1.53</b></td></tr>
-<tr><td>128K</td><td>config</td><td class=runs>4.26 3.65 4.24 4.24 3.62 3.81 4.31 4.5 4.31</td><td><b>4.24</b></td></tr>
-<tr><td>256K</td><td>default</td><td class=runs>2.02 2.09 2.06 2.09 2.07 2.1 2.09 2.03 2.0</td><td><b>2.07</b></td></tr>
-<tr><td>256K</td><td>config</td><td class=runs>5.61 6.27 6.35 6.32 6.21 5.53 6.28 6.34 5.54</td><td><b>6.27</b></td></tr>
-<tr><td>512K</td><td>default</td><td class=runs>5.17 5.04 4.88 4.91 5.03 5.04 5.19 5.04 5.16</td><td><b>5.04</b></td></tr>
-<tr><td>512K</td><td>config</td><td class=runs>7.4 7.99 7.39 8.03 7.92 7.42 7.32 8.17 8.15</td><td><b>7.92</b></td></tr>
-<tr><td>1M</td><td>default</td><td class=runs>8.74 8.85 8.76 8.91 8.83 8.46 8.94 8.82 8.9</td><td><b>8.83</b></td></tr>
-<tr><td>1M</td><td>config</td><td class=runs>8.81 8.81 9.33 9.29 8.79 9.35 8.84 8.83 9.24</td><td><b>8.84</b></td></tr>
-<tr><td>2M</td><td>default</td><td class=runs>15.29 14.75 15.61 15.47 15.41 14.94 15.42 15.5 14.94</td><td><b>15.41</b></td></tr>
-<tr><td>2M</td><td>config</td><td class=runs>15.0 15.66 15.51 15.58 15.59 15.82 15.56 15.68 15.36</td><td><b>15.58</b></td></tr>
-<tr><td>4M</td><td>default</td><td class=runs>23.12 23.62 23.54 23.64 23.53 22.98 23.52 23.72 23.53</td><td><b>23.53</b></td></tr>
-<tr><td>4M</td><td>config</td><td class=runs>24.28 24.33 24.08 24.2 24.26 24.08 24.33 24.3 24.28</td><td><b>24.28</b></td></tr>
-<tr><td>8M</td><td>default</td><td class=runs>43.16 42.98 43.11 42.72 42.42 43.02 42.62 42.92 43.19</td><td><b>42.98</b></td></tr>
-<tr><td>8M</td><td>config</td><td class=runs>41.31 42.77 43.01 42.01 42.93 42.74 37.68 42.59 42.66</td><td><b>42.66</b></td></tr>
-<tr><td>16M</td><td>default</td><td class=runs>71.53 71.76 71.93 63.88 68.74 71.93 71.73 71.89 71.52</td><td><b>71.73</b></td></tr>
-<tr><td>16M</td><td>config</td><td class=runs>73.58 72.3 70.6 68.97 73.29 72.9 72.45 71.88 71.99</td><td><b>72.3</b></td></tr>
-<tr><td>32M</td><td>default</td><td class=runs>113.67 114.31 112.76 114.16 112.54 109.82 112.91 113.87 112.56</td><td><b>112.91</b></td></tr>
-<tr><td>32M</td><td>config</td><td class=runs>113.84 114.8 114.65 113.87 113.13 114.49 114.81 114.96 114.82</td><td><b>114.65</b></td></tr>
-<tr><td>64M</td><td>default</td><td class=runs>163.75 162.71 164.24 145.75 162.28 163.65 164.1 163.94 163.29</td><td><b>163.65</b></td></tr>
-<tr><td>64M</td><td>config</td><td class=runs>163.63 164.31 162.46 164.44 163.93 163.91 161.71 163.63 165.12</td><td><b>163.91</b></td></tr>
-<tr><td>128M</td><td>default</td><td class=runs>209.15 208.95 209.66 209.01 208.5 209.16 208.98 209.07 208.3</td><td><b>209.01</b></td></tr>
-<tr><td>128M</td><td>config</td><td class=runs>209.6 209.18 208.43 209.4 209.74 208.95 207.96 209.02 209.34</td><td><b>209.18</b></td></tr>
-<tr><td>256M</td><td>default</td><td class=runs>244.83 244.31 244.88 243.12 244.26 244.54 244.16 243.75 243.83</td><td><b>244.26</b></td></tr>
-<tr><td>256M</td><td>config</td><td class=runs>243.94 244.67 244.99 244.83 243.47 243.91 243.2 243.7 244.99</td><td><b>243.94</b></td></tr>
-<tr><td>512M</td><td>default</td><td class=runs>271.85 271.72 272.67 272.31 272.54 272.85 272.82 272.08 272.29</td><td><b>272.31</b></td></tr>
-<tr><td>512M</td><td>config</td><td class=runs>271.76 272.34 271.67 272.14 271.75 271.48 271.64 271.71 271.75</td><td><b>271.75</b></td></tr>
+<details><summary>raw A/B runs</summary><div class=tw><table class=fit><tr><th>size</th><th>arm</th><th>runs</th><th>median</th><th>mean</th><th>stddev</th><th>CV %</th></tr>
+<tr><td>4K</td><td>default</td><td class=runs>0.23 0.16 0.23 0.22 0.01 0.22 0.23 0.23 0.23</td><td><b>0.23</b></td><td>0.1956</td><td>0.0732</td><td>37.4</td></tr>
+<tr><td>4K</td><td>config</td><td class=runs>0.21 0.22 0.06 0.22 0.17 0.21 0.23 0.22 0.16</td><td><b>0.21</b></td><td>0.1889</td><td>0.054</td><td>28.6</td></tr>
+<tr><td>8K</td><td>default</td><td class=runs>0.33 0.45 0.45 0.44 0.45 0.45 0.46 0.34 0.33</td><td><b>0.45</b></td><td>0.4111</td><td>0.0586</td><td>14.3</td></tr>
+<tr><td>8K</td><td>config</td><td class=runs>0.33 0.44 0.45 0.44 0.4 0.3 0.44 0.43 0.31</td><td><b>0.43</b></td><td>0.3933</td><td>0.062</td><td>15.8</td></tr>
+<tr><td>16K</td><td>default</td><td class=runs>0.76 0.78 0.77 0.55 0.74 0.7 0.59 0.8 0.77</td><td><b>0.76</b></td><td>0.7178</td><td>0.0889</td><td>12.4</td></tr>
+<tr><td>16K</td><td>config</td><td class=runs>0.78 0.83 0.82 0.78 0.65 0.77 0.86 0.63 0.79</td><td><b>0.78</b></td><td>0.7678</td><td>0.0781</td><td>10.2</td></tr>
+<tr><td>32K</td><td>default</td><td class=runs>1.03 1.01 1.23 1.25 1.24 1.21 1.24 1.24 1.23</td><td><b>1.23</b></td><td>1.187</td><td>0.0953</td><td>8.0</td></tr>
+<tr><td>32K</td><td>config</td><td class=runs>1.64 1.54 1.16 1.64 1.26 1.64 0.8 1.48 1.19</td><td><b>1.48</b></td><td>1.372</td><td>0.29</td><td>21.1</td></tr>
+<tr><td>64K</td><td>default</td><td class=runs>1.72 1.72 1.48 1.73 1.75 1.7 1.49 1.73 1.49</td><td><b>1.72</b></td><td>1.646</td><td>0.12</td><td>7.3</td></tr>
+<tr><td>64K</td><td>config</td><td class=runs>2.31 2.86 2.75 2.7 2.94 2.77 2.29 2.78 2.61</td><td><b>2.75</b></td><td>2.668</td><td>0.228</td><td>8.5</td></tr>
+<tr><td>128K</td><td>default</td><td class=runs>1.54 1.53 1.52 1.53 1.51 1.45 1.54 1.53 1.5</td><td><b>1.53</b></td><td>1.517</td><td>0.0283</td><td>1.9</td></tr>
+<tr><td>128K</td><td>config</td><td class=runs>4.26 3.65 4.24 4.24 3.62 3.81 4.31 4.5 4.31</td><td><b>4.24</b></td><td>4.104</td><td>0.322</td><td>7.8</td></tr>
+<tr><td>256K</td><td>default</td><td class=runs>2.02 2.09 2.06 2.09 2.07 2.1 2.09 2.03 2.0</td><td><b>2.07</b></td><td>2.061</td><td>0.0362</td><td>1.8</td></tr>
+<tr><td>256K</td><td>config</td><td class=runs>5.61 6.27 6.35 6.32 6.21 5.53 6.28 6.34 5.54</td><td><b>6.27</b></td><td>6.05</td><td>0.37</td><td>6.1</td></tr>
+<tr><td>512K</td><td>default</td><td class=runs>5.17 5.04 4.88 4.91 5.03 5.04 5.19 5.04 5.16</td><td><b>5.04</b></td><td>5.051</td><td>0.109</td><td>2.2</td></tr>
+<tr><td>512K</td><td>config</td><td class=runs>7.4 7.99 7.39 8.03 7.92 7.42 7.32 8.17 8.15</td><td><b>7.92</b></td><td>7.754</td><td>0.362</td><td>4.7</td></tr>
+<tr><td>1M</td><td>default</td><td class=runs>8.74 8.85 8.76 8.91 8.83 8.46 8.94 8.82 8.9</td><td><b>8.83</b></td><td>8.801</td><td>0.144</td><td>1.6</td></tr>
+<tr><td>1M</td><td>config</td><td class=runs>8.81 8.81 9.33 9.29 8.79 9.35 8.84 8.83 9.24</td><td><b>8.84</b></td><td>9.032</td><td>0.258</td><td>2.9</td></tr>
+<tr><td>2M</td><td>default</td><td class=runs>15.29 14.75 15.61 15.47 15.41 14.94 15.42 15.5 14.94</td><td><b>15.41</b></td><td>15.26</td><td>0.304</td><td>2.0</td></tr>
+<tr><td>2M</td><td>config</td><td class=runs>15.0 15.66 15.51 15.58 15.59 15.82 15.56 15.68 15.36</td><td><b>15.58</b></td><td>15.53</td><td>0.235</td><td>1.5</td></tr>
+<tr><td>4M</td><td>default</td><td class=runs>23.12 23.62 23.54 23.64 23.53 22.98 23.52 23.72 23.53</td><td><b>23.53</b></td><td>23.47</td><td>0.248</td><td>1.1</td></tr>
+<tr><td>4M</td><td>config</td><td class=runs>24.28 24.33 24.08 24.2 24.26 24.08 24.33 24.3 24.28</td><td><b>24.28</b></td><td>24.24</td><td>0.0976</td><td>0.4</td></tr>
+<tr><td>8M</td><td>default</td><td class=runs>43.16 42.98 43.11 42.72 42.42 43.02 42.62 42.92 43.19</td><td><b>42.98</b></td><td>42.9</td><td>0.264</td><td>0.6</td></tr>
+<tr><td>8M</td><td>config</td><td class=runs>41.31 42.77 43.01 42.01 42.93 42.74 37.68 42.59 42.66</td><td><b>42.66</b></td><td>41.97</td><td>1.69</td><td>4.0</td></tr>
+<tr><td>16M</td><td>default</td><td class=runs>71.53 71.76 71.93 63.88 68.74 71.93 71.73 71.89 71.52</td><td><b>71.73</b></td><td>70.55</td><td>2.7</td><td>3.8</td></tr>
+<tr><td>16M</td><td>config</td><td class=runs>73.58 72.3 70.6 68.97 73.29 72.9 72.45 71.88 71.99</td><td><b>72.3</b></td><td>72</td><td>1.43</td><td>2.0</td></tr>
+<tr><td>32M</td><td>default</td><td class=runs>113.67 114.31 112.76 114.16 112.54 109.82 112.91 113.87 112.56</td><td><b>112.91</b></td><td>113</td><td>1.36</td><td>1.2</td></tr>
+<tr><td>32M</td><td>config</td><td class=runs>113.84 114.8 114.65 113.87 113.13 114.49 114.81 114.96 114.82</td><td><b>114.65</b></td><td>114.4</td><td>0.622</td><td>0.5</td></tr>
+<tr><td>64M</td><td>default</td><td class=runs>163.75 162.71 164.24 145.75 162.28 163.65 164.1 163.94 163.29</td><td><b>163.65</b></td><td>161.5</td><td>5.95</td><td>3.7</td></tr>
+<tr><td>64M</td><td>config</td><td class=runs>163.63 164.31 162.46 164.44 163.93 163.91 161.71 163.63 165.12</td><td><b>163.91</b></td><td>163.7</td><td>1.03</td><td>0.6</td></tr>
+<tr><td>128M</td><td>default</td><td class=runs>209.15 208.95 209.66 209.01 208.5 209.16 208.98 209.07 208.3</td><td><b>209.01</b></td><td>209</td><td>0.392</td><td>0.2</td></tr>
+<tr><td>128M</td><td>config</td><td class=runs>209.6 209.18 208.43 209.4 209.74 208.95 207.96 209.02 209.34</td><td><b>209.18</b></td><td>209.1</td><td>0.568</td><td>0.3</td></tr>
+<tr><td>256M</td><td>default</td><td class=runs>244.83 244.31 244.88 243.12 244.26 244.54 244.16 243.75 243.83</td><td><b>244.26</b></td><td>244.2</td><td>0.559</td><td>0.2</td></tr>
+<tr><td>256M</td><td>config</td><td class=runs>243.94 244.67 244.99 244.83 243.47 243.91 243.2 243.7 244.99</td><td><b>243.94</b></td><td>244.2</td><td>0.689</td><td>0.3</td></tr>
+<tr><td>512M</td><td>default</td><td class=runs>271.85 271.72 272.67 272.31 272.54 272.85 272.82 272.08 272.29</td><td><b>272.31</b></td><td>272.3</td><td>0.408</td><td>0.1</td></tr>
+<tr><td>512M</td><td>config</td><td class=runs>271.76 272.34 271.67 272.14 271.75 271.48 271.64 271.71 271.75</td><td><b>271.75</b></td><td>271.8</td><td>0.266</td><td>0.1</td></tr>
 </table></div></details>
 <h2>5 nodes</h2>
 <p class=note>run <b>2026-08-25-1-stage5n</b> · search 72 runs vs grid 81 (&minus;11%), 24 configs, 20 min search · 9 A/B repeats/arm</p>
 <h3>Per size (live A/B numbers - run VOIDED, <span class=b>no verdicts issued</span>)</h3>
-<div class=tw><table><tr><th>size</th><th>default executed</th><th>ours requested</th><th>ours executed</th><th>default med</th><th>ours med</th><th>gain</th><th>P(sup)</th><th>spread def / cfg</th><th>verdict</th></tr>
-<tr ><td>4K</td><td>RING/LL/1</td><td>RING/LL/2</td><td>RING/LL/1 (trimmed)</td><td>0.13</td><td>0.13</td><td class=n>+0.0%</td><td>0.54</td><td class=n>0.1-0.14 / 0.01-0.14</td><td class=wrap>no rule</td></tr>
-<tr ><td>8K</td><td>RING/LL/1</td><td>RING/LL128/16</td><td>RING/LL128/1 (trimmed)</td><td>0.26</td><td>0.25</td><td class=b>-3.8%</td><td>0.31</td><td class=n>0.12-0.28 / 0.11-0.27</td><td class=wrap>no rule</td></tr>
-<tr ><td>16K</td><td>RING/LL/1</td><td>RING/LL128/8</td><td>RING/LL128/1 (trimmed)</td><td>0.48</td><td>0.51</td><td class=g>+6.2%</td><td>0.68</td><td class=n>0.26-0.51 / 0.05-0.53</td><td class=wrap>no rule</td></tr>
-<tr ><td>32K</td><td>RING/LL/1</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>0.86</td><td>1.0</td><td class=g>+16.3%</td><td>0.89</td><td class=n>0.75-0.87 / 0.04-1.03</td><td class=wrap>no rule</td></tr>
-<tr ><td>64K</td><td>RING/LL/1</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>1.29</td><td>1.87</td><td class=g>+45.0%</td><td>0.85</td><td class=n>0.83-1.33 / 1.02-1.9</td><td class=wrap>no rule</td></tr>
-<tr ><td>128K</td><td>RING/LL/1</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>1.79</td><td>3.07</td><td class=g>+71.5%</td><td>0.89</td><td class=n>1.73-1.8 / 0.07-3.18</td><td class=wrap>no rule</td></tr>
-<tr ><td>256K</td><td>RING/LL/3</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>1.57</td><td>4.91</td><td class=g>+212.7%</td><td>1.00</td><td class=n>1.44-1.57 / 2.95-4.96</td><td class=wrap>no rule</td></tr>
-<tr ><td>512K</td><td>RING/LL/6</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>3.0</td><td>6.79</td><td class=g>+126.3%</td><td>1.00</td><td class=n>2.46-3.03 / 6.63-6.85</td><td class=wrap>no rule</td></tr>
-<tr ><td>1M</td><td>RING/LL128/32</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>6.77</td><td>8.17</td><td class=g>+20.7%</td><td>0.89</td><td class=n>5.12-6.89 / 3.21-8.32</td><td class=wrap>no rule</td></tr>
-<tr ><td>2M</td><td>RING/LL128/43</td><td>RING/LL128/48</td><td>RING/LL128/43 (trimmed)</td><td>12.18</td><td>12.09</td><td class=n>-0.7%</td><td>0.26</td><td class=n>11.53-12.34 / 10.38-12.21</td><td class=wrap>no rule</td></tr>
-<tr ><td>4M</td><td>RING/LL128/43</td><td>RING/LL128/24</td><td>RING/LL128/24</td><td>19.18</td><td>18.22</td><td class=b>-5.0%</td><td>0.16</td><td class=n>18.19-19.4 / 16.08-19.18</td><td class=wrap>no rule</td></tr>
-<tr ><td>8M</td><td>RING/LL128/47</td><td>RING/LL128/32</td><td>RING/LL128/32</td><td>34.78</td><td>34.01</td><td class=b>-2.2%</td><td>0.21</td><td class=n>33.1-35.32 / 26.5-34.73</td><td class=wrap>no rule</td></tr>
-<tr ><td>16M</td><td>RING/LL128/47</td><td>RING/LL128/48</td><td>RING/LL128/47 (trimmed)</td><td>60.67</td><td>58.56</td><td class=b>-3.5%</td><td>0.15</td><td class=n>57.55-60.83 / 15.39-60.45</td><td class=wrap>no rule</td></tr>
-<tr ><td>32M</td><td>RING/LL128/48</td><td>RING/LL128/40</td><td>RING/LL128/40</td><td>98.72</td><td>97.67</td><td class=n>-1.1%</td><td>0.25</td><td class=n>93.08-99.37 / 95.43-98.04</td><td class=wrap>no rule</td></tr>
-<tr ><td>64M</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>144.76</td><td>145.01</td><td class=n>+0.2%</td><td>0.60</td><td class=n>140.58-146.16 / 141.86-145.65</td><td class=wrap>no rule</td></tr>
-<tr ><td>128M</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>192.88</td><td>193.05</td><td class=n>+0.1%</td><td>0.51</td><td class=n>189.6-193.27 / 188.7-193.73</td><td class=wrap>no rule</td></tr>
-<tr ><td>256M</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>230.85</td><td>231.09</td><td class=n>+0.1%</td><td>0.63</td><td class=n>82.77-231.89 / 230.52-231.54</td><td class=wrap>no rule</td></tr>
-<tr ><td>512M</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>262.77</td><td>262.89</td><td class=n>+0.0%</td><td>0.56</td><td class=n>170.91-263.79 / 252.48-263.94</td><td class=wrap>no rule</td></tr>
+<div class=tw><table><tr><th>size</th><th>default executed</th><th>ours requested</th><th>ours executed</th><th>default med</th><th>ours med</th><th>gain</th><th>P(sup)</th><th>noise gate def / cfg</th><th>verdict</th></tr>
+<tr ><td>4K</td><td>RING/LL/1</td><td>RING/LL/2</td><td>RING/LL/1 (trimmed)</td><td>0.13</td><td>0.13</td><td class=n>+0.0%</td><td>0.54</td><td class='wrap n'><span class=warn>CV 8.6% &rarr; core 8/9 CV 2.7% (dips discarded)</span> / <span class=warn>CV 44.8% &rarr; core 7/9 CV 5.9% (dips discarded)</span></td><td class=wrap>no rule</td></tr>
+<tr ><td>8K</td><td>RING/LL/1</td><td>RING/LL128/16</td><td>RING/LL128/1 (trimmed)</td><td>0.26</td><td>0.25</td><td class=b>-3.8%</td><td>0.31</td><td class='wrap n'><span class=b>CV 21.7%, no clean core - NOISY</span> / <span class=b>CV 30.3%, no clean core - NOISY</span></td><td class=wrap>no rule</td></tr>
+<tr ><td>16K</td><td>RING/LL/1</td><td>RING/LL128/8</td><td>RING/LL128/1 (trimmed)</td><td>0.48</td><td>0.51</td><td class=g>+6.2%</td><td>0.68</td><td class='wrap n'><span class=warn>CV 17.0% &rarr; core 8/9 CV 5.5% (dips discarded)</span> / <span class=warn>CV 34.6% &rarr; core 7/9 CV 3.2% (dips discarded)</span></td><td class=wrap>no rule</td></tr>
+<tr ><td>32K</td><td>RING/LL/1</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>0.86</td><td>1.0</td><td class=g>+16.3%</td><td>0.89</td><td class='wrap n'><span class=n>CV 4.9%</span> / <span class=warn>CV 36.0% &rarr; core 8/9 CV 3.2% (dips discarded)</span></td><td class=wrap>no rule</td></tr>
+<tr ><td>64K</td><td>RING/LL/1</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>1.29</td><td>1.87</td><td class=g>+45.0%</td><td>0.85</td><td class='wrap n'><span class=warn>CV 12.7% &rarr; core 8/9 CV 2.5% (dips discarded)</span> / <span class=b>CV 18.8%, no clean core - NOISY</span></td><td class=wrap>no rule</td></tr>
+<tr ><td>128K</td><td>RING/LL/1</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>1.79</td><td>3.07</td><td class=g>+71.5%</td><td>0.89</td><td class='wrap n'><span class=n>CV 1.7%</span> / <span class=b>CV 39.1%, no clean core - NOISY</span></td><td class=wrap>no rule</td></tr>
+<tr ><td>256K</td><td>RING/LL/3</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>1.57</td><td>4.91</td><td class=g>+212.7%</td><td>1.00</td><td class='wrap n'><span class=n>CV 2.7%</span> / <span class=warn>CV 13.9% &rarr; core 7/9 CV 2.4% (dips discarded)</span></td><td class=wrap>no rule</td></tr>
+<tr ><td>512K</td><td>RING/LL/6</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>3.0</td><td>6.79</td><td class=g>+126.3%</td><td>1.00</td><td class='wrap n'><span class=n>CV 6.2%</span> / <span class=n>CV 0.9%</span></td><td class=wrap>no rule</td></tr>
+<tr ><td>1M</td><td>RING/LL128/32</td><td>RING/LL128/1</td><td>RING/LL128/1</td><td>6.77</td><td>8.17</td><td class=g>+20.7%</td><td>0.89</td><td class='wrap n'><span class=warn>CV 10.2% &rarr; core 7/9 CV 3.3% (dips discarded)</span> / <span class=warn>CV 21.8% &rarr; core 8/9 CV 3.0% (dips discarded)</span></td><td class=wrap>no rule</td></tr>
+<tr ><td>2M</td><td>RING/LL128/43</td><td>RING/LL128/48</td><td>RING/LL128/43 (trimmed)</td><td>12.18</td><td>12.09</td><td class=n>-0.7%</td><td>0.26</td><td class='wrap n'><span class=n>CV 2.6%</span> / <span class=n>CV 6.5%</span></td><td class=wrap>no rule</td></tr>
+<tr ><td>4M</td><td>RING/LL128/43</td><td>RING/LL128/24</td><td>RING/LL128/24</td><td>19.18</td><td>18.22</td><td class=b>-5.0%</td><td>0.16</td><td class='wrap n'><span class=n>CV 2.5%</span> / <span class=n>CV 5.1%</span></td><td class=wrap>no rule</td></tr>
+<tr ><td>8M</td><td>RING/LL128/47</td><td>RING/LL128/32</td><td>RING/LL128/32</td><td>34.78</td><td>34.01</td><td class=b>-2.2%</td><td>0.21</td><td class='wrap n'><span class=n>CV 2.4%</span> / <span class=n>CV 7.8%</span></td><td class=wrap>no rule</td></tr>
+<tr ><td>16M</td><td>RING/LL128/47</td><td>RING/LL128/48</td><td>RING/LL128/47 (trimmed)</td><td>60.67</td><td>58.56</td><td class=b>-3.5%</td><td>0.15</td><td class='wrap n'><span class=n>CV 1.9%</span> / <span class=warn>CV 26.9% &rarr; core 8/9 CV 2.3% (dips discarded)</span></td><td class=wrap>no rule</td></tr>
+<tr ><td>32M</td><td>RING/LL128/48</td><td>RING/LL128/40</td><td>RING/LL128/40</td><td>98.72</td><td>97.67</td><td class=n>-1.1%</td><td>0.25</td><td class='wrap n'><span class=n>CV 2.0%</span> / <span class=n>CV 1.1%</span></td><td class=wrap>no rule</td></tr>
+<tr ><td>64M</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>144.76</td><td>145.01</td><td class=n>+0.2%</td><td>0.60</td><td class='wrap n'><span class=n>CV 1.4%</span> / <span class=n>CV 1.0%</span></td><td class=wrap>no rule</td></tr>
+<tr ><td>128M</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>192.88</td><td>193.05</td><td class=n>+0.1%</td><td>0.51</td><td class='wrap n'><span class=n>CV 0.6%</span> / <span class=n>CV 1.1%</span></td><td class=wrap>no rule</td></tr>
+<tr ><td>256M</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>230.85</td><td>231.09</td><td class=n>+0.1%</td><td>0.63</td><td class='wrap n'><span class=warn>CV 23.0% &rarr; core 7/9 CV 0.8% (dips discarded)</span> / <span class=n>CV 0.1%</span></td><td class=wrap>no rule</td></tr>
+<tr ><td>512M</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>RING/LL128/48</td><td>262.77</td><td>262.89</td><td class=n>+0.0%</td><td>0.56</td><td class='wrap n'><span class=b>CV 12.1%, no clean core - NOISY</span> / <span class=n>CV 1.3%</span></td><td class=wrap>no rule</td></tr>
 </table></div>
-<details><summary>raw A/B runs</summary><div class=tw><table class=fit><tr><th>size</th><th>arm</th><th>runs</th><th>median</th></tr>
-<tr><td>4K</td><td>default</td><td class=runs>0.14 0.13 0.1 0.13 0.13 0.13 0.13 0.13 0.13</td><td><b>0.13</b></td></tr>
-<tr><td>4K</td><td>config</td><td class=runs>0.13 0.14 0.04 0.01 0.13 0.14 0.14 0.12 0.14</td><td><b>0.13</b></td></tr>
-<tr><td>8K</td><td>default</td><td class=runs>0.28 0.26 0.12 0.2 0.27 0.28 0.25 0.26 0.28</td><td><b>0.26</b></td></tr>
-<tr><td>8K</td><td>config</td><td class=runs>0.27 0.27 0.17 0.11 0.25 0.27 0.25 0.12 0.25</td><td><b>0.25</b></td></tr>
-<tr><td>16K</td><td>default</td><td class=runs>0.48 0.49 0.46 0.51 0.26 0.51 0.48 0.43 0.49</td><td><b>0.48</b></td></tr>
-<tr><td>16K</td><td>config</td><td class=runs>0.48 0.52 0.53 0.05 0.52 0.39 0.51 0.51 0.5</td><td><b>0.51</b></td></tr>
-<tr><td>32K</td><td>default</td><td class=runs>0.86 0.81 0.87 0.86 0.86 0.75 0.86 0.8 0.86</td><td><b>0.86</b></td></tr>
-<tr><td>32K</td><td>config</td><td class=runs>1.03 0.94 1.0 0.04 1.01 1.03 0.97 1.0 1.03</td><td><b>1.0</b></td></tr>
-<tr><td>64K</td><td>default</td><td class=runs>1.28 1.32 1.33 0.83 1.27 1.24 1.33 1.31 1.29</td><td><b>1.29</b></td></tr>
-<tr><td>64K</td><td>config</td><td class=runs>1.3 1.88 1.02 1.88 1.85 1.9 1.88 1.66 1.87</td><td><b>1.87</b></td></tr>
-<tr><td>128K</td><td>default</td><td class=runs>1.8 1.8 1.73 1.79 1.79 1.73 1.75 1.75 1.79</td><td><b>1.79</b></td></tr>
-<tr><td>128K</td><td>config</td><td class=runs>3.14 3.17 0.07 3.13 2.28 3.18 3.07 2.3 2.97</td><td><b>3.07</b></td></tr>
-<tr><td>256K</td><td>default</td><td class=runs>1.55 1.57 1.57 1.57 1.57 1.57 1.44 1.57 1.55</td><td><b>1.57</b></td></tr>
-<tr><td>256K</td><td>config</td><td class=runs>4.91 4.71 2.95 4.65 4.92 4.95 4.93 4.68 4.96</td><td><b>4.91</b></td></tr>
-<tr><td>512K</td><td>default</td><td class=runs>2.98 3.01 2.99 3.0 2.97 2.46 3.03 3.01 3.03</td><td><b>3.0</b></td></tr>
-<tr><td>512K</td><td>config</td><td class=runs>6.77 6.8 6.78 6.79 6.74 6.85 6.8 6.8 6.63</td><td><b>6.79</b></td></tr>
-<tr><td>1M</td><td>default</td><td class=runs>6.26 6.87 6.85 6.77 5.12 5.58 6.89 6.77 6.87</td><td><b>6.77</b></td></tr>
-<tr><td>1M</td><td>config</td><td class=runs>8.32 8.18 7.99 3.21 8.19 8.05 8.17 7.57 8.32</td><td><b>8.17</b></td></tr>
-<tr><td>2M</td><td>default</td><td class=runs>12.18 11.57 12.19 12.17 12.34 11.53 12.27 12.16 12.33</td><td><b>12.18</b></td></tr>
-<tr><td>2M</td><td>config</td><td class=runs>12.07 12.17 10.71 12.15 12.21 12.09 10.87 12.19 10.38</td><td><b>12.09</b></td></tr>
-<tr><td>4M</td><td>default</td><td class=runs>19.35 19.38 18.19 19.4 19.07 19.11 19.18 18.29 19.34</td><td><b>19.18</b></td></tr>
-<tr><td>4M</td><td>config</td><td class=runs>18.07 19.18 18.99 18.37 19.07 18.04 16.08 18.22 18.21</td><td><b>18.22</b></td></tr>
-<tr><td>8M</td><td>default</td><td class=runs>33.22 34.77 34.96 35.32 34.79 34.78 33.1 34.56 35.25</td><td><b>34.78</b></td></tr>
-<tr><td>8M</td><td>config</td><td class=runs>34.63 34.73 33.92 33.26 34.73 34.01 32.87 34.07 26.5</td><td><b>34.01</b></td></tr>
-<tr><td>16M</td><td>default</td><td class=runs>60.81 57.55 60.83 60.74 60.65 58.95 60.67 60.8 60.13</td><td><b>60.67</b></td></tr>
-<tr><td>16M</td><td>config</td><td class=runs>60.45 57.54 59.57 15.39 59.74 57.78 58.56 60.45 57.0</td><td><b>58.56</b></td></tr>
-<tr><td>32M</td><td>default</td><td class=runs>99.33 93.08 97.92 99.37 97.32 98.72 97.16 98.9 98.82</td><td><b>98.72</b></td></tr>
-<tr><td>32M</td><td>config</td><td class=runs>95.43 98.04 97.67 95.87 97.87 95.67 97.72 96.44 97.89</td><td><b>97.67</b></td></tr>
-<tr><td>64M</td><td>default</td><td class=runs>142.21 145.2 144.81 145.44 146.16 144.76 141.7 140.58 142.36</td><td><b>144.76</b></td></tr>
-<tr><td>64M</td><td>config</td><td class=runs>141.86 142.31 144.28 145.65 145.01 144.73 145.52 145.64 145.09</td><td><b>145.01</b></td></tr>
-<tr><td>128M</td><td>default</td><td class=runs>193.27 192.62 192.38 193.21 193.25 192.88 189.6 193.09 192.82</td><td><b>192.88</b></td></tr>
-<tr><td>128M</td><td>config</td><td class=runs>193.26 188.7 189.35 193.07 193.73 193.05 193.28 193.05 189.11</td><td><b>193.05</b></td></tr>
-<tr><td>256M</td><td>default</td><td class=runs>230.95 231.41 231.89 82.77 231.19 229.02 222.87 226.44 230.85</td><td><b>230.85</b></td></tr>
-<tr><td>256M</td><td>config</td><td class=runs>231.06 230.8 231.17 231.14 231.23 230.52 231.54 230.56 231.09</td><td><b>231.09</b></td></tr>
-<tr><td>512M</td><td>default</td><td class=runs>170.91 262.95 259.25 262.77 250.84 263.18 263.79 263.22 262.51</td><td><b>262.77</b></td></tr>
-<tr><td>512M</td><td>config</td><td class=runs>262.89 262.01 263.94 262.83 252.48 263.12 262.51 263.03 262.96</td><td><b>262.89</b></td></tr>
+<details><summary>raw A/B runs</summary><div class=tw><table class=fit><tr><th>size</th><th>arm</th><th>runs</th><th>median</th><th>mean</th><th>stddev</th><th>CV %</th></tr>
+<tr><td>4K</td><td>default</td><td class=runs>0.14 0.13 0.1 0.13 0.13 0.13 0.13 0.13 0.13</td><td><b>0.13</b></td><td>0.1278</td><td>0.0109</td><td>8.6</td></tr>
+<tr><td>4K</td><td>config</td><td class=runs>0.13 0.14 0.04 0.01 0.13 0.14 0.14 0.12 0.14</td><td><b>0.13</b></td><td>0.11</td><td>0.0492</td><td>44.8</td></tr>
+<tr><td>8K</td><td>default</td><td class=runs>0.28 0.26 0.12 0.2 0.27 0.28 0.25 0.26 0.28</td><td><b>0.26</b></td><td>0.2444</td><td>0.0529</td><td>21.7</td></tr>
+<tr><td>8K</td><td>config</td><td class=runs>0.27 0.27 0.17 0.11 0.25 0.27 0.25 0.12 0.25</td><td><b>0.25</b></td><td>0.2178</td><td>0.0659</td><td>30.3</td></tr>
+<tr><td>16K</td><td>default</td><td class=runs>0.48 0.49 0.46 0.51 0.26 0.51 0.48 0.43 0.49</td><td><b>0.48</b></td><td>0.4567</td><td>0.0778</td><td>17.0</td></tr>
+<tr><td>16K</td><td>config</td><td class=runs>0.48 0.52 0.53 0.05 0.52 0.39 0.51 0.51 0.5</td><td><b>0.51</b></td><td>0.4456</td><td>0.154</td><td>34.6</td></tr>
+<tr><td>32K</td><td>default</td><td class=runs>0.86 0.81 0.87 0.86 0.86 0.75 0.86 0.8 0.86</td><td><b>0.86</b></td><td>0.8367</td><td>0.0409</td><td>4.9</td></tr>
+<tr><td>32K</td><td>config</td><td class=runs>1.03 0.94 1.0 0.04 1.01 1.03 0.97 1.0 1.03</td><td><b>1</b></td><td>0.8944</td><td>0.322</td><td>36.0</td></tr>
+<tr><td>64K</td><td>default</td><td class=runs>1.28 1.32 1.33 0.83 1.27 1.24 1.33 1.31 1.29</td><td><b>1.29</b></td><td>1.244</td><td>0.158</td><td>12.7</td></tr>
+<tr><td>64K</td><td>config</td><td class=runs>1.3 1.88 1.02 1.88 1.85 1.9 1.88 1.66 1.87</td><td><b>1.87</b></td><td>1.693</td><td>0.319</td><td>18.8</td></tr>
+<tr><td>128K</td><td>default</td><td class=runs>1.8 1.8 1.73 1.79 1.79 1.73 1.75 1.75 1.79</td><td><b>1.79</b></td><td>1.77</td><td>0.0296</td><td>1.7</td></tr>
+<tr><td>128K</td><td>config</td><td class=runs>3.14 3.17 0.07 3.13 2.28 3.18 3.07 2.3 2.97</td><td><b>3.07</b></td><td>2.59</td><td>1.01</td><td>39.1</td></tr>
+<tr><td>256K</td><td>default</td><td class=runs>1.55 1.57 1.57 1.57 1.57 1.57 1.44 1.57 1.55</td><td><b>1.57</b></td><td>1.551</td><td>0.0426</td><td>2.7</td></tr>
+<tr><td>256K</td><td>config</td><td class=runs>4.91 4.71 2.95 4.65 4.92 4.95 4.93 4.68 4.96</td><td><b>4.91</b></td><td>4.629</td><td>0.642</td><td>13.9</td></tr>
+<tr><td>512K</td><td>default</td><td class=runs>2.98 3.01 2.99 3.0 2.97 2.46 3.03 3.01 3.03</td><td><b>3</b></td><td>2.942</td><td>0.182</td><td>6.2</td></tr>
+<tr><td>512K</td><td>config</td><td class=runs>6.77 6.8 6.78 6.79 6.74 6.85 6.8 6.8 6.63</td><td><b>6.79</b></td><td>6.773</td><td>0.0612</td><td>0.9</td></tr>
+<tr><td>1M</td><td>default</td><td class=runs>6.26 6.87 6.85 6.77 5.12 5.58 6.89 6.77 6.87</td><td><b>6.77</b></td><td>6.442</td><td>0.659</td><td>10.2</td></tr>
+<tr><td>1M</td><td>config</td><td class=runs>8.32 8.18 7.99 3.21 8.19 8.05 8.17 7.57 8.32</td><td><b>8.17</b></td><td>7.556</td><td>1.65</td><td>21.8</td></tr>
+<tr><td>2M</td><td>default</td><td class=runs>12.18 11.57 12.19 12.17 12.34 11.53 12.27 12.16 12.33</td><td><b>12.18</b></td><td>12.08</td><td>0.309</td><td>2.6</td></tr>
+<tr><td>2M</td><td>config</td><td class=runs>12.07 12.17 10.71 12.15 12.21 12.09 10.87 12.19 10.38</td><td><b>12.09</b></td><td>11.65</td><td>0.758</td><td>6.5</td></tr>
+<tr><td>4M</td><td>default</td><td class=runs>19.35 19.38 18.19 19.4 19.07 19.11 19.18 18.29 19.34</td><td><b>19.18</b></td><td>19.03</td><td>0.467</td><td>2.5</td></tr>
+<tr><td>4M</td><td>config</td><td class=runs>18.07 19.18 18.99 18.37 19.07 18.04 16.08 18.22 18.21</td><td><b>18.22</b></td><td>18.25</td><td>0.928</td><td>5.1</td></tr>
+<tr><td>8M</td><td>default</td><td class=runs>33.22 34.77 34.96 35.32 34.79 34.78 33.1 34.56 35.25</td><td><b>34.78</b></td><td>34.53</td><td>0.812</td><td>2.4</td></tr>
+<tr><td>8M</td><td>config</td><td class=runs>34.63 34.73 33.92 33.26 34.73 34.01 32.87 34.07 26.5</td><td><b>34.01</b></td><td>33.19</td><td>2.59</td><td>7.8</td></tr>
+<tr><td>16M</td><td>default</td><td class=runs>60.81 57.55 60.83 60.74 60.65 58.95 60.67 60.8 60.13</td><td><b>60.67</b></td><td>60.13</td><td>1.14</td><td>1.9</td></tr>
+<tr><td>16M</td><td>config</td><td class=runs>60.45 57.54 59.57 15.39 59.74 57.78 58.56 60.45 57.0</td><td><b>58.56</b></td><td>54.05</td><td>14.6</td><td>26.9</td></tr>
+<tr><td>32M</td><td>default</td><td class=runs>99.33 93.08 97.92 99.37 97.32 98.72 97.16 98.9 98.82</td><td><b>98.72</b></td><td>97.85</td><td>1.96</td><td>2.0</td></tr>
+<tr><td>32M</td><td>config</td><td class=runs>95.43 98.04 97.67 95.87 97.87 95.67 97.72 96.44 97.89</td><td><b>97.67</b></td><td>96.96</td><td>1.08</td><td>1.1</td></tr>
+<tr><td>64M</td><td>default</td><td class=runs>142.21 145.2 144.81 145.44 146.16 144.76 141.7 140.58 142.36</td><td><b>144.76</b></td><td>143.7</td><td>1.98</td><td>1.4</td></tr>
+<tr><td>64M</td><td>config</td><td class=runs>141.86 142.31 144.28 145.65 145.01 144.73 145.52 145.64 145.09</td><td><b>145.01</b></td><td>144.5</td><td>1.42</td><td>1.0</td></tr>
+<tr><td>128M</td><td>default</td><td class=runs>193.27 192.62 192.38 193.21 193.25 192.88 189.6 193.09 192.82</td><td><b>192.88</b></td><td>192.6</td><td>1.15</td><td>0.6</td></tr>
+<tr><td>128M</td><td>config</td><td class=runs>193.26 188.7 189.35 193.07 193.73 193.05 193.28 193.05 189.11</td><td><b>193.05</b></td><td>191.8</td><td>2.11</td><td>1.1</td></tr>
+<tr><td>256M</td><td>default</td><td class=runs>230.95 231.41 231.89 82.77 231.19 229.02 222.87 226.44 230.85</td><td><b>230.85</b></td><td>213</td><td>48.9</td><td>23.0</td></tr>
+<tr><td>256M</td><td>config</td><td class=runs>231.06 230.8 231.17 231.14 231.23 230.52 231.54 230.56 231.09</td><td><b>231.09</b></td><td>231</td><td>0.329</td><td>0.1</td></tr>
+<tr><td>512M</td><td>default</td><td class=runs>170.91 262.95 259.25 262.77 250.84 263.18 263.79 263.22 262.51</td><td><b>262.77</b></td><td>251</td><td>30.3</td><td>12.1</td></tr>
+<tr><td>512M</td><td>config</td><td class=runs>262.89 262.01 263.94 262.83 252.48 263.12 262.51 263.03 262.96</td><td><b>262.89</b></td><td>261.8</td><td>3.51</td><td>1.3</td></tr>
 </table></div></details>

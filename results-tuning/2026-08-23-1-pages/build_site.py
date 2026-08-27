@@ -56,6 +56,44 @@ pre .why{color:#8a8f98;text-decoration:none;font-style:italic}
 details{margin:8px 0}summary{cursor:pointer;color:#6ea8ff;font-size:13px}"""
 
 
+def _vals(row, key):
+    return [float(x) for x in row[key].split(";") if x]
+
+
+def _stats(vals):
+    """median, mean, stddev, CV% of one arm's repeats."""
+    import statistics as _s
+    if not vals:
+        return "", "", "", ""
+    med = _s.median(vals)
+    mean = _s.mean(vals)
+    sd = _s.stdev(vals) if len(vals) > 1 else 0.0
+    cv = sd / mean * 100 if mean else 0.0
+    return f"{med:g}", f"{mean:.4g}", f"{sd:.3g}", f"{cv:.1f}"
+
+
+def _gate_cell(vals):
+    """The cv-core gate's view of one arm: CV, core size, and its decision."""
+    import statistics as _s
+    if len(vals) < 2 or min(vals) <= 0:
+        return "<span class=n>no data</span>"
+    mean = _s.mean(vals)
+    cv = _s.stdev(vals) / mean * 100 if mean else 0.0
+    med = _s.median(vals)
+    mad = _s.median([abs(v - med) for v in vals])
+    scale = max(1.4826 * mad if mad > 0 else
+                1.2533 * _s.mean([abs(v - med) for v in vals]), 0.005)
+    core = [v for v in vals if abs(v - med) / scale <= 3.5]
+    ccv = (_s.stdev(core) / _s.mean(core) * 100
+           if len(core) > 1 and _s.mean(core) else 0.0)
+    if cv <= 8.0:
+        return f"<span class=n>CV {cv:.1f}%</span>"
+    if len(core) >= 7 and ccv <= 8.0:
+        return (f"<span class=warn>CV {cv:.1f}% &rarr; core {len(core)}/"
+                f"{len(vals)} CV {ccv:.1f}% (dips discarded)</span>")
+    return f"<span class=b>CV {cv:.1f}%, no clean core - NOISY</span>"
+
+
 def size_h(b):
     for u, d in (("M", 1 << 20), ("K", 1 << 10)):
         if b >= d:
@@ -284,7 +322,7 @@ for coll in COLLS:
             page.append("<div class=tw><table><tr><th>size</th><th>default executed</th>"
                         "<th>ours requested</th><th>ours executed</th>"
                         "<th>default med</th><th>ours med</th><th>gain</th>"
-                        "<th>P(sup)</th><th>spread def / cfg</th>"
+                        "<th>P(sup)</th><th>noise gate def / cfg</th>"
                         "<th>verdict</th></tr>")
             winners = {int(s): w["cfg"] for s, w in rep["winners"].items()}
             for s in sorted(winners):
@@ -310,20 +348,21 @@ for coll in COLLS:
                     f"<td>{row['def_median']}</td><td>{row['cfg_median']}</td>"
                     f"<td class={gcls}>{gain:+.1f}%</td>"
                     f"<td>{float(row['psup']):.2f}</td>"
-                    f"<td class=n>{row['def_min']}-{row['def_max']} / "
-                    f"{row['cfg_min']}-{row['cfg_max']}</td>"
+                    f"<td class='wrap n'>{_gate_cell(_vals(row, 'def_runs'))}"
+                    f" / {_gate_cell(_vals(row, 'cfg_runs'))}</td>"
                     f"<td class=wrap>{html.escape(verdict)}</td></tr>")
             page.append("</table></div>")
             page.append("<details><summary>raw A/B runs</summary>"
                         "<div class=tw><table class=fit><tr><th>size</th><th>arm</th><th>runs</th>"
-                        "<th>median</th></tr>")
+                        "<th>median</th><th>mean</th><th>stddev</th><th>CV %</th></tr>")
             for s in sorted(st):
                 row = st[s]
-                for arm, key, med in (("default", "def_runs", row["def_median"]),
-                                      ("config", "cfg_runs", row["cfg_median"])):
+                for arm, key in (("default", "def_runs"), ("config", "cfg_runs")):
+                    med, mean, sd, cvp = _stats(_vals(row, key))
                     page.append(f"<tr><td>{size_h(s)}</td><td>{arm}</td>"
                                 f"<td class=runs>{row[key].replace(';', ' ')}</td>"
-                                f"<td><b>{med}</b></td></tr>")
+                                f"<td><b>{med}</b></td><td>{mean}</td>"
+                                f"<td>{sd}</td><td>{cvp}</td></tr>")
             page.append("</table></div></details>")
     (HERE / f"collective_{coll}.html").write_text("\n".join(page))
 
