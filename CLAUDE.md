@@ -95,17 +95,21 @@ Entry criteria — this is the whole point of the folder:
   `optimize_metrics.py` discriminates at.
 
 # Cluster
-- Partition `XAI`, nodes `amd-mi355x-1..9`, 8 GPUs per node. Skip node2
-  (orchestrator). node9 ssh access verified 2026-08-24 - usable, but fabric never probed; probe before first use.
+- Partition `XAI`, nodes `amd-mi355x-1..9`, 8 GPUs per node. All nodes usable
+  (user decision 2026-08-27). Mild unverified suspicions, no action unless a
+  failure points at them: node 2 was long listed as "orchestrator" (origin
+  untraced; the cluster-admin skill lists it as a plain compute node), node 4
+  had a "fabric fault" note from 2026-08-18 (log never located; ran
+  single-node jobs fine since), node 9's fabric was never exercised by us.
 - **Fabric topology** (source: gpu-cluster plugin, cluster-admin skill): 2-rail
   fat-tree, RDMA/RoCE. Nodes **1,3,5,7 hang on the L1 leaves; 2,4,6,8,9 on the
   L2 leaves**; L1<->L2 traffic crosses shared spine switches that ALSO carry the
   ses2/des2 clusters' traffic - an empty XAI queue does not mean a quiet fabric.
-  Same-leaf traffic never leaves the leaf. Only same-leaf 4-node set that is
-  healthy: {1,3,5,7} (L2 side has node 2 forbidden + node 4 broken, so an
-  all-L2 set is impossible). Working hypothesis (unproven, experiment pending
-  2026-08-27): the chronic 4n/5n A/B noise is spine congestion - any node set
-  mixing L1+L2 is exposed; 5+ nodes are forced to mix.
+  Same-leaf traffic never leaves the leaf. Spine-congestion hypothesis for
+  the 4n/5n A/B noise: TESTED AND REJECTED 2026-08-27 - the all-L1 set
+  {1,3,5,7} voided 4 of 5 collectives exactly like every mixed set
+  (results-tuning/2026-08-24-1-stage4n/ab_out_refill4). Noise source still
+  unknown; signature is single-repeat transient dips.
 - Binaries (`all_reduce_perf` etc.) are at `/opt/shared/ylerman/GPU-107/bin`,
   which the sweep reads as `$MY_PATH`.
 - `/opt/shared` is NFS on the cluster nodes and is **not** mounted on this dev VM.

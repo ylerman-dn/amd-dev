@@ -45,8 +45,11 @@ REMOTE_TOOL = f"{SHARED}/rccl-sweep-optuna"
 PLUGIN = f"{SHARED}/ab-tuner-test/librccl-tunerv4-dn.so"
 MY_PATH = f"{SHARED}/bin"
 
-FORBIDDEN_NODES = {2}             # orchestrator; 9 un-blacklisted 2026-08-24 (ssh verified)
-BROKEN_NODES = {4}                # fabric fault 2026-08-18; edit when repaired
+FORBIDDEN_NODES = set()           # none (user decision 2026-08-27); node 2's
+                                  # old "orchestrator" label was never traced
+BROKEN_NODES = set()              # node 4's 2026-08-18 "fabric fault" note had
+                                  # no locatable log; treat as healthy until a
+                                  # failure points at it
 NODE_PREFERENCE = [5, 8, 3, 7, 6, 1]
 
 # the validated search policy (findings/07); changing any of these is a
