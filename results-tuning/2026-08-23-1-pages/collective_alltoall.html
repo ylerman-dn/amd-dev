@@ -1,0 +1,270 @@
+<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><title>alltoall</title><style>body{font-family:-apple-system,system-ui,sans-serif;margin:12px;max-width:1280px;
+background:#14161a;color:#d8dbe0}
+.tw{overflow-x:auto;margin:10px 0}
+table{border-collapse:collapse;font-size:13px;width:100%}
+th{border:1px solid #34383f;padding:4px 8px;text-align:center}
+td{border:1px solid #34383f;padding:4px 8px;text-align:right;white-space:nowrap}
+td:first-child{text-align:left}
+table.fit{width:auto}
+table.fit td{text-align:left;white-space:normal}
+td.runs{font-family:ui-monospace,monospace;font-size:11.5px;max-width:430px}
+td.wrap{white-space:normal;min-width:160px;max-width:260px;text-align:left;font-size:12px}
+h1{font-size:20px;color:#f0f2f5}h2{font-size:16px;color:#e6e9ee;margin-top:26px}
+h3{font-size:14px;color:#e6e9ee}
+.g{color:#4ec96a;font-weight:600}.b{color:#ff6b6b}.n{color:#8a8f98}
+.v{background:#173321}.x{background:#331a1a}.warn{color:#e0c05a}
+.note{color:#9aa0a8;font-size:13px}
+a{color:#6ea8ff;text-decoration:none}
+pre{background:#1b1e24;padding:8px;font-size:12px;overflow-x:auto;border-radius:6px;line-height:1.5}
+pre .keep{color:#4ec96a}pre .drop{color:#ff6b6b;text-decoration:line-through}
+pre .why{color:#8a8f98;text-decoration:none;font-style:italic}
+details{margin:8px 0}summary{cursor:pointer;color:#6ea8ff;font-size:13px}</style>
+<p><a href='index.html'>&larr; all collectives</a></p>
+<h1>alltoall</h1>
+<p class=note>alltoall never reaches RCCL's collective tuner: it is decomposed into p2p send/recv tasks at enqueue, so NCCL_ALGO/NCCL_PROTO requests are no-ops, <code>-A 1</code> prints N/A, and the tuner plugin cannot apply per-size rules. The search therefore sweeps the channel request only ('P2P/-/N'), the deployable artifact is one global NCCL_MIN/MAX_NCHANNELS value, and the A/B validates that env setting against the untouched default. Executed channels are read from the debug logs' 'p2p channels' line.</p>
+<p class=note>1n: <span class=n>defaults win</span> &nbsp;·&nbsp; 2n: <span class=n>defaults win (search)</span> &nbsp;·&nbsp; 3n: <span class=n>defaults win</span> &nbsp;·&nbsp; 4n: <span class=warn>no live verdict</span> &nbsp;·&nbsp; 5n: <span class=n>defaults win (search)</span></p>
+<h2>1 node</h2>
+<p class=note>run <b>2026-08-26-1-a2a123</b> · search 21 runs vs grid 27 (&minus;22%), 7 configs, 4 min search · 9 A/B repeats/arm</p>
+<p class=warn>&#9888; candidate ch=40 A/B&#x27;d 2026-08-26: no rule survived - defaults win. 32K excluded by the scoped preflight (chronic 690% same-config scatter).</p>
+<h3>Search config &rarr; A/B verdicts</h3>
+<pre><span class=n># env-arm conf: deployed as NCCL_MIN_NCHANNELS/NCCL_MAX_NCHANNELS=40, not via the tuner plugin (alltoall runs on the p2p path).</span>
+<span class=n># picked from adaptive_report.json: median gain +0.01% over 18 sizes vs same-session defaults (landmined in search data, A/B decides).</span>
+<span class=n>collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff</span>
+<span class=drop>alltoall,4096,536870912,none,none,40,1,8,-1,-1</span>  <span class=why>&larr; not reproducible (P 0.82)</span></pre>
+<p class=note>No config ships at this scale - RCCL's defaults won every size.</p>
+<h3>Per size (live A/B numbers)</h3>
+<div class=tw><table><tr><th>size</th><th>default executed</th><th>ours requested</th><th>ours executed</th><th>default med</th><th>ours med</th><th>gain</th><th>P(sup)</th><th>spread def / cfg</th><th>verdict</th></tr>
+<tr class=x><td>4K</td><td>P2P/-/64</td><td>P2P/-/16</td><td>P2P/-/64</td><td>0.35</td><td>0.35</td><td class=n>+0.0%</td><td>0.41</td><td class=n>0.33-0.37 / 0.32-0.37</td><td class=wrap>dropped: not reproducible (P 0.82)</td></tr>
+<tr class=x><td>8K</td><td>P2P/-/64</td><td>P2P/-/48</td><td>P2P/-/64</td><td>0.71</td><td>0.72</td><td class=n>+1.4%</td><td>0.53</td><td class=n>0.67-0.75 / 0.68-0.74</td><td class=wrap>dropped: not reproducible (P 0.82)</td></tr>
+<tr class=x><td>16K</td><td>P2P/-/64</td><td>P2P/-/40</td><td>P2P/-/64</td><td>1.23</td><td>1.24</td><td class=n>+0.8%</td><td>0.49</td><td class=n>1.16-1.3 / 1.15-1.3</td><td class=wrap>dropped: not reproducible (P 0.82)</td></tr>
+<tr class=x><td>32K</td><td>P2P/-/64</td><td>P2P/-/32</td><td>P2P/-/64</td><td>2.38</td><td>2.41</td><td class=n>+1.3%</td><td>0.69</td><td class=n>2.22-2.46 / 2.31-2.45</td><td class=wrap>dropped: not reproducible (P 0.82)</td></tr>
+<tr class=x><td>64K</td><td>P2P/-/64</td><td>P2P/-/40</td><td>P2P/-/64</td><td>4.87</td><td>4.82</td><td class=n>-1.0%</td><td>0.35</td><td class=n>4.49-4.9 / 4.74-4.89</td><td class=wrap>dropped: not reproducible (P 0.82)</td></tr>
+<tr class=x><td>128K</td><td>P2P/-/64</td><td>P2P/-/40</td><td>P2P/-/64</td><td>8.62</td><td>8.85</td><td class=g>+2.7%</td><td>0.70</td><td class=n>8.4-9.2 / 8.66-9.24</td><td class=wrap>dropped: not reproducible (P 0.82)</td></tr>
+<tr class=x><td>256K</td><td>P2P/-/64</td><td>P2P/-/16</td><td>P2P/-/64</td><td>17.77</td><td>18.01</td><td class=n>+1.4%</td><td>0.52</td><td class=n>14.3-18.64 / 12.86-18.48</td><td class=wrap>dropped: not reproducible (P 0.82)</td></tr>
+<tr class=x><td>512K</td><td>P2P/-/64</td><td>P2P/-/16</td><td>P2P/-/64</td><td>29.99</td><td>29.92</td><td class=n>-0.2%</td><td>0.43</td><td class=n>29.4-30.13 / 29.51-30.11</td><td class=wrap>dropped: not reproducible (P 0.82)</td></tr>
+<tr class=x><td>1M</td><td>P2P/-/64</td><td>P2P/-/16</td><td>P2P/-/64</td><td>52.1</td><td>51.75</td><td class=n>-0.7%</td><td>0.40</td><td class=n>49.79-53.22 / 50.53-52.82</td><td class=wrap>dropped: not reproducible (P 0.82)</td></tr>
+<tr class=x><td>2M</td><td>P2P/-/64</td><td>P2P/-/16</td><td>P2P/-/64</td><td>97.31</td><td>96.54</td><td class=n>-0.8%</td><td>0.22</td><td class=n>96.07-97.74 / 96.0-97.4</td><td class=wrap>dropped: not reproducible (P 0.82)</td></tr>
+<tr class=x><td>4M</td><td>P2P/-/64</td><td>P2P/-/16</td><td>P2P/-/64</td><td>154.77</td><td>154.21</td><td class=n>-0.4%</td><td>0.36</td><td class=n>152.23-156.05 / 153.56-155.68</td><td class=wrap>dropped: not reproducible (P 0.82)</td></tr>
+<tr class=x><td>8M</td><td>P2P/-/64</td><td>P2P/-/16</td><td>P2P/-/64</td><td>202.79</td><td>202.15</td><td class=n>-0.3%</td><td>0.30</td><td class=n>200.8-204.36 / 201.41-203.21</td><td class=wrap>dropped: not reproducible (P 0.82)</td></tr>
+<tr class=x><td>16M</td><td>P2P/-/64</td><td>P2P/-/16</td><td>P2P/-/64</td><td>241.93</td><td>241.39</td><td class=n>-0.2%</td><td>0.42</td><td class=n>240.3-242.28 / 240.26-242.27</td><td class=wrap>dropped: not reproducible (P 0.82)</td></tr>
+<tr class=x><td>32M</td><td>P2P/-/64</td><td>P2P/-/16</td><td>P2P/-/64</td><td>270.65</td><td>270.56</td><td class=n>-0.0%</td><td>0.44</td><td class=n>269.6-271.5 / 269.65-271.07</td><td class=wrap>dropped: not reproducible (P 0.82)</td></tr>
+<tr class=x><td>64M</td><td>P2P/-/64</td><td>P2P/-/16</td><td>P2P/-/64</td><td>300.87</td><td>301.27</td><td class=n>+0.1%</td><td>0.75</td><td class=n>299.05-301.33 / 300.42-302.11</td><td class=wrap>dropped: not reproducible (P 0.82)</td></tr>
+<tr class=x><td>128M</td><td>P2P/-/64</td><td>P2P/-/16</td><td>P2P/-/64</td><td>322.08</td><td>322.14</td><td class=n>+0.0%</td><td>0.52</td><td class=n>321.58-323.07 / 321.87-322.45</td><td class=wrap>dropped: not reproducible (P 0.82)</td></tr>
+<tr class=x><td>256M</td><td>P2P/-/64</td><td>P2P/-/16</td><td>P2P/-/64</td><td>335.36</td><td>335.89</td><td class=n>+0.2%</td><td>0.82</td><td class=n>335.17-335.91 / 335.22-336.42</td><td class=wrap>dropped: not reproducible (P 0.82)</td></tr>
+<tr class=x><td>512M</td><td>P2P/-/64</td><td>P2P/-/16</td><td>P2P/-/64</td><td>342.99</td><td>343.51</td><td class=n>+0.2%</td><td>0.69</td><td class=n>342.78-343.71 / 342.26-343.81</td><td class=wrap>dropped: not reproducible (P 0.82)</td></tr>
+</table></div>
+<details><summary>raw A/B runs</summary><div class=tw><table class=fit><tr><th>size</th><th>arm</th><th>runs</th><th>median</th></tr>
+<tr><td>4K</td><td>default</td><td class=runs>0.36 0.35 0.35 0.37 0.36 0.37 0.33 0.33 0.34</td><td><b>0.35</b></td></tr>
+<tr><td>4K</td><td>config</td><td class=runs>0.34 0.37 0.32 0.35 0.34 0.32 0.35 0.36 0.36</td><td><b>0.35</b></td></tr>
+<tr><td>8K</td><td>default</td><td class=runs>0.67 0.75 0.74 0.71 0.73 0.74 0.69 0.67 0.7</td><td><b>0.71</b></td></tr>
+<tr><td>8K</td><td>config</td><td class=runs>0.74 0.73 0.71 0.71 0.72 0.69 0.74 0.72 0.68</td><td><b>0.72</b></td></tr>
+<tr><td>16K</td><td>default</td><td class=runs>1.21 1.23 1.3 1.21 1.28 1.26 1.2 1.16 1.24</td><td><b>1.23</b></td></tr>
+<tr><td>16K</td><td>config</td><td class=runs>1.24 1.22 1.26 1.27 1.25 1.18 1.2 1.3 1.15</td><td><b>1.24</b></td></tr>
+<tr><td>32K</td><td>default</td><td class=runs>2.22 2.46 2.41 2.35 2.41 2.4 2.37 2.24 2.38</td><td><b>2.38</b></td></tr>
+<tr><td>32K</td><td>config</td><td class=runs>2.41 2.43 2.45 2.41 2.39 2.37 2.43 2.41 2.31</td><td><b>2.41</b></td></tr>
+<tr><td>64K</td><td>default</td><td class=runs>4.8 4.89 4.87 4.77 4.49 4.9 4.88 4.87 4.87</td><td><b>4.87</b></td></tr>
+<tr><td>64K</td><td>config</td><td class=runs>4.79 4.83 4.87 4.78 4.74 4.89 4.86 4.82 4.8</td><td><b>4.82</b></td></tr>
+<tr><td>128K</td><td>default</td><td class=runs>8.4 8.62 9.2 8.67 9.19 8.6 9.04 8.47 8.4</td><td><b>8.62</b></td></tr>
+<tr><td>128K</td><td>config</td><td class=runs>8.66 8.85 8.9 8.88 8.77 8.84 9.06 9.24 8.78</td><td><b>8.85</b></td></tr>
+<tr><td>256K</td><td>default</td><td class=runs>17.5 17.79 18.64 17.77 18.36 18.2 17.54 17.28 14.3</td><td><b>17.77</b></td></tr>
+<tr><td>256K</td><td>config</td><td class=runs>18.42 18.09 17.74 18.48 17.16 17.48 18.28 12.86 18.01</td><td><b>18.01</b></td></tr>
+<tr><td>512K</td><td>default</td><td class=runs>29.91 30.03 29.94 29.99 29.54 30.08 30.08 30.13 29.4</td><td><b>29.99</b></td></tr>
+<tr><td>512K</td><td>config</td><td class=runs>29.93 29.92 30.05 29.51 29.7 30.1 29.87 29.57 30.11</td><td><b>29.92</b></td></tr>
+<tr><td>1M</td><td>default</td><td class=runs>49.79 52.1 53.11 51.9 52.85 53.22 51.69 49.84 52.12</td><td><b>52.1</b></td></tr>
+<tr><td>1M</td><td>config</td><td class=runs>51.75 50.53 51.48 52.82 51.42 51.81 52.51 52.46 50.85</td><td><b>51.75</b></td></tr>
+<tr><td>2M</td><td>default</td><td class=runs>96.77 97.74 97.31 97.55 96.07 97.54 96.95 97.46 97.26</td><td><b>97.31</b></td></tr>
+<tr><td>2M</td><td>config</td><td class=runs>97.0 97.15 97.05 96.33 96.09 97.4 96.54 96.16 96.0</td><td><b>96.54</b></td></tr>
+<tr><td>4M</td><td>default</td><td class=runs>153.69 152.23 155.88 154.2 155.18 156.05 154.54 154.77 154.79</td><td><b>154.77</b></td></tr>
+<tr><td>4M</td><td>config</td><td class=runs>154.7 153.6 155.36 153.65 154.13 155.68 153.56 154.23 154.21</td><td><b>154.21</b></td></tr>
+<tr><td>8M</td><td>default</td><td class=runs>200.8 202.27 204.36 203.56 202.36 203.34 202.79 201.95 203.66</td><td><b>202.79</b></td></tr>
+<tr><td>8M</td><td>config</td><td class=runs>202.15 202.12 203.21 202.75 202.04 203.02 201.41 202.23 201.85</td><td><b>202.15</b></td></tr>
+<tr><td>16M</td><td>default</td><td class=runs>241.98 240.3 242.04 242.28 241.09 241.08 242.13 241.44 241.93</td><td><b>241.93</b></td></tr>
+<tr><td>16M</td><td>config</td><td class=runs>242.08 241.57 242.27 241.1 240.47 242.1 240.7 240.26 241.39</td><td><b>241.39</b></td></tr>
+<tr><td>32M</td><td>default</td><td class=runs>271.18 270.08 269.93 271.02 269.6 271.5 270.35 270.71 270.65</td><td><b>270.65</b></td></tr>
+<tr><td>32M</td><td>config</td><td class=runs>270.56 269.65 271.07 270.77 270.88 270.57 270.12 270.2 269.94</td><td><b>270.56</b></td></tr>
+<tr><td>64M</td><td>default</td><td class=runs>301.33 300.7 301.04 300.87 299.05 300.57 301.27 300.3 301.02</td><td><b>300.87</b></td></tr>
+<tr><td>64M</td><td>config</td><td class=runs>302.11 301.97 300.42 301.78 301.27 300.94 300.58 302.05 301.16</td><td><b>301.27</b></td></tr>
+<tr><td>128M</td><td>default</td><td class=runs>323.07 321.77 322.08 321.58 321.92 322.62 321.9 322.31 322.41</td><td><b>322.08</b></td></tr>
+<tr><td>128M</td><td>config</td><td class=runs>322.11 322.41 322.45 322.14 321.87 322.17 322.27 321.93 321.9</td><td><b>322.14</b></td></tr>
+<tr><td>256M</td><td>default</td><td class=runs>335.26 335.22 335.24 335.36 335.58 335.91 335.17 335.41 335.43</td><td><b>335.36</b></td></tr>
+<tr><td>256M</td><td>config</td><td class=runs>335.22 336.42 335.89 335.49 335.45 335.9 335.76 335.92 336.3</td><td><b>335.89</b></td></tr>
+<tr><td>512M</td><td>default</td><td class=runs>343.65 342.98 342.99 342.98 342.78 343.18 343.27 343.71 342.89</td><td><b>342.99</b></td></tr>
+<tr><td>512M</td><td>config</td><td class=runs>343.8 343.43 343.58 342.26 343.36 343.76 342.83 343.51 343.81</td><td><b>343.51</b></td></tr>
+</table></div></details>
+<h2>2 nodes</h2>
+<p class=note>run <b>2026-08-26-1-a2a123</b> · search 21 runs vs grid 27 (&minus;22%), 7 configs, 6 min search · 9 A/B repeats/arm</p>
+<h3>Per size (predicted from the search - <span class=b>NOT validated, does not ship</span>)</h3>
+<p class=note>Search measurements (env-var path); executed combos from the search runs' debug logs. P(sup)/spread/verdict require an A/B and stay blank.</p>
+<div class=tw><table><tr><th>size</th><th>default executed</th><th>ours requested</th><th>ours executed</th><th>default med</th><th>ours med</th><th>gain</th><th>P(sup)</th><th>spread def / cfg</th><th>verdict</th></tr>
+<tr><td>4K</td><td>P2P/-/32</td><td>P2P/-/16</td><td>P2P/-/16</td><td>0.11</td><td>0.11</td><td class=n>+0.0%</td><td class=n></td><td class=n></td><td class='wrap n'>no A/B</td></tr>
+<tr><td>8K</td><td>P2P/-/32</td><td>P2P/-/16</td><td>P2P/-/16</td><td>0.22</td><td>0.22</td><td class=n>+0.0%</td><td class=n></td><td class=n></td><td class='wrap n'>no A/B</td></tr>
+<tr><td>16K</td><td>P2P/-/32</td><td>P2P/-/16</td><td>P2P/-/16</td><td>0.44</td><td>0.45</td><td class=g>+2.3%</td><td class=n></td><td class=n></td><td class='wrap n'>no A/B</td></tr>
+<tr><td>32K</td><td>P2P/-/32</td><td>P2P/-/32</td><td>P2P/-/32</td><td>0.89</td><td>0.9</td><td class=n>+1.1%</td><td class=n></td><td class=n></td><td class='wrap n'>no A/B</td></tr>
+<tr><td>64K</td><td>P2P/-/32</td><td>P2P/-/16</td><td>P2P/-/16</td><td>1.71</td><td>1.74</td><td class=n>+1.8%</td><td class=n></td><td class=n></td><td class='wrap n'>no A/B</td></tr>
+<tr><td>128K</td><td>P2P/-/32</td><td>P2P/-/24</td><td>P2P/-/32</td><td>3.34</td><td>3.5</td><td class=g>+4.8%</td><td class=n></td><td class=n></td><td class='wrap n'>no A/B</td></tr>
+<tr><td>256K</td><td>P2P/-/32</td><td>P2P/-/24</td><td>P2P/-/32</td><td>6.74</td><td>6.74</td><td class=n>+0.0%</td><td class=n></td><td class=n></td><td class='wrap n'>no A/B</td></tr>
+<tr><td>512K</td><td>P2P/-/32</td><td>P2P/-/32</td><td>P2P/-/32</td><td>11.64</td><td>12.12</td><td class=g>+4.1%</td><td class=n></td><td class=n></td><td class='wrap n'>no A/B</td></tr>
+<tr><td>1M</td><td>P2P/-/32</td><td>P2P/-/16</td><td>P2P/-/16</td><td>19.21</td><td>19.27</td><td class=n>+0.3%</td><td class=n></td><td class=n></td><td class='wrap n'>no A/B</td></tr>
+<tr><td>2M</td><td>P2P/-/32</td><td>P2P/-/24</td><td>P2P/-/32</td><td>31.79</td><td>31.85</td><td class=n>+0.2%</td><td class=n></td><td class=n></td><td class='wrap n'>no A/B</td></tr>
+<tr><td>4M</td><td>P2P/-/32</td><td>P2P/-/32</td><td>P2P/-/32</td><td>45.9</td><td>45.81</td><td class=n>-0.2%</td><td class=n></td><td class=n></td><td class='wrap n'>no A/B</td></tr>
+<tr><td>8M</td><td>P2P/-/32</td><td>P2P/-/16</td><td>P2P/-/16</td><td>58.66</td><td>58.55</td><td class=n>-0.2%</td><td class=n></td><td class=n></td><td class='wrap n'>no A/B</td></tr>
+<tr><td>16M</td><td>P2P/-/32</td><td>P2P/-/24</td><td>P2P/-/32</td><td>69.5</td><td>69.99</td><td class=n>+0.7%</td><td class=n></td><td class=n></td><td class='wrap n'>no A/B</td></tr>
+<tr><td>32M</td><td>P2P/-/32</td><td>P2P/-/32</td><td>P2P/-/32</td><td>77.25</td><td>77.24</td><td class=n>-0.0%</td><td class=n></td><td class=n></td><td class='wrap n'>no A/B</td></tr>
+<tr><td>64M</td><td>P2P/-/32</td><td>P2P/-/16</td><td>P2P/-/16</td><td>82.46</td><td>82.45</td><td class=n>-0.0%</td><td class=n></td><td class=n></td><td class='wrap n'>no A/B</td></tr>
+<tr><td>128M</td><td>P2P/-/32</td><td>P2P/-/16</td><td>P2P/-/16</td><td>86.12</td><td>85.77</td><td class=n>-0.4%</td><td class=n></td><td class=n></td><td class='wrap n'>no A/B</td></tr>
+<tr><td>256M</td><td>P2P/-/32</td><td>P2P/-/32</td><td>P2P/-/32</td><td>87.81</td><td>87.9</td><td class=n>+0.1%</td><td class=n></td><td class=n></td><td class='wrap n'>no A/B</td></tr>
+<tr><td>512M</td><td>P2P/-/32</td><td>P2P/-/16</td><td>P2P/-/16</td><td>88.44</td><td>88.34</td><td class=n>-0.1%</td><td class=n></td><td class=n></td><td class='wrap n'>no A/B</td></tr>
+</table></div>
+<h2>3 nodes</h2>
+<p class=note>run <b>2026-08-26-1-a2a123</b> · search 21 runs vs grid 27 (&minus;22%), 7 configs, 7 min search · 9 A/B repeats/arm</p>
+<h3>Search config &rarr; A/B verdicts</h3>
+<pre><span class=n># env-arm conf: deployed as NCCL_MIN_NCHANNELS/NCCL_MAX_NCHANNELS=32, not via the tuner plugin (alltoall runs on the p2p path).</span>
+<span class=n># picked from adaptive_report.json: median gain +0.53% over 18 sizes vs same-session defaults (landmined in search data, A/B decides).</span>
+<span class=n>collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff</span>
+<span class=drop>alltoall,4096,536870912,none,none,32,3,24,-1,-1</span>  <span class=why>&larr; regression -8.0%</span></pre>
+<p class=note>No config ships at this scale - RCCL's defaults won every size.</p>
+<h3>Per size (live A/B numbers)</h3>
+<div class=tw><table><tr><th>size</th><th>default executed</th><th>ours requested</th><th>ours executed</th><th>default med</th><th>ours med</th><th>gain</th><th>P(sup)</th><th>spread def / cfg</th><th>verdict</th></tr>
+<tr ><td>3.8K</td><td>P2P/-/64</td><td>P2P/-/32</td><td>P2P/-/32</td><td>0.07</td><td>0.06</td><td class=b>-14.3%</td><td>0.22</td><td class=n>0.06-0.07 / 0.06-0.07</td><td class=wrap>no rule</td></tr>
+<tr class=x><td>7.9K</td><td>P2P/-/64</td><td>P2P/-/24</td><td>P2P/-/32</td><td>0.14</td><td>0.14</td><td class=n>+0.0%</td><td>0.61</td><td class=n>0.13-0.14 / 0.13-0.14</td><td class=wrap>dropped: regression -8.0%</td></tr>
+<tr class=x><td>15.8K</td><td>P2P/-/64</td><td>P2P/-/24</td><td>P2P/-/32</td><td>0.27</td><td>0.28</td><td class=g>+3.7%</td><td>0.79</td><td class=n>0.12-0.3 / 0.27-0.28</td><td class=wrap>dropped: regression -8.0%</td></tr>
+<tr class=x><td>31.9K</td><td>P2P/-/64</td><td>P2P/-/24</td><td>P2P/-/32</td><td>0.56</td><td>0.56</td><td class=n>+0.0%</td><td>0.67</td><td class=n>0.53-0.56 / 0.55-0.59</td><td class=wrap>dropped: regression -8.0%</td></tr>
+<tr class=x><td>63.8K</td><td>P2P/-/64</td><td>P2P/-/24</td><td>P2P/-/32</td><td>1.1</td><td>1.11</td><td class=n>+0.9%</td><td>0.62</td><td class=n>1.09-1.12 / 0.89-1.12</td><td class=wrap>dropped: regression -8.0%</td></tr>
+<tr class=x><td>127.9K</td><td>P2P/-/64</td><td>P2P/-/32</td><td>P2P/-/32</td><td>2.17</td><td>2.18</td><td class=n>+0.5%</td><td>0.78</td><td class=n>1.77-2.19 / 2.16-2.21</td><td class=wrap>dropped: regression -8.0%</td></tr>
+<tr class=x><td>255.8K</td><td>P2P/-/64</td><td>P2P/-/40</td><td>P2P/-/32</td><td>4.16</td><td>4.26</td><td class=g>+2.4%</td><td>0.87</td><td class=n>3.51-4.26 / 4.22-4.34</td><td class=wrap>dropped: regression -8.0%</td></tr>
+<tr class=x><td>511.9K</td><td>P2P/-/64</td><td>P2P/-/24</td><td>P2P/-/32</td><td>7.93</td><td>7.98</td><td class=n>+0.6%</td><td>0.67</td><td class=n>6.58-7.98 / 4.22-8.09</td><td class=wrap>dropped: regression -8.0%</td></tr>
+<tr class=x><td>1023.8K</td><td>P2P/-/64</td><td>P2P/-/16</td><td>P2P/-/32</td><td>13.69</td><td>13.83</td><td class=n>+1.0%</td><td>0.87</td><td class=n>4.65-13.76 / 10.19-14.0</td><td class=wrap>dropped: regression -8.0%</td></tr>
+<tr class=x><td>2.0M</td><td>P2P/-/64</td><td>P2P/-/24</td><td>P2P/-/32</td><td>21.07</td><td>21.32</td><td class=n>+1.2%</td><td>0.81</td><td class=n>20.25-21.29 / 14.37-21.45</td><td class=wrap>dropped: regression -8.0%</td></tr>
+<tr class=x><td>4.0M</td><td>P2P/-/64</td><td>P2P/-/24</td><td>P2P/-/32</td><td>28.7</td><td>31.44</td><td class=g>+9.5%</td><td>1.00</td><td class=n>28.43-28.96 / 31.0-31.62</td><td class=wrap>dropped: regression -8.0%</td></tr>
+<tr class=x><td>8.0M</td><td>P2P/-/64</td><td>P2P/-/24</td><td>P2P/-/32</td><td>41.25</td><td>42.9</td><td class=g>+4.0%</td><td>0.93</td><td class=n>41.02-41.36 / 41.16-42.98</td><td class=wrap>dropped: regression -8.0%</td></tr>
+<tr class=x><td>16.0M</td><td>P2P/-/64</td><td>P2P/-/32</td><td>P2P/-/32</td><td>47.59</td><td>48.72</td><td class=g>+2.4%</td><td>0.62</td><td class=n>47.2-50.58 / 42.74-49.93</td><td class=wrap>dropped: regression -8.0%</td></tr>
+<tr class=x><td>32.0M</td><td>P2P/-/64</td><td>P2P/-/32</td><td>P2P/-/32</td><td>53.4</td><td>56.46</td><td class=g>+5.7%</td><td>0.89</td><td class=n>51.43-55.66 / 52.57-57.29</td><td class=wrap>dropped: regression -8.0%</td></tr>
+<tr class=x><td>64.0M</td><td>P2P/-/64</td><td>P2P/-/24</td><td>P2P/-/32</td><td>61.62</td><td>57.05</td><td class=b>-7.4%</td><td>0.22</td><td class=n>60.62-62.43 / 51.39-62.15</td><td class=wrap>dropped: regression -8.0%</td></tr>
+<tr class=x><td>128.0M</td><td>P2P/-/64</td><td>P2P/-/48</td><td>P2P/-/32</td><td>65.49</td><td>60.25</td><td class=b>-8.0%</td><td>0.02</td><td class=n>63.1-65.69 / 59.3-64.24</td><td class=wrap>dropped: regression -8.0%</td></tr>
+<tr class=x><td>256.0M</td><td>P2P/-/64</td><td>P2P/-/48</td><td>P2P/-/32</td><td>67.06</td><td>62.3</td><td class=b>-7.1%</td><td>0.09</td><td class=n>61.94-67.2 / 59.92-63.99</td><td class=wrap>dropped: regression -8.0%</td></tr>
+<tr class=x><td>512.0M</td><td>P2P/-/64</td><td>P2P/-/24</td><td>P2P/-/32</td><td>66.16</td><td>67.61</td><td class=g>+2.2%</td><td>0.80</td><td class=n>64.57-67.28 / 65.2-67.74</td><td class=wrap>dropped: regression -8.0%</td></tr>
+</table></div>
+<details><summary>raw A/B runs</summary><div class=tw><table class=fit><tr><th>size</th><th>arm</th><th>runs</th><th>median</th></tr>
+<tr><td>3.8K</td><td>default</td><td class=runs>0.07 0.07 0.07 0.07 0.07 0.06 0.06 0.07 0.07</td><td><b>0.07</b></td></tr>
+<tr><td>3.8K</td><td>config</td><td class=runs>0.06 0.07 0.06 0.06 0.06 0.06 0.07 0.06 0.06</td><td><b>0.06</b></td></tr>
+<tr><td>7.9K</td><td>default</td><td class=runs>0.13 0.14 0.13 0.14 0.14 0.14 0.14 0.14 0.13</td><td><b>0.14</b></td></tr>
+<tr><td>7.9K</td><td>config</td><td class=runs>0.14 0.14 0.14 0.14 0.14 0.14 0.13 0.14 0.14</td><td><b>0.14</b></td></tr>
+<tr><td>15.8K</td><td>default</td><td class=runs>0.27 0.27 0.27 0.27 0.3 0.27 0.12 0.27 0.28</td><td><b>0.27</b></td></tr>
+<tr><td>15.8K</td><td>config</td><td class=runs>0.28 0.28 0.28 0.28 0.28 0.28 0.28 0.27 0.28</td><td><b>0.28</b></td></tr>
+<tr><td>31.9K</td><td>default</td><td class=runs>0.54 0.56 0.56 0.56 0.56 0.53 0.55 0.56 0.55</td><td><b>0.56</b></td></tr>
+<tr><td>31.9K</td><td>config</td><td class=runs>0.56 0.56 0.59 0.55 0.56 0.56 0.55 0.56 0.56</td><td><b>0.56</b></td></tr>
+<tr><td>63.8K</td><td>default</td><td class=runs>1.09 1.11 1.09 1.1 1.12 1.1 1.09 1.1 1.11</td><td><b>1.1</b></td></tr>
+<tr><td>63.8K</td><td>config</td><td class=runs>0.89 1.11 1.1 1.11 1.1 1.12 1.11 1.11 1.1</td><td><b>1.11</b></td></tr>
+<tr><td>127.9K</td><td>default</td><td class=runs>1.77 2.19 2.15 2.13 2.19 2.15 2.17 2.17 2.19</td><td><b>2.17</b></td></tr>
+<tr><td>127.9K</td><td>config</td><td class=runs>2.17 2.21 2.18 2.18 2.18 2.2 2.21 2.2 2.16</td><td><b>2.18</b></td></tr>
+<tr><td>255.8K</td><td>default</td><td class=runs>4.22 4.23 4.12 4.25 3.51 4.16 4.0 4.1 4.26</td><td><b>4.16</b></td></tr>
+<tr><td>255.8K</td><td>config</td><td class=runs>4.28 4.25 4.22 4.34 4.25 4.33 4.22 4.26 4.3</td><td><b>4.26</b></td></tr>
+<tr><td>511.9K</td><td>default</td><td class=runs>7.98 7.88 7.96 7.93 6.58 7.86 7.91 7.95 7.93</td><td><b>7.93</b></td></tr>
+<tr><td>511.9K</td><td>config</td><td class=runs>7.99 8.02 7.98 4.22 8.09 8.03 7.17 7.97 7.84</td><td><b>7.98</b></td></tr>
+<tr><td>1023.8K</td><td>default</td><td class=runs>12.35 4.65 13.73 13.69 13.76 13.71 13.62 13.64 13.69</td><td><b>13.69</b></td></tr>
+<tr><td>1023.8K</td><td>config</td><td class=runs>13.81 14.0 10.19 13.84 13.73 13.83 13.75 13.9 13.86</td><td><b>13.83</b></td></tr>
+<tr><td>2.0M</td><td>default</td><td class=runs>21.07 21.29 21.29 21.0 20.25 21.02 21.03 21.14 21.14</td><td><b>21.07</b></td></tr>
+<tr><td>2.0M</td><td>config</td><td class=runs>21.25 21.45 21.15 14.37 21.38 21.4 21.32 21.39 21.21</td><td><b>21.32</b></td></tr>
+<tr><td>4.0M</td><td>default</td><td class=runs>28.75 28.7 28.74 28.59 28.43 28.68 28.7 28.9 28.96</td><td><b>28.7</b></td></tr>
+<tr><td>4.0M</td><td>config</td><td class=runs>31.07 31.3 31.44 31.56 31.07 31.62 31.45 31.0 31.47</td><td><b>31.44</b></td></tr>
+<tr><td>8.0M</td><td>default</td><td class=runs>41.34 41.26 41.14 41.04 41.32 41.25 41.17 41.36 41.02</td><td><b>41.25</b></td></tr>
+<tr><td>8.0M</td><td>config</td><td class=runs>42.9 41.16 42.84 42.88 42.95 42.98 42.76 42.95 42.9</td><td><b>42.9</b></td></tr>
+<tr><td>16.0M</td><td>default</td><td class=runs>47.24 50.58 47.53 47.29 48.73 48.78 47.59 47.98 47.2</td><td><b>47.59</b></td></tr>
+<tr><td>16.0M</td><td>config</td><td class=runs>46.95 48.72 42.74 49.21 48.84 49.7 48.72 48.67 49.93</td><td><b>48.72</b></td></tr>
+<tr><td>32.0M</td><td>default</td><td class=runs>55.66 54.23 52.83 53.35 53.23 54.67 55.36 51.43 53.4</td><td><b>53.4</b></td></tr>
+<tr><td>32.0M</td><td>config</td><td class=runs>57.29 55.39 56.46 57.22 56.31 56.61 52.57 57.15 56.28</td><td><b>56.46</b></td></tr>
+<tr><td>64.0M</td><td>default</td><td class=runs>61.04 62.29 61.3 61.62 61.93 62.34 60.62 62.43 61.31</td><td><b>61.62</b></td></tr>
+<tr><td>64.0M</td><td>config</td><td class=runs>62.14 51.4 62.15 53.34 62.05 51.39 52.62 57.05 58.9</td><td><b>57.05</b></td></tr>
+<tr><td>128.0M</td><td>default</td><td class=runs>65.56 65.69 63.1 65.05 65.64 64.93 65.6 65.49 64.25</td><td><b>65.49</b></td></tr>
+<tr><td>128.0M</td><td>config</td><td class=runs>59.64 60.08 60.27 59.38 64.22 60.25 64.24 59.3 60.73</td><td><b>60.25</b></td></tr>
+<tr><td>256.0M</td><td>default</td><td class=runs>66.43 66.43 67.06 66.63 61.94 67.18 67.09 67.17 67.2</td><td><b>67.06</b></td></tr>
+<tr><td>256.0M</td><td>config</td><td class=runs>63.59 63.99 59.92 62.25 62.3 62.55 62.28 60.54 62.63</td><td><b>62.3</b></td></tr>
+<tr><td>512.0M</td><td>default</td><td class=runs>67.02 66.98 67.28 65.8 65.09 65.75 66.16 66.76 64.57</td><td><b>66.16</b></td></tr>
+<tr><td>512.0M</td><td>config</td><td class=runs>66.68 67.74 67.61 65.2 67.04 67.69 67.69 67.72 66.28</td><td><b>67.61</b></td></tr>
+</table></div></details>
+<h2>4 nodes</h2>
+<p class=note>run <b>2026-08-26-1-a2a45</b> · search 21 runs vs grid 27 (&minus;22%), 7 configs, 9 min search · 9 A/B repeats/arm</p>
+<p class=warn>&#9888; A/B voided (rc=2) in all 4 attempts on 2026-08-26 - transient fabric stalls at 4+ nodes (see stage5n NOISE-ANALYSIS.md). Numbers below are from the voided runs; no verdicts were issued.</p>
+<h3>Per size (live A/B numbers - run VOIDED, <span class=b>no verdicts issued</span>)</h3>
+<div class=tw><table><tr><th>size</th><th>default executed</th><th>ours requested</th><th>ours executed</th><th>default med</th><th>ours med</th><th>gain</th><th>P(sup)</th><th>spread def / cfg</th><th>verdict</th></tr>
+<tr ><td>4K</td><td>P2P/-/32</td><td>P2P/-/24</td><td>P2P/-/32</td><td>0.07</td><td>0.06</td><td class=b>-14.3%</td><td>0.22</td><td class=n>0.04-0.07 / 0.02-0.06</td><td class=wrap>no rule</td></tr>
+<tr ><td>8K</td><td>P2P/-/32</td><td>P2P/-/24</td><td>P2P/-/32</td><td>0.11</td><td>0.13</td><td class=g>+18.2%</td><td>0.81</td><td class=n>0.01-0.13 / 0.12-0.13</td><td class=wrap>no rule</td></tr>
+<tr ><td>16K</td><td>P2P/-/32</td><td>P2P/-/40</td><td>P2P/-/32</td><td>0.26</td><td>0.26</td><td class=n>+0.0%</td><td>0.69</td><td class=n>0.23-0.27 / 0.24-0.27</td><td class=wrap>no rule</td></tr>
+<tr ><td>32K</td><td>P2P/-/32</td><td>P2P/-/48</td><td>P2P/-/32</td><td>0.52</td><td>0.51</td><td class=n>-1.9%</td><td>0.19</td><td class=n>0.51-0.54 / 0.41-0.52</td><td class=wrap>no rule</td></tr>
+<tr ><td>64K</td><td>P2P/-/32</td><td>P2P/-/24</td><td>P2P/-/32</td><td>1.04</td><td>1.07</td><td class=g>+2.9%</td><td>0.75</td><td class=n>0.99-1.07 / 0.92-1.09</td><td class=wrap>no rule</td></tr>
+<tr ><td>128K</td><td>P2P/-/32</td><td>P2P/-/40</td><td>P2P/-/32</td><td>2.03</td><td>2.0</td><td class=n>-1.5%</td><td>0.28</td><td class=n>1.94-2.16 / 1.55-2.06</td><td class=wrap>no rule</td></tr>
+<tr ><td>256K</td><td>P2P/-/32</td><td>P2P/-/40</td><td>P2P/-/32</td><td>4.18</td><td>4.17</td><td class=n>-0.2%</td><td>0.28</td><td class=n>4.17-4.26 / 3.5-4.21</td><td class=wrap>no rule</td></tr>
+<tr ><td>512K</td><td>P2P/-/32</td><td>P2P/-/32</td><td>P2P/-/32</td><td>8.07</td><td>8.11</td><td class=n>+0.5%</td><td>0.60</td><td class=n>5.83-8.27 / 4.22-8.29</td><td class=wrap>no rule</td></tr>
+<tr ><td>1M</td><td>P2P/-/32</td><td>P2P/-/40</td><td>P2P/-/32</td><td>14.22</td><td>13.98</td><td class=n>-1.7%</td><td>0.25</td><td class=n>7.61-14.4 / 12.34-14.14</td><td class=wrap>no rule</td></tr>
+<tr ><td>2M</td><td>P2P/-/32</td><td>P2P/-/24</td><td>P2P/-/32</td><td>19.55</td><td>20.21</td><td class=g>+3.4%</td><td>0.65</td><td class=n>13.95-20.36 / 19.07-20.42</td><td class=wrap>no rule</td></tr>
+<tr ><td>4M</td><td>P2P/-/32</td><td>P2P/-/24</td><td>P2P/-/32</td><td>25.21</td><td>24.95</td><td class=n>-1.0%</td><td>0.25</td><td class=n>21.9-25.36 / 23.74-25.32</td><td class=wrap>no rule</td></tr>
+<tr ><td>8M</td><td>P2P/-/32</td><td>P2P/-/32</td><td>P2P/-/32</td><td>41.32</td><td>41.85</td><td class=n>+1.3%</td><td>0.77</td><td class=n>39.65-42.0 / 41.24-42.24</td><td class=wrap>no rule</td></tr>
+<tr ><td>16M</td><td>P2P/-/32</td><td>P2P/-/16</td><td>P2P/-/32</td><td>45.91</td><td>46.17</td><td class=n>+0.6%</td><td>0.49</td><td class=n>43.57-47.86 / 39.38-47.87</td><td class=wrap>no rule</td></tr>
+<tr ><td>32M</td><td>P2P/-/32</td><td>P2P/-/40</td><td>P2P/-/32</td><td>48.8</td><td>50.01</td><td class=g>+2.5%</td><td>0.72</td><td class=n>44.99-52.18 / 47.03-52.22</td><td class=wrap>no rule</td></tr>
+<tr ><td>64M</td><td>P2P/-/32</td><td>P2P/-/24</td><td>P2P/-/32</td><td>43.33</td><td>56.36</td><td class=g>+30.1%</td><td>1.00</td><td class=n>32.42-47.17 / 54.25-56.94</td><td class=wrap>no rule</td></tr>
+<tr ><td>128M</td><td>P2P/-/32</td><td>P2P/-/24</td><td>P2P/-/32</td><td>44.74</td><td>58.54</td><td class=g>+30.8%</td><td>1.00</td><td class=n>39.54-49.69 / 58.21-58.8</td><td class=wrap>no rule</td></tr>
+<tr ><td>256M</td><td>P2P/-/32</td><td>P2P/-/24</td><td>P2P/-/32</td><td>47.55</td><td>59.96</td><td class=g>+26.1%</td><td>1.00</td><td class=n>45.9-50.1 / 56.84-60.19</td><td class=wrap>no rule</td></tr>
+<tr ><td>512M</td><td>P2P/-/32</td><td>P2P/-/40</td><td>P2P/-/32</td><td>53.87</td><td>59.69</td><td class=g>+10.8%</td><td>1.00</td><td class=n>52.52-54.78 / 59.05-61.02</td><td class=wrap>no rule</td></tr>
+</table></div>
+<details><summary>raw A/B runs</summary><div class=tw><table class=fit><tr><th>size</th><th>arm</th><th>runs</th><th>median</th></tr>
+<tr><td>4K</td><td>default</td><td class=runs>0.07 0.06 0.07 0.05 0.07 0.07 0.07 0.04 0.07</td><td><b>0.07</b></td></tr>
+<tr><td>4K</td><td>config</td><td class=runs>0.06 0.05 0.06 0.06 0.05 0.06 0.06 0.02 0.06</td><td><b>0.06</b></td></tr>
+<tr><td>8K</td><td>default</td><td class=runs>0.01 0.11 0.13 0.12 0.13 0.11 0.12 0.07 0.11</td><td><b>0.11</b></td></tr>
+<tr><td>8K</td><td>config</td><td class=runs>0.13 0.13 0.13 0.12 0.13 0.13 0.12 0.12 0.13</td><td><b>0.13</b></td></tr>
+<tr><td>16K</td><td>default</td><td class=runs>0.27 0.23 0.26 0.26 0.24 0.26 0.27 0.23 0.23</td><td><b>0.26</b></td></tr>
+<tr><td>16K</td><td>config</td><td class=runs>0.27 0.26 0.27 0.27 0.27 0.26 0.24 0.26 0.24</td><td><b>0.26</b></td></tr>
+<tr><td>32K</td><td>default</td><td class=runs>0.51 0.54 0.52 0.53 0.51 0.53 0.53 0.52 0.52</td><td><b>0.52</b></td></tr>
+<tr><td>32K</td><td>config</td><td class=runs>0.46 0.52 0.5 0.52 0.51 0.41 0.52 0.5 0.52</td><td><b>0.51</b></td></tr>
+<tr><td>64K</td><td>default</td><td class=runs>1.04 1.06 1.04 0.99 1.03 1.07 1.04 1.07 1.03</td><td><b>1.04</b></td></tr>
+<tr><td>64K</td><td>config</td><td class=runs>0.92 1.09 1.09 1.07 1.08 1.07 1.0 1.08 1.07</td><td><b>1.07</b></td></tr>
+<tr><td>128K</td><td>default</td><td class=runs>1.94 1.99 2.12 1.98 2.01 2.16 2.03 2.12 2.07</td><td><b>2.03</b></td></tr>
+<tr><td>128K</td><td>config</td><td class=runs>1.78 1.92 2.06 2.0 1.55 2.04 2.06 1.68 2.06</td><td><b>2.0</b></td></tr>
+<tr><td>256K</td><td>default</td><td class=runs>4.26 4.18 4.17 4.19 4.17 4.25 4.18 4.24 4.17</td><td><b>4.18</b></td></tr>
+<tr><td>256K</td><td>config</td><td class=runs>3.5 4.18 4.19 3.79 4.21 4.16 4.14 4.2 4.17</td><td><b>4.17</b></td></tr>
+<tr><td>512K</td><td>default</td><td class=runs>7.77 5.83 6.76 8.18 8.15 8.15 8.07 8.27 6.82</td><td><b>8.07</b></td></tr>
+<tr><td>512K</td><td>config</td><td class=runs>8.23 8.26 7.93 8.11 8.09 8.29 4.22 8.28 6.1</td><td><b>8.11</b></td></tr>
+<tr><td>1M</td><td>default</td><td class=runs>14.22 7.61 14.16 14.25 14.4 14.39 12.75 14.24 14.0</td><td><b>14.22</b></td></tr>
+<tr><td>1M</td><td>config</td><td class=runs>14.08 14.01 14.14 13.96 13.98 12.71 12.34 13.9 14.08</td><td><b>13.98</b></td></tr>
+<tr><td>2M</td><td>default</td><td class=runs>20.36 16.77 18.9 19.55 13.95 20.35 20.31 20.22 19.44</td><td><b>19.55</b></td></tr>
+<tr><td>2M</td><td>config</td><td class=runs>20.29 20.16 19.07 20.21 20.42 20.28 19.7 19.72 20.39</td><td><b>20.21</b></td></tr>
+<tr><td>4M</td><td>default</td><td class=runs>25.05 25.21 25.17 25.36 25.27 25.33 25.21 21.9 25.26</td><td><b>25.21</b></td></tr>
+<tr><td>4M</td><td>config</td><td class=runs>25.2 25.2 25.32 23.99 24.95 23.74 25.12 23.77 23.9</td><td><b>24.95</b></td></tr>
+<tr><td>8M</td><td>default</td><td class=runs>39.65 41.89 41.32 40.48 41.22 42.0 41.69 40.71 41.71</td><td><b>41.32</b></td></tr>
+<tr><td>8M</td><td>config</td><td class=runs>41.94 41.99 42.24 41.76 41.57 42.23 41.24 41.85 41.47</td><td><b>41.85</b></td></tr>
+<tr><td>16M</td><td>default</td><td class=runs>47.64 45.91 43.57 47.86 47.13 44.82 46.28 45.73 45.82</td><td><b>45.91</b></td></tr>
+<tr><td>16M</td><td>config</td><td class=runs>43.49 46.17 47.87 45.16 47.62 46.13 46.3 39.38 47.04</td><td><b>46.17</b></td></tr>
+<tr><td>32M</td><td>default</td><td class=runs>52.18 48.8 48.29 49.94 48.48 46.69 49.4 44.99 50.23</td><td><b>48.8</b></td></tr>
+<tr><td>32M</td><td>config</td><td class=runs>47.03 50.94 50.01 50.1 49.82 51.64 49.84 52.22 49.16</td><td><b>50.01</b></td></tr>
+<tr><td>64M</td><td>default</td><td class=runs>47.17 43.75 46.18 32.42 43.33 39.97 40.84 34.8 43.68</td><td><b>43.33</b></td></tr>
+<tr><td>64M</td><td>config</td><td class=runs>54.57 56.81 56.36 56.29 56.68 56.94 56.29 54.25 56.62</td><td><b>56.36</b></td></tr>
+<tr><td>128M</td><td>default</td><td class=runs>44.67 43.67 49.69 39.54 49.27 47.08 44.1 44.74 46.83</td><td><b>44.74</b></td></tr>
+<tr><td>128M</td><td>config</td><td class=runs>58.69 58.54 58.26 58.21 58.8 58.71 58.55 58.47 58.31</td><td><b>58.54</b></td></tr>
+<tr><td>256M</td><td>default</td><td class=runs>46.42 46.36 47.66 49.26 48.6 50.1 46.27 47.55 45.9</td><td><b>47.55</b></td></tr>
+<tr><td>256M</td><td>config</td><td class=runs>58.37 60.15 60.19 59.96 60.15 56.84 60.12 59.83 57.89</td><td><b>59.96</b></td></tr>
+<tr><td>512M</td><td>default</td><td class=runs>53.88 53.96 54.06 52.52 53.62 53.65 53.71 53.87 54.78</td><td><b>53.87</b></td></tr>
+<tr><td>512M</td><td>config</td><td class=runs>60.98 60.95 61.02 59.05 59.66 59.24 59.69 60.13 59.35</td><td><b>59.69</b></td></tr>
+</table></div></details>
+<h2>5 nodes</h2>
+<p class=note>run <b>2026-08-26-1-a2a45</b> · search 21 runs vs grid 27 (&minus;22%), 7 configs, 9 min search · 9 A/B repeats/arm</p>
+<h3>Per size (predicted from the search - <span class=b>NOT validated, does not ship</span>)</h3>
+<p class=note>Search measurements (env-var path); executed combos from the search runs' debug logs. P(sup)/spread/verdict require an A/B and stay blank.</p>
+<div class=tw><table><tr><th>size</th><th>default executed</th><th>ours requested</th><th>ours executed</th><th>default med</th><th>ours med</th><th>gain</th><th>P(sup)</th><th>spread def / cfg</th><th>verdict</th></tr>
+<tr><td>3.8K</td><td>P2P/-/64</td><td>P2P/-/40</td><td>P2P/-/64</td><td>0.05</td><td>0.05</td><td class=n>+0.0%</td><td class=n></td><td class=n></td><td class='wrap n'>no A/B</td></tr>
+<tr><td>7.5K</td><td>P2P/-/64</td><td>P2P/-/24</td><td>P2P/-/32</td><td>0.09</td><td>0.09</td><td class=n>+0.0%</td><td class=n></td><td class=n></td><td class='wrap n'>no A/B</td></tr>
+<tr><td>15.6K</td><td>P2P/-/64</td><td>P2P/-/24</td><td>P2P/-/32</td><td>0.19</td><td>0.18</td><td class=b>-5.3%</td><td class=n></td><td class=n></td><td class='wrap n'>no A/B</td></tr>
+<tr><td>31.9K</td><td>P2P/-/64</td><td>P2P/-/40</td><td>P2P/-/64</td><td>0.38</td><td>0.41</td><td class=g>+7.9%</td><td class=n></td><td class=n></td><td class='wrap n'>no A/B</td></tr>
+<tr><td>63.8K</td><td>P2P/-/64</td><td>P2P/-/40</td><td>P2P/-/64</td><td>0.79</td><td>0.82</td><td class=g>+3.8%</td><td class=n></td><td class=n></td><td class='wrap n'>no A/B</td></tr>
+<tr><td>127.5K</td><td>P2P/-/64</td><td>P2P/-/40</td><td>P2P/-/64</td><td>1.58</td><td>1.56</td><td class=n>-1.3%</td><td class=n></td><td class=n></td><td class='wrap n'>no A/B</td></tr>
+<tr><td>255.6K</td><td>P2P/-/64</td><td>P2P/-/40</td><td>P2P/-/64</td><td>3.1</td><td>3.12</td><td class=n>+0.6%</td><td class=n></td><td class=n></td><td class='wrap n'>no A/B</td></tr>
+<tr><td>511.9K</td><td>P2P/-/64</td><td>P2P/-/48</td><td>P2P/-/64</td><td>6.3</td><td>6.16</td><td class=b>-2.2%</td><td class=n></td><td class=n></td><td class='wrap n'>no A/B</td></tr>
+<tr><td>1023.8K</td><td>P2P/-/64</td><td>P2P/-/32</td><td>P2P/-/32</td><td>11.31</td><td>11.3</td><td class=n>-0.1%</td><td class=n></td><td class=n></td><td class='wrap n'>no A/B</td></tr>
+<tr><td>2.0M</td><td>P2P/-/64</td><td>P2P/-/48</td><td>P2P/-/64</td><td>17.36</td><td>17.36</td><td class=n>+0.0%</td><td class=n></td><td class=n></td><td class='wrap n'>no A/B</td></tr>
+<tr><td>4.0M</td><td>P2P/-/64</td><td>P2P/-/24</td><td>P2P/-/32</td><td>22.36</td><td>22.46</td><td class=n>+0.4%</td><td class=n></td><td class=n></td><td class='wrap n'>no A/B</td></tr>
+<tr><td>8.0M</td><td>P2P/-/64</td><td>P2P/-/16</td><td>P2P/-/16</td><td>34.56</td><td>34.46</td><td class=n>-0.3%</td><td class=n></td><td class=n></td><td class='wrap n'>no A/B</td></tr>
+<tr><td>16.0M</td><td>P2P/-/64</td><td>P2P/-/16</td><td>P2P/-/16</td><td>37.18</td><td>40.69</td><td class=g>+9.4%</td><td class=n></td><td class=n></td><td class='wrap n'>no A/B</td></tr>
+<tr><td>32.0M</td><td>P2P/-/64</td><td>P2P/-/32</td><td>P2P/-/32</td><td>42.3</td><td>43.41</td><td class=g>+2.6%</td><td class=n></td><td class=n></td><td class='wrap n'>no A/B</td></tr>
+<tr><td>64.0M</td><td>P2P/-/64</td><td>P2P/-/24</td><td>P2P/-/32</td><td>52.08</td><td>52.36</td><td class=n>+0.5%</td><td class=n></td><td class=n></td><td class='wrap n'>no A/B</td></tr>
+<tr><td>128.0M</td><td>P2P/-/64</td><td>P2P/-/24</td><td>P2P/-/32</td><td>54.02</td><td>54.46</td><td class=n>+0.8%</td><td class=n></td><td class=n></td><td class='wrap n'>no A/B</td></tr>
+<tr><td>256.0M</td><td>P2P/-/64</td><td>P2P/-/40</td><td>P2P/-/64</td><td>54.57</td><td>54.45</td><td class=n>-0.2%</td><td class=n></td><td class=n></td><td class='wrap n'>no A/B</td></tr>
+<tr><td>512.0M</td><td>P2P/-/64</td><td>P2P/-/16</td><td>P2P/-/16</td><td>52.65</td><td>53.81</td><td class=g>+2.2%</td><td class=n></td><td class=n></td><td class='wrap n'>no A/B</td></tr>
+</table></div>
