@@ -356,6 +356,42 @@ def preflight(args, scales, rules=None):
     return excluded if ok else None
 
 
+RESOLUTION = 0.005  # benchmark prints busbw to 0.01: half a print unit
+
+
+def mad_core(vals, z=3.5):
+    """Repeats within z robust-z of the median (Iglewicz-Hoaglin). MAD=0
+    falls back to the mean absolute deviation; scale floored at RESOLUTION."""
+    med = statistics.median(vals)
+    mad = statistics.median([abs(v - med) for v in vals])
+    scale = 1.4826 * mad if mad > 0 else \
+        1.2533 * statistics.mean([abs(v - med) for v in vals])
+    scale = max(scale, RESOLUTION)
+    return [v for v in vals if abs(v - med) / scale <= z]
+
+
+def cv_pct(vals):
+    m = statistics.mean(vals) if vals else 0
+    return statistics.stdev(vals) / m * 100 if len(vals) > 1 and m else 0.0
+
+
+def point_noisy_cv_core(vals, cv_limit=8.0, core_min=7):
+    """The cv-core gate (agreed 2026-08-27): a point is noisy when its CV
+    exceeds cv_limit AND its MAD core (>= core_min repeats) is not itself
+    under the limit. Single transient dips are rescued via the core; chronic
+    scatter and true bimodal collapse still flag."""
+    if cv_pct(vals) <= cv_limit:
+        return False
+    core = mad_core(vals)
+    return not (len(core) >= core_min and cv_pct(core) <= cv_limit)
+
+
+def gate_values(vals, gate):
+    """The repeats a rule's verdict is computed on: raw for the spread gate,
+    the MAD core for cv-core (dips identified as outliers are discarded)."""
+    return mad_core(vals) if gate == "cv-core" and len(vals) >= 2 else vals
+
+
 def psup(a, b):
     """Probability that a random draw from `a` exceeds a random draw from `b` (ties count half)."""
     if not a or not b:
@@ -533,6 +569,18 @@ def main():
                          "more than --max-arm-spread mean the environment is unusable. 0 disables.")
     ap.add_argument("--no-preflight", action="store_true",
                     help="skip the preflight and run the A/B regardless")
+    ap.add_argument("--noise-gate", choices=["spread", "cv-core"], default="spread",
+                    help="point-noise rule for the rc=2 void accounting and the verdict inputs. "
+                         "'spread' (default, original): (max-min)/min > 25%%, verdicts on raw "
+                         "repeats. 'cv-core' (agreed 2026-08-27): noisy when CV > 8%% AND the "
+                         "MAD core (>=7 repeats within 3.5 robust-z) is not under 8%% CV; "
+                         "verdicts are computed on the cores (transient dips discarded).")
+    ap.add_argument("--replay-stats", default=None, metavar="PER_SIZE_STATS.CSV",
+                    help="OFFLINE replay: take both arms' repeats (and executed combos) from a "
+                         "stored per_size_stats.csv instead of running anything. No cluster "
+                         "contact. Preflight is replaced by: a size is excluded when its "
+                         "DEFAULT-arm point is noisy under the active gate (baseline "
+                         "untrustworthy). Meant for re-judging voided runs under a new gate.")
     ap.add_argument("--preflight-scope", choices=["all", "rules"], default="all",
                     help="'rules' (agreed 2026-08-26): judge preflight spread only on sizes the "
                          "config ships rules for, and EXCLUDE chronically noisy sizes instead of "
@@ -635,19 +683,52 @@ def main():
             for k in sorted(_probe_env):
                 fh.write(f"{k}={_probe_env[k]}\n")
 
+    def point_noisy(vals):
+        if args.noise_gate == "cv-core":
+            return point_noisy_cv_core(vals)
+        return len(vals) >= 2 and min(vals) > 0 and \
+            (max(vals) - min(vals)) / min(vals) * 100 > args.max_arm_spread
+
     pf_excluded = {n: set() for n in scales}
-    if args.preflight and not args.no_preflight:
+    replay_exec = {}
+    if args.replay_stats:
+        # offline: repeats and executed combos come from the stored sidecar
+        measured = {n: {"default": defaultdict(list), "config": defaultdict(list)}
+                    for n in scales}
+        with open(args.replay_stats) as fh:
+            for row in csv.DictReader(fh):
+                n, s = int(row["nodes"]), int(row["size_bytes"])
+                if n not in measured:
+                    continue
+                for variant, key in (("default", "def_runs"), ("config", "cfg_runs")):
+                    vals = [float(x) for x in row[key].split(";") if x]
+                    measured[n][variant][s] = vals
+                    lbl = row.get("def_exec" if variant == "default" else "cfg_exec", "")
+                    if lbl:
+                        parts = lbl.split("/")
+                        replay_exec.setdefault((n, variant), {})[s] = \
+                            (parts[0], parts[1] if len(parts) > 1 else "",
+                             parts[2] if len(parts) > 2 else "", None)
+        for n in scales:
+            pf_excluded[n] = {s for s, vals in measured[n]["default"].items()
+                              if point_noisy(vals)}
+            if pf_excluded[n]:
+                print(f"replay: {n}n sizes excluded (default arm noisy under "
+                      f"{args.noise_gate}): {sorted(pf_excluded[n])}")
+        print(f"replay: repeats loaded from {args.replay_stats}, gate {args.noise_gate}\n")
+    elif args.preflight and not args.no_preflight:
         pf = preflight(args, scales,
                        rules if args.preflight_scope == "rules" else None)
         if pf is None:
             return 3
         pf_excluded.update(pf)
 
-    measured = {}   # nodes -> variant -> size -> [busbw]
+    if not args.replay_stats:
+        measured = {}   # nodes -> variant -> size -> [busbw]
     hangs = defaultdict(int)
     total = defaultdict(int)
 
-    for nodes in scales:
+    for nodes in (scales if not args.replay_stats else []):
         measured[nodes] = {"default": defaultdict(list), "config": defaultdict(list)}
 
         # --- clock warm-up ------------------------------------------------------------------------
@@ -747,8 +828,10 @@ def main():
                     continue
                 dm = statistics.median(b)
                 de = exec_truth.get((nodes, "default"), {}).get(s2) \
+                    or replay_exec.get((nodes, "default"), {}).get(s2) \
                     or p2p_truth.get((nodes, "default"))
                 ce = exec_truth.get((nodes, "config"), {}).get(s2) \
+                    or replay_exec.get((nodes, "config"), {}).get(s2) \
                     or p2p_truth.get((nodes, "config"))
                 d_lbl = f"{de[0]}/{de[1]}/{de[2]}" if de else ""
                 c_lbl = f"{ce[0]}/{ce[1]}/{ce[2]}" if ce else ""
@@ -785,7 +868,8 @@ def main():
         gains, psups, worst = [], [], 0.0
         per_size = []          # (size, gain, psup) for the sizes that actually have data
         for s in sizes:
-            a, b = cand.get(s, []), base.get(s, [])
+            a = gate_values(cand.get(s, []), args.noise_gate)
+            b = gate_values(base.get(s, []), args.noise_gate)
             if len(a) < 2 or len(b) < 2:
                 continue
             g = (statistics.median(a) / statistics.median(b) - 1) * 100
@@ -850,9 +934,8 @@ def main():
                 if _sz in pf_excluded.get(_n, set()):
                     continue
                 if len(_vals) >= 2 and min(_vals) > 0:
-                    _spreads_pre.append((max(_vals) - min(_vals)) / min(_vals) * 100)
-    _noisy_pre = [x for x in _spreads_pre if x > args.max_arm_spread]
-    _invalid_pre = len(_noisy_pre) > len(_spreads_pre) * args.max_noisy_fraction
+                    _spreads_pre.append(point_noisy(_vals))
+    _invalid_pre = sum(_spreads_pre) > len(_spreads_pre) * args.max_noisy_fraction
     if _invalid_pre and os.path.exists(out):
         os.rename(out, out + ".stale")  # do not let an old file masquerade
     with open(out if not _invalid_pre else out + ".VOID-rc2", "w") as fh:
@@ -892,9 +975,10 @@ def main():
                 if size in pf_excluded.get(nodes, set()):
                     continue  # scoped-preflight exclusion, see above
                 if len(vals) >= 2 and min(vals) > 0:
-                    spreads.append(((max(vals) - min(vals)) / min(vals) * 100, nodes, variant, size))
+                    spreads.append(((max(vals) - min(vals)) / min(vals) * 100,
+                                    nodes, variant, size, point_noisy(vals)))
     worst_spread = max(spreads)[0] if spreads else 0.0
-    noisy = [s for s in spreads if s[0] > args.max_arm_spread]
+    noisy = [s for s in spreads if s[4]]
 
     print(f"\nwithin-arm spread: worst {worst_spread:.1f}%, "
           f"{len(noisy)} of {len(spreads)} (size, arm) points over {args.max_arm_spread:.0f}%")
@@ -903,7 +987,7 @@ def main():
     print(f"\nkept {len(kept)} of {len(rules)} rules -> {out}")
 
     if invalid:
-        wp, wn, wv, ws = max(spreads)
+        wp, wn, wv, ws, _ = max(spreads)
         print(f"\n*** RUN NOT VALID. {len(noisy)} of {len(spreads)} points exceed "
               f"{args.max_arm_spread:.0f}% within-arm spread (worst {wp:.0f}% at "
               f"{ws} bytes, {wn}n {wv}).\n"
