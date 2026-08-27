@@ -22,7 +22,7 @@ details{margin:8px 0}summary{cursor:pointer;color:#6ea8ff;font-size:13px}</style
 <p><a href='index.html'>&larr; all collectives</a></p>
 <h1>alltoall</h1>
 <p class=note>alltoall never reaches RCCL's collective tuner: it is decomposed into p2p send/recv tasks at enqueue, so NCCL_ALGO/NCCL_PROTO requests are no-ops, <code>-A 1</code> prints N/A, and the tuner plugin cannot apply per-size rules. The search therefore sweeps the channel request only ('P2P/-/N'), the deployable artifact is one global NCCL_MIN/MAX_NCHANNELS value, and the A/B validates that env setting against the untouched default. Executed channels are read from the debug logs' 'p2p channels' line.</p>
-<p class=note>1n: <span class=n>defaults win</span> &nbsp;·&nbsp; 2n: <span class=n>defaults win (search)</span> &nbsp;·&nbsp; 3n: <span class=n>defaults win</span> &nbsp;·&nbsp; 4n: <span class=warn>no live verdict</span> &nbsp;·&nbsp; 5n: <span class=n>defaults win (search)</span></p>
+<p class=note>1n: <span class=n>defaults win</span> &nbsp;·&nbsp; 2n: <span class=warn>no live verdict</span> &nbsp;·&nbsp; 3n: <span class=n>defaults win</span> &nbsp;·&nbsp; 4n: <span class=warn>no live verdict</span> &nbsp;·&nbsp; 5n: <span class=warn>no live verdict</span></p>
 <h2>1 node</h2>
 <p class=note>run <b>2026-08-26-1-a2a123</b> · search 21 runs vs grid 27 (&minus;22%), 7 configs, 4 min search · 9 A/B repeats/arm</p>
 <p class=warn>&#9888; candidate ch=40 A/B&#x27;d 2026-08-26: no rule survived - defaults win. 32K excluded by the scoped preflight (chronic 690% same-config scatter).</p>
