@@ -97,6 +97,15 @@ Entry criteria — this is the whole point of the folder:
 # Cluster
 - Partition `XAI`, nodes `amd-mi355x-1..9`, 8 GPUs per node. Skip node2
   (orchestrator). node9 ssh access verified 2026-08-24 - usable, but fabric never probed; probe before first use.
+- **Fabric topology** (source: gpu-cluster plugin, cluster-admin skill): 2-rail
+  fat-tree, RDMA/RoCE. Nodes **1,3,5,7 hang on the L1 leaves; 2,4,6,8,9 on the
+  L2 leaves**; L1<->L2 traffic crosses shared spine switches that ALSO carry the
+  ses2/des2 clusters' traffic - an empty XAI queue does not mean a quiet fabric.
+  Same-leaf traffic never leaves the leaf. Only same-leaf 4-node set that is
+  healthy: {1,3,5,7} (L2 side has node 2 forbidden + node 4 broken, so an
+  all-L2 set is impossible). Working hypothesis (unproven, experiment pending
+  2026-08-27): the chronic 4n/5n A/B noise is spine congestion - any node set
+  mixing L1+L2 is exposed; 5+ nodes are forced to mix.
 - Binaries (`all_reduce_perf` etc.) are at `/opt/shared/ylerman/GPU-107/bin`,
   which the sweep reads as `$MY_PATH`.
 - `/opt/shared` is NFS on the cluster nodes and is **not** mounted on this dev VM.
