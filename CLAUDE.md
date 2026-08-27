@@ -109,8 +109,12 @@ Entry criteria — this is the whole point of the folder:
   not per sweep, not per phase. Release once at the end.
 - Book the largest node count needed, then run smaller scales on a subset of the
   same nodes. Never release a node to re-book it.
-- Pin which nodes each scale uses and keep it fixed across the session. A 2-node
-  run on a different pair is not comparable to the previous one.
+- Node choice is free (healthy nodes only — skip node 2, node 4, and node 9
+  until its fabric is probed). RUNLOG's nodelist column is what keeps runs
+  comparable after the fact; within one A/B both arms share nodes by
+  construction. (Strict cross-session pinning dropped 2026-08-27 — it was
+  never followed before the CLI anyway: broadcast 2n's early attempts ran on
+  three different pairs.)
 - Never `scancel -u dn` — `dn` is shared and it kills other people's jobs. Cancel
   by job id.
 - **`srun --export` uses commas as its OWN separator.** Any comma-containing value
