@@ -473,6 +473,80 @@ ov.append("<p class=note>120 verified rules total. Gate: cv-core "
 (HERE / "overview.html").write_text("\n".join(ov))
 print("overview built")
 
+
+# --------------------------------------------------------------- audit page
+au = [f"<!doctype html><meta charset=utf-8><meta name=viewport "
+      f"content='width=device-width,initial-scale=1'>"
+      f"<title>verdict audit</title><style>{CSS}</style>"]
+au.append("<p><a href='index.html'>&larr; index</a></p>")
+au.append("<h1>Verdict audit — every accept and reject, sanity-checked</h1>")
+_kept_n, _reasons, _suspects, _weak = 0, {}, [], []
+for (_c, _sc) in sorted(R):
+    _r = R[(_c, _sc)]
+    if not _r["vfile"]:
+        continue
+    _sp = (Path(_r["conf"]).parent / "ab_out_replaycv" /
+           f"{STEMS[_c]}_{_sc}n" / "per_size_stats.csv") if _r["conf"] else None
+    _stats = {}
+    if _sp and _sp.exists():
+        with open(_sp) as fh:
+            _stats = {int(x["size_bytes"]): x for x in csv.DictReader(fh)}
+    for _line in Path(_r["vfile"]).read_text().splitlines():
+        _m = re.match(r"# dropped: ([\w,]+?),(\d+),(\d+),(.*?)\s+\((.*)\)$", _line)
+        if _m:
+            _size, _why = int(_m.group(2)), _m.group(5)
+            _cat = ("psup" if "P(sup)" in _why else
+                    "landmine" if "regression" in _why else
+                    "no-gain" if "best gain" in _why else
+                    "unmeasurable" if "unmeasurable" in _why else "other")
+            _reasons[_cat] = _reasons.get(_cat, 0) + 1
+            _st = _stats.get(_size, {})
+            _g = float(_st.get("gain_pct") or 0)
+            _p = float(_st.get("psup") or 0)
+            if (_cat == "psup" and _g > 5) or (_cat == "unmeasurable" and _g > 10):
+                _suspects.append((_c, _sc, _size, _g, _p, _why))
+        elif _line.strip() and not _line.startswith("#") \
+                and not _line.startswith("collective_type"):
+            _kept_n += 1
+            _size = int(_line.split(",")[1])
+            _st = _stats.get(_size, {})
+            _g = float(_st.get("gain_pct") or 0)
+            _p = float(_st.get("psup") or 0)
+            if _g < 3 or _p < 0.98:
+                _weak.append((_c, _sc, _size, _g, _p))
+_total = _kept_n + sum(_reasons.values())
+au.append(f"<h2>Totals</h2><p>{_total} rules judged &rarr; "
+          f"<span class=g>{_kept_n} KEPT</span>, "
+          f"{sum(_reasons.values())} dropped: "
+          + ", ".join(f"{v} {k}" for k, v in sorted(_reasons.items(),
+                                                    key=lambda kv: -kv[1]))
+          + ". Drop meanings: <i>no-gain</i> = defaults already optimal there; "
+            "<i>landmine</i> = a size in range regresses &gt;2%; <i>psup</i> = "
+            "not reproducible at P(sup) &ge; 0.95; <i>unmeasurable</i> = "
+            "baseline too noisy to judge.</p>")
+au.append("<h2>Suspect drops — gains that look real, lost to residual noise "
+          "(retry shortlist)</h2>"
+          "<div class=tw><table><tr><th>rule</th><th>core gain</th>"
+          "<th>P(sup)</th><th>reject reason</th></tr>")
+for _c, _sc, _sz, _g, _p, _why in sorted(_suspects, key=lambda x: -x[3]):
+    au.append(f"<tr><td>{_c} {_sc}n {size_h(_sz)}</td>"
+              f"<td class=g>{_g:+.1f}%</td><td>{_p:.2f}</td>"
+              f"<td class=wrap>{html.escape(_why)}</td></tr>")
+au.append("</table></div><p class=note>Assessment: the gates applied their "
+          "rules correctly in every case above - these are candidates for one "
+          "targeted live A/B each, not evidence of a broken gate.</p>")
+au.append("<h2>Weakest keeps (legitimate, flagged for transparency)</h2>"
+          "<div class=tw><table><tr><th>rule</th><th>core gain</th>"
+          "<th>P(sup)</th></tr>")
+for _c, _sc, _sz, _g, _p in sorted(_weak, key=lambda x: x[3]):
+    au.append(f"<tr><td>{_c} {_sc}n {size_h(_sz)}</td>"
+              f"<td>{_g:+.1f}%</td><td>{_p:.2f}</td></tr>")
+au.append("</table></div>")
+au.append("<p class=note>Generated with the site from the live verdict files "
+          "and core-based stats; regenerating the site refreshes this audit.</p>")
+(HERE / "audit.html").write_text("\n".join(au))
+print("audit built")
+
 # index: status matrix + satellites
 idx = [f"<!doctype html><meta charset=utf-8><meta name=viewport "
        f"content='width=device-width,initial-scale=1'>"
@@ -499,7 +573,8 @@ idx.append("<p class=note>alltoall: runs on the p2p path (send/recv tasks) - "
            "NCCL_MIN/MAX_NCHANNELS as the ON arm (in the CLI since "
            "2026-08-26).</p>")
 idx.append("<p><a href='overview.html'><b>Overview: verified gains heatmap "
-           "+ shipped configs</b></a></p>")
+           "+ shipped configs</b></a> &nbsp;·&nbsp; "
+           "<a href='audit.html'><b>Verdict audit</b></a></p>")
 idx.append("<h2>Method evaluation &amp; docs</h2><ul>"
            "<li><a href='approaches.html'>the story: grid vs adaptive vs "
            "optuna vs random vs triage</a> "

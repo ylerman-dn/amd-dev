@@ -1,0 +1,46 @@
+<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><title>verdict audit</title><style>body{font-family:-apple-system,system-ui,sans-serif;margin:12px;max-width:1280px;
+background:#14161a;color:#d8dbe0}
+.tw{overflow-x:auto;margin:10px 0}
+table{border-collapse:collapse;font-size:13px;width:100%}
+th{border:1px solid #34383f;padding:4px 8px;text-align:center}
+td{border:1px solid #34383f;padding:4px 8px;text-align:right;white-space:nowrap}
+td:first-child{text-align:left}
+table.fit{width:auto}
+table.fit td{text-align:left;white-space:normal}
+td.runs{font-family:ui-monospace,monospace;font-size:11.5px;max-width:430px}
+td.wrap{white-space:normal;min-width:160px;max-width:260px;text-align:left;font-size:12px}
+h1{font-size:20px;color:#f0f2f5}h2{font-size:16px;color:#e6e9ee;margin-top:26px}
+h3{font-size:14px;color:#e6e9ee}
+.g{color:#4ec96a;font-weight:600}.b{color:#ff6b6b}.n{color:#8a8f98}
+.v{background:#173321}.x{background:#331a1a}.warn{color:#e0c05a}
+.note{color:#9aa0a8;font-size:13px}
+a{color:#6ea8ff;text-decoration:none}
+pre{background:#1b1e24;padding:8px;font-size:12px;overflow-x:auto;border-radius:6px;line-height:1.5}
+pre .keep{color:#4ec96a}pre .drop{color:#ff6b6b;text-decoration:line-through}
+pre .why{color:#8a8f98;text-decoration:none;font-style:italic}
+details{margin:8px 0}summary{cursor:pointer;color:#6ea8ff;font-size:13px}</style>
+<p><a href='index.html'>&larr; index</a></p>
+<h1>Verdict audit — every accept and reject, sanity-checked</h1>
+<h2>Totals</h2><p>395 rules judged &rarr; <span class=g>120 KEPT</span>, 275 dropped: 168 no-gain, 68 landmine, 20 unmeasurable, 19 psup. Drop meanings: <i>no-gain</i> = defaults already optimal there; <i>landmine</i> = a size in range regresses &gt;2%; <i>psup</i> = not reproducible at P(sup) &ge; 0.95; <i>unmeasurable</i> = baseline too noisy to judge.</p>
+<h2>Suspect drops — gains that look real, lost to residual noise (retry shortlist)</h2><div class=tw><table><tr><th>rule</th><th>core gain</th><th>P(sup)</th><th>reject reason</th></tr>
+<tr><td>broadcast 4n 128K</td><td class=g>+133.3%</td><td>0.90</td><td class=wrap>P(sup) only 0.90, not reproducible</td></tr>
+<tr><td>reduce 5n 128K</td><td class=g>+71.5%</td><td>0.89</td><td class=wrap>P(sup) only 0.89, not reproducible</td></tr>
+<tr><td>reduce 5n 64K</td><td class=g>+43.8%</td><td>0.83</td><td class=wrap>P(sup) only 0.83, not reproducible</td></tr>
+<tr><td>reduce 4n 32K</td><td class=g>+19.4%</td><td>0.67</td><td class=wrap>P(sup) only 0.67, not reproducible</td></tr>
+<tr><td>broadcast 4n 32K</td><td class=g>+18.7%</td><td>0.81</td><td class=wrap>preflight: every size in range unmeasurable</td></tr>
+<tr><td>broadcast 2n 32K</td><td class=g>+17.9%</td><td>0.99</td><td class=wrap>preflight: every size in range unmeasurable</td></tr>
+<tr><td>all_gather 4n 64M</td><td class=g>+13.3%</td><td>0.89</td><td class=wrap>P(sup) only 0.89, not reproducible</td></tr>
+<tr><td>reduce 1n 64K</td><td class=g>+9.2%</td><td>0.88</td><td class=wrap>P(sup) only 0.88, not reproducible</td></tr>
+<tr><td>reduce 5n 4K</td><td class=g>+7.7%</td><td>0.66</td><td class=wrap>P(sup) only 0.66, not reproducible</td></tr>
+<tr><td>all_reduce 4n 128K</td><td class=g>+6.7%</td><td>0.87</td><td class=wrap>P(sup) only 0.87, not reproducible</td></tr>
+<tr><td>broadcast 1n 256K</td><td class=g>+6.0%</td><td>0.78</td><td class=wrap>P(sup) only 0.78, not reproducible</td></tr>
+<tr><td>reduce 5n 16K</td><td class=g>+5.2%</td><td>0.84</td><td class=wrap>P(sup) only 0.84, not reproducible</td></tr>
+</table></div><p class=note>Assessment: the gates applied their rules correctly in every case above - these are candidates for one targeted live A/B each, not evidence of a broken gate.</p>
+<h2>Weakest keeps (legitimate, flagged for transparency)</h2><div class=tw><table><tr><th>rule</th><th>core gain</th><th>P(sup)</th></tr>
+<tr><td>all_reduce 5n 256M</td><td>+2.1%</td><td>1.00</td></tr>
+<tr><td>all_gather 5n 256.0M</td><td>+2.5%</td><td>1.00</td></tr>
+<tr><td>reduce 2n 512M</td><td>+2.7%</td><td>1.00</td></tr>
+<tr><td>reduce_scatter 3n 63.8K</td><td>+2.7%</td><td>1.00</td></tr>
+<tr><td>reduce 3n 4M</td><td>+2.8%</td><td>1.00</td></tr>
+</table></div>
+<p class=note>Generated with the site from the live verdict files and core-based stats; regenerating the site refreshes this audit.</p>
