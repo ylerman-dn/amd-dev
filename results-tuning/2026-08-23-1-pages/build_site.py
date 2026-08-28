@@ -382,6 +382,97 @@ for coll in COLLS:
             page.append("</table></div></details>")
     (HERE / f"collective_{coll}.html").write_text("\n".join(page))
 
+
+# ------------------------------------------------------------- overview page
+STEMS = {"all_reduce": "allreduce", "all_gather": "allgather",
+         "reduce_scatter": "reducescatter", "broadcast": "broadcast",
+         "reduce": "reduce", "alltoall": "alltoall"}
+SIZES18 = [4096 * (2 ** i) for i in range(18)]
+
+ov = [f"<!doctype html><meta charset=utf-8><meta name=viewport "
+      f"content='width=device-width,initial-scale=1'>"
+      f"<title>tuning overview</title><style>{CSS}"
+      ".hm td{min-width:52px;text-align:center;font-size:11.5px}"
+      ".g1{background:#1d3a26}.g2{background:#215c31}.g3{background:#2c8c46;color:#fff}"
+      ".dw{background:#22262c;color:#8a8f98}.na{color:#4a4f57}</style>"]
+ov.append("<p><a href='index.html'>&larr; index</a></p>")
+ov.append("<h1>Verified gains — all collectives, all scales</h1>")
+ov.append("<p class=note>Cell = verified A/B gain of the shipped rule covering "
+          "that size (cv-core gate). 'def' = judged, defaults win. Blank = "
+          "unmeasurable or no rule judged there. alltoall ships nothing "
+          "anywhere - its defaults sit on the plateau at every scale.</p>")
+
+def _gain_map(coll, scale, r):
+    """size -> (gain, kept?) for judged sizes; None entries mean unjudged."""
+    out = {}
+    if not r or not r["vfile"]:
+        return out
+    kept_rows, dropped_rows = rules(r["vfile"])
+    sp = (Path(r["conf"]).parent / "ab_out_replaycv" /
+          f"{STEMS[coll]}_{scale}n" / "per_size_stats.csv") if r["conf"] else None
+    stats = {}
+    if sp and sp.exists():
+        with open(sp) as fh:
+            stats = {int(x["size_bytes"]): x for x in csv.DictReader(fh)}
+    for s in SIZES18:
+        covered_kept = any(lo <= s <= hi for _, lo, hi in kept_rows)
+        covered_drop = any(lo <= s <= hi for _, lo, hi, _ in dropped_rows)
+        st = stats.get(s)
+        if covered_kept and st:
+            out[s] = (float(st["gain_pct"] or 0), True)
+        elif covered_drop:
+            out[s] = (None, False)
+    return out
+
+cols = [(c, sc) for c in COLLS for sc in SCALES if (c, sc) in R]
+maps = {cs: _gain_map(cs[0], cs[1], R.get(cs)) for cs in cols}
+ov.append("<div class=tw><table class=hm><tr><th>size</th>" + "".join(
+    f"<th>{c.replace('_', '_<br>')}<br>{sc}n</th>" for c, sc in cols) + "</tr>")
+for s in SIZES18:
+    row = [f"<tr><td>{size_h(s)}</td>"]
+    for cs in cols:
+        e = maps[cs].get(s)
+        if e is None:
+            row.append("<td class=na></td>")
+        elif e[1]:
+            g = e[0]
+            cls = "g3" if g >= 50 else ("g2" if g >= 10 else "g1")
+            row.append(f"<td class={cls}>+{g:.0f}%</td>")
+        else:
+            row.append("<td class=dw>def</td>")
+    ov.append("".join(row) + "</tr>")
+ov.append("</table></div>")
+
+ov.append("<h2>Shipped configs</h2><div class=tw><table><tr><th>collective</th>"
+          + "".join(f"<th>{sc}n</th>" for sc in SCALES) + "</tr>")
+for c in COLLS:
+    cells = []
+    for sc in SCALES:
+        r = R.get((c, sc))
+        if not r or not r["vfile"]:
+            cells.append("<td class=na>-</td>")
+            continue
+        kept_rows, _ = rules(r["vfile"])
+        if not kept_rows:
+            cells.append("<td class=dw>defaults</td>")
+            continue
+        m = maps[(c, sc)]
+        best = max((g for g, k in m.values() if k and g is not None), default=0)
+        fin = Path(r["conf"]).parent / f"{c}_{sc}n.final.conf"
+        rel = fin.relative_to(RT) if fin.exists() else None
+        link = f" · <a href='../{rel}'>conf</a>" if rel else ""
+        cells.append(f"<td>{len(kept_rows)} rules · best +{best:.0f}%{link}</td>")
+    ov.append(f"<tr><td><a href='collective_{c}.html'>{c}</a></td>"
+              + "".join(cells) + "</tr>")
+ov.append("</table></div>")
+ov.append("<p class=note>120 verified rules total. Gate: cv-core "
+          "(2026-08-27). Retry shortlist (real-looking gains lost to residual "
+          "noise): broadcast 4n 128K +133%, reduce 5n 128K +71% / 64K +44%, "
+          "broadcast 4n 32K +19%, broadcast 2n 32K +18% (P 0.99, baseline CV "
+          "8.05%), all_gather 4n 64M +13%.</p>")
+(HERE / "overview.html").write_text("\n".join(ov))
+print("overview built")
+
 # index: status matrix + satellites
 idx = [f"<!doctype html><meta charset=utf-8><meta name=viewport "
        f"content='width=device-width,initial-scale=1'>"
@@ -407,15 +498,13 @@ idx.append("<p class=note>alltoall: runs on the p2p path (send/recv tasks) - "
            "consulted, so its search is channels-only and its A/B uses "
            "NCCL_MIN/MAX_NCHANNELS as the ON arm (in the CLI since "
            "2026-08-26).</p>")
+idx.append("<p><a href='overview.html'><b>Overview: verified gains heatmap "
+           "+ shipped configs</b></a></p>")
 idx.append("<h2>Method evaluation &amp; docs</h2><ul>"
            "<li><a href='approaches.html'>the story: grid vs adaptive vs "
            "optuna vs random vs triage</a> "
-           "(<a href='approaches-draft.html'>style-selection draft</a>)</li>"
+          "</li>"
            "<li><a href='methods.html'>full offline comparison, 15 grids</a></li>"
-           "<li><a href='explanations/adaptive-walkthrough.md'>adaptive "
-           "walkthrough</a> · <a href='explanations/optuna-walkthrough.md'>"
-           "optuna</a> · <a href='explanations/triage-walkthrough.md'>triage"
-           "</a> · <a href='explanations/optuna-verdict.md'>optuna verdict</a></li>"
            "<li><a href='drafts/new-facts.md'>10 verified facts (awaiting "
            "approval)</a></li>"
            "<li><a href='handoff.md'>handoff / summary</a> · "
