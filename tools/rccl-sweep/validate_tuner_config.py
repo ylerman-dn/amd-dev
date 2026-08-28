@@ -386,10 +386,16 @@ def point_noisy_cv_core(vals, cv_limit=8.0, core_min=7):
     return not (len(core) >= core_min and cv_pct(core) <= cv_limit)
 
 
-def gate_values(vals, gate):
+def gate_values(vals, gate, core_min=7):
     """The repeats a rule's verdict is computed on: raw for the spread gate,
-    the MAD core for cv-core (dips identified as outliers are discarded)."""
-    return mad_core(vals) if gate == "cv-core" and len(vals) >= 2 else vals
+    the MAD core for cv-core (dips identified as outliers are discarded).
+    A core smaller than core_min is not trusted - fall back to the raw
+    repeats rather than judge on a hand-picked subset (2026-08-27: a 6-of-9
+    core pushed a P(sup) 0.66 point to 0.99 - manufactured win)."""
+    if gate != "cv-core" or len(vals) < 2:
+        return vals
+    core = mad_core(vals)
+    return core if len(core) >= core_min else vals
 
 
 def psup(a, b):
@@ -569,6 +575,11 @@ def main():
                          "more than --max-arm-spread mean the environment is unusable. 0 disables.")
     ap.add_argument("--no-preflight", action="store_true",
                     help="skip the preflight and run the A/B regardless")
+    ap.add_argument("--require-full-range", action="store_true",
+                    help="drop a rule when ANY size in its range was preflight-excluded. For "
+                         "unsplittable deployments (alltoall's env-arm is one global setting): an "
+                         "unmeasurable size inside the range may hide a regression the setting "
+                         "would still inflict, so the rule cannot be blessed.")
     ap.add_argument("--noise-gate", choices=["spread", "cv-core"], default="spread",
                     help="point-noise rule for the rc=2 void accounting and the verdict inputs. "
                          "'spread' (default, original): (max-min)/min > 25%%, verdicts on raw "
@@ -823,7 +834,8 @@ def main():
             base = measured[nodes]["default"]
             cand = measured[nodes]["config"]
             for s2 in sorted(set(base) | set(cand)):
-                a, b = cand.get(s2, []), base.get(s2, [])
+                a = gate_values(cand.get(s2, []), args.noise_gate)
+                b = gate_values(base.get(s2, []), args.noise_gate)
                 if not a or not b:
                     continue
                 dm = statistics.median(b)
@@ -859,6 +871,13 @@ def main():
         _excl = pf_excluded.get(rule["nodes"], set())
         in_range = [s for s in sorted(base) if rule["min_bytes"] <= s <= rule["max_bytes"]]
         sizes = [s for s in in_range if s not in _excl]
+        if args.require_full_range and len(sizes) < len(in_range):
+            label = f"{rule['coll']} {rule['min_bytes']}-{rule['max_bytes']} ch{rule['channels']} {rule['nodes']}n"
+            _hidden = sorted(set(in_range) - set(sizes))
+            print(f"{label:<44} {0:>6} {0:>+9.1f}% {0:>+7.1f}% {0:>7.2f}  DROP "
+                  f"(unsplittable rule, unmeasurable sizes in range: {_hidden})")
+            dropped.append((rule, f"unsplittable rule, unmeasurable sizes in range: {_hidden}"))
+            continue
         if in_range and not sizes:
             label = f"{rule['coll']} {rule['min_bytes']}-{rule['max_bytes']} ch{rule['channels']} {rule['nodes']}n"
             print(f"{label:<44} {0:>6} {0:>+9.1f}% {0:>+7.1f}% {0:>7.2f}  DROP "

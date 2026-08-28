@@ -20,13 +20,13 @@ pre .keep{color:#4ec96a}pre .drop{color:#ff6b6b;text-decoration:line-through}
 pre .why{color:#8a8f98;text-decoration:none;font-style:italic}
 details{margin:8px 0}summary{cursor:pointer;color:#6ea8ff;font-size:13px}</style>
 <h1>RCCL tuning — results by collective</h1>
-<p class=note>Freshest live A/B verdicts, resolved automatically from all rccl-tune runs. 1 measurement = median of 3 runs; A/B = 9 repeats/arm through the tuner plugin.</p>
+<p class=note>Freshest live A/B verdicts, resolved automatically from all rccl-tune runs. 1 measurement = median of 3 runs; A/B = 9 repeats/arm through the tuner plugin. Verdicts judged under the cv-core noise gate (adopted 2026-08-27): per point, repeats beyond 3.5 robust-z are outliers; a point needs CV &le; 8% raw or on a &ge;7-repeat core; verdict stats are computed on the cores.</p>
 <div class=tw><table><tr><th>collective</th><th>1n</th><th>2n</th><th>3n</th><th>4n</th><th>5n</th></tr>
-<tr><td><a href='collective_all_reduce.html'>all_reduce</a></td><td class=g>8 rules validated</td><td class=g>3 rules validated</td><td class=g>5 rules validated</td><td class=g>4 rules validated</td><td class=warn>no live verdict</td></tr>
-<tr><td><a href='collective_broadcast.html'>broadcast</a></td><td class=g>5 rules validated</td><td class=g>4 rules validated</td><td class=g>6 rules validated</td><td class=g>3 rules validated</td><td class=warn>no live verdict</td></tr>
-<tr><td><a href='collective_reduce.html'>reduce</a></td><td class=g>5 rules validated</td><td class=g>6 rules validated</td><td class=g>7 rules validated</td><td class=g>5 rules validated</td><td class=warn>no live verdict</td></tr>
-<tr><td><a href='collective_all_gather.html'>all_gather</a></td><td class=n>defaults win</td><td class=g>2 rules validated</td><td class=g>4 rules validated</td><td class=g>4 rules validated</td><td class=warn>no live verdict</td></tr>
-<tr><td><a href='collective_reduce_scatter.html'>reduce_scatter</a></td><td class=n>defaults win</td><td class=g>6 rules validated</td><td class=g>10 rules validated</td><td class=g>4 rules validated</td><td class=warn>no live verdict</td></tr>
+<tr><td><a href='collective_all_reduce.html'>all_reduce</a></td><td class=g>9 rules validated</td><td class=g>2 rules validated</td><td class=g>5 rules validated</td><td class=g>4 rules validated</td><td class=g>5 rules validated</td></tr>
+<tr><td><a href='collective_broadcast.html'>broadcast</a></td><td class=g>5 rules validated</td><td class=g>3 rules validated</td><td class=g>6 rules validated</td><td class=g>3 rules validated</td><td class=g>6 rules validated</td></tr>
+<tr><td><a href='collective_reduce.html'>reduce</a></td><td class=g>6 rules validated</td><td class=g>6 rules validated</td><td class=g>7 rules validated</td><td class=g>5 rules validated</td><td class=g>4 rules validated</td></tr>
+<tr><td><a href='collective_all_gather.html'>all_gather</a></td><td class=n>defaults win</td><td class=g>4 rules validated</td><td class=g>4 rules validated</td><td class=g>3 rules validated</td><td class=g>4 rules validated</td></tr>
+<tr><td><a href='collective_reduce_scatter.html'>reduce_scatter</a></td><td class=n>defaults win</td><td class=g>6 rules validated</td><td class=g>10 rules validated</td><td class=g>4 rules validated</td><td class=g>9 rules validated</td></tr>
 <tr><td><a href='collective_alltoall.html'>alltoall</a></td><td class=n>defaults win</td><td class=n>defaults win (search)</td><td class=n>defaults win</td><td class=n>defaults win</td><td class=n>defaults win (search)</td></tr>
 </table></div>
 <p class=note>alltoall: runs on the p2p path (send/recv tasks) - NCCL_ALGO/NCCL_PROTO are no-ops and the tuner plugin is never consulted, so its search is channels-only and its A/B uses NCCL_MIN/MAX_NCHANNELS as the ON arm (in the CLI since 2026-08-26).</p>

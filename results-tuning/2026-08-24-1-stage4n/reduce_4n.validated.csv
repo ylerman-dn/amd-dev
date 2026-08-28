@@ -6,7 +6,7 @@
 # dropped: reduce,8192,8192,ring,ll128,8,4,32,-1,-1   (preflight: every size in range unmeasurable)
 # dropped: reduce,16384,16384,ring,ll128,4,4,32,-1,-1   (best gain only +1.3%)
 # dropped: reduce,32768,32768,ring,ll128,1,4,32,-1,-1   (P(sup) only 0.67, not reproducible)
-# dropped: reduce,1048576,1048576,ring,ll128,1,4,32,-1,-1   (best gain only -0.3%)
+# dropped: reduce,1048576,1048576,ring,ll128,1,4,32,-1,-1   (best gain only +0.0%)
 # dropped: reduce,2097152,2097152,ring,ll128,48,4,32,-1,-1   (best gain only +1.1%)
 # dropped: reduce,8388608,8388608,ring,ll128,32,4,32,-1,-1   (best gain only -0.7%)
 # dropped: reduce,16777216,16777216,ring,ll128,40,4,32,-1,-1   (best gain only +0.9%)

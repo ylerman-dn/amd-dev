@@ -1,7 +1,6 @@
 # Validated by validate_tuner_config.py: only rules that beat RCCL default
 # with P(sup) >= 0.95 over 9 repeats, gain > 2.0%,
 # and no size in range regressing more than 2.0%.
-# dropped: allreduce,524288,524288,ring,ll,48,1,8,-1,-1   (P(sup) only 0.89, not reproducible)
 # dropped: allreduce,2097152,2097152,ring,simple,48,1,8,-1,-1   (best gain only -0.5%)
 # dropped: allreduce,4194304,4194304,ring,simple,40,1,8,-1,-1   (best gain only -2.0%)
 # dropped: allreduce,8388608,8388608,ring,simple,48,1,8,-1,-1   (best gain only -0.9%)
@@ -19,4 +18,5 @@ allreduce,32768,32768,tree,ll,24,1,8,-1,-1
 allreduce,65536,65536,tree,ll,48,1,8,-1,-1
 allreduce,131072,131072,tree,ll,48,1,8,-1,-1
 allreduce,262144,262144,ring,ll,32,1,8,-1,-1
+allreduce,524288,524288,ring,ll,48,1,8,-1,-1
 allreduce,1048576,1048576,ring,ll,40,1,8,-1,-1

@@ -92,11 +92,13 @@ def main():
                    "--min-bytes", "4096", "--max-bytes", "536870912",
                    "--iters", "20", "--warmup", "5",
                    "--preflight-scope", "rules",
+                   "--noise-gate", "cv-core",
                    "--logdir", str(logdir)]
             if env_arm:
                 ch = chans.copy().pop()
                 cmd += ["--arm-env", f"NCCL_MIN_NCHANNELS={ch}",
-                        "--arm-env", f"NCCL_MAX_NCHANNELS={ch}"]
+                        "--arm-env", f"NCCL_MAX_NCHANNELS={ch}",
+                        "--require-full-range"]
             else:
                 cmd += ["--plugin", args.plugin, "--plugin-must-fire",
                         "--split-ranges"]

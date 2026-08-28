@@ -21,12 +21,28 @@ KNOWN_ISSUES = {
         "gates: 22 A/B attempts across three node pairs ({5,7}, {5,8}, {1,3}) "
         "failed preflight on intrinsic small-size (4-16K) scatter. RESOLVED "
         "2026-08-26 by the rule-scoped preflight: 4K/16K excluded as "
-        "unmeasurable, every other size judged - 4 rules verified.",
+        "unmeasurable, every other size judged. Re-judged under cv-core "
+        "2026-08-27: 3 rules (32K lost - baseline CV 8.05%, over the limit).",
     ("broadcast", 4): "verdict via cv-core replay (2026-08-27) of the L1 run: single "
         "transient dips discarded by MAD outlier rejection, chronic sizes still "
         "excluded. 13 earlier attempts voided under the plain spread gate.",
     ("all_gather", 4): "verdict via cv-core replay (2026-08-27) of the L1 run.",
     ("reduce_scatter", 4): "verdict via cv-core replay (2026-08-27) of the L1 run.",
+    ("all_reduce", 5): "verdict via cv-core replay (2026-08-27) of the stored 5n run - "
+        "every live attempt was voided under the old spread gate; the MAD core "
+        "rescue found judgeable data. Fresh confirmation A/B pending a window.",
+    ("broadcast", 5): "verdict via cv-core replay (2026-08-27) of the stored 5n run - "
+        "every live attempt was voided under the old spread gate; the MAD core "
+        "rescue found judgeable data. Fresh confirmation A/B pending a window.",
+    ("reduce", 5): "verdict via cv-core replay (2026-08-27) of the stored 5n run - "
+        "every live attempt was voided under the old spread gate; the MAD core "
+        "rescue found judgeable data. Fresh confirmation A/B pending a window.",
+    ("all_gather", 5): "verdict via cv-core replay (2026-08-27) of the stored 5n run - "
+        "every live attempt was voided under the old spread gate; the MAD core "
+        "rescue found judgeable data. Fresh confirmation A/B pending a window.",
+    ("reduce_scatter", 5): "verdict via cv-core replay (2026-08-27) of the stored 5n run - "
+        "every live attempt was voided under the old spread gate; the MAD core "
+        "rescue found judgeable data. Fresh confirmation A/B pending a window.",
     ("alltoall", 1): "candidate ch=40 A/B'd 2026-08-26: no rule survived - "
         "defaults win. 32K excluded by the scoped preflight (chronic 690% "
         "same-config scatter).",
@@ -373,7 +389,10 @@ idx = [f"<!doctype html><meta charset=utf-8><meta name=viewport "
 idx.append("<h1>RCCL tuning — results by collective</h1>")
 idx.append("<p class=note>Freshest live A/B verdicts, resolved automatically "
            "from all rccl-tune runs. 1 measurement = median of 3 runs; A/B = "
-           "9 repeats/arm through the tuner plugin.</p>")
+           "9 repeats/arm through the tuner plugin. Verdicts judged under the "
+           "cv-core noise gate (adopted 2026-08-27): per point, repeats beyond "
+           "3.5 robust-z are outliers; a point needs CV &le; 8% raw or on a "
+           "&ge;7-repeat core; verdict stats are computed on the cores.</p>")
 idx.append("<div class=tw><table><tr><th>collective</th>"
            + "".join(f"<th>{s}n</th>" for s in SCALES) + "</tr>")
 for coll in COLLS:

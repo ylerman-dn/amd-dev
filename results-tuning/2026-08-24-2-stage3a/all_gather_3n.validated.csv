@@ -1,7 +1,8 @@
 # Validated by validate_tuner_config.py: only rules that beat RCCL default
 # with P(sup) >= 0.95 over 9 repeats, gain > 2.0%,
 # and no size in range regressing more than 2.0%.
-# dropped: allgather,67108608,67108608,ring,ll128,48,3,24,-1,-1   (best gain only -0.1%)
+# preflight-excluded sizes at 3n (chronic same-config scatter over 25%): [3840, 2097024] -- no verdict was issued for these sizes.
+# dropped: allgather,67108608,67108608,ring,ll128,48,3,24,-1,-1   (best gain only -0.0%)
 # dropped: allgather,268435200,268435200,ring,simple,48,3,24,-1,-1   (best gain only +0.3%)
 # dropped: allgather,536870784,536870784,ring,simple,48,3,24,-1,-1   (best gain only +0.0%)
 collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff

@@ -5,7 +5,7 @@
 # dropped: broadcast,8192,8192,ring,ll,1,1,8,-1,-1   (contains a regression of -15.2% (landmine))
 # dropped: broadcast,16384,16384,ring,ll,32,1,8,-1,-1   (contains a regression of -11.1% (landmine))
 # dropped: broadcast,32768,32768,ring,ll,16,1,8,-1,-1   (contains a regression of -16.0% (landmine))
-# dropped: broadcast,65536,65536,ring,ll,16,1,8,-1,-1   (P(sup) only 0.79, not reproducible)
+# dropped: broadcast,65536,65536,ring,ll,16,1,8,-1,-1   (P(sup) only 0.76, not reproducible)
 # dropped: broadcast,262144,262144,ring,ll,32,1,8,-1,-1   (P(sup) only 0.78, not reproducible)
 # dropped: broadcast,8388608,8388608,ring,ll,48,1,8,-1,-1   (contains a regression of -15.3% (landmine))
 # dropped: broadcast,16777216,16777216,ring,simple,48,1,8,-1,-1   (contains a regression of -26.8% (landmine))

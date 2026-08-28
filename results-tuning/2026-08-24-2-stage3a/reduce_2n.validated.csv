@@ -3,15 +3,15 @@
 # and no size in range regressing more than 2.0%.
 # dropped: reduce,4096,4096,ring,ll,4,2,16,-1,-1   (best gain only +0.0%)
 # dropped: reduce,8192,8192,ring,ll,1,2,16,-1,-1   (contains a regression of -3.7% (landmine))
-# dropped: reduce,16384,16384,ring,ll128,1,2,16,-1,-1   (P(sup) only 0.81, not reproducible)
+# dropped: reduce,16384,16384,ring,ll128,1,2,16,-1,-1   (P(sup) only 0.91, not reproducible)
 # dropped: reduce,524288,524288,ring,ll128,32,2,16,-1,-1   (best gain only -1.8%)
-# dropped: reduce,1048576,1048576,ring,ll128,32,2,16,-1,-1   (contains a regression of -4.0% (landmine))
-# dropped: reduce,2097152,2097152,ring,ll128,48,2,16,-1,-1   (best gain only -2.0%)
-# dropped: reduce,4194304,4194304,ring,ll128,40,2,16,-1,-1   (contains a regression of -4.1% (landmine))
+# dropped: reduce,1048576,1048576,ring,ll128,32,2,16,-1,-1   (contains a regression of -3.7% (landmine))
+# dropped: reduce,2097152,2097152,ring,ll128,48,2,16,-1,-1   (contains a regression of -2.2% (landmine))
+# dropped: reduce,4194304,4194304,ring,ll128,40,2,16,-1,-1   (contains a regression of -4.0% (landmine))
 # dropped: reduce,8388608,8388608,ring,ll128,48,2,16,-1,-1   (contains a regression of -3.4% (landmine))
 # dropped: reduce,16777216,16777216,ring,ll128,40,2,16,-1,-1   (contains a regression of -3.6% (landmine))
 # dropped: reduce,33554432,33554432,ring,ll128,48,2,16,-1,-1   (best gain only -1.7%)
-# dropped: reduce,67108864,67108864,ring,ll128,48,2,16,-1,-1   (best gain only -0.4%)
+# dropped: reduce,67108864,67108864,ring,ll128,48,2,16,-1,-1   (best gain only -0.5%)
 # dropped: reduce,134217728,134217728,ring,ll128,48,2,16,-1,-1   (best gain only -0.3%)
 collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff
 reduce,32768,32768,ring,ll128,1,2,16,-1,-1
