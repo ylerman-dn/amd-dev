@@ -23,6 +23,8 @@ directly; no server needed).
 | [09](09-algo-support-matrix.md) | **Which algorithms RCCL honours per collective** — TREE only for all_reduce; silent RING substitution |
 | [10](10-a-flag-blind-spots.md) | `-A 1` is a plan, not execution — channels wrong, side-kernels invisible; debug log is the truth |
 | [11](11-pinned-channels-kill-warpspeed.md) | A pinned-channels rule disables WarpSpeed at >=64M — default runs 224ch, rule forces 48, ~-65% |
+| [12](12-alltoall-not-tunable.md) | **alltoall cannot be tuned** — no algo, no proto, tuner never consulted; only p2p channels, where the default already wins |
+| [13](13-leaf-placement-shifts-baseline-not-gain.md) | **Leaf placement shifts the baseline, not the gain** — cross-leaf costs up to 17% at small sizes, but the 32M rule holds in both placements |
 
 ## Open — deliberately not findings
 

@@ -45,9 +45,12 @@ KNOWN_ISSUES = {
         "rescue found judgeable data. Fresh confirmation A/B pending a window.",
     ("alltoall", 1): "candidate ch=40 A/B'd 2026-08-26: no rule survived - "
         "defaults win. 32K excluded by the scoped preflight (chronic 690% "
-        "same-config scatter).",
+        "same-config scatter). NOTE: that A/B used NCCL_MIN/MAX_NCHANNELS, "
+        "which does not control p2p channels, so it changed nothing "
+        "(corrected 2026-08-30, findings/12).",
     ("alltoall", 4): "verdict via cv-core replay (2026-08-27): the env-arm rule "
-        "contains a -14.3% regression - defaults win at 4n too.",
+        "contains a -14.3% regression - defaults win at 4n too. Same knob "
+        "caveat as 1n: re-measure with NCCL_MIN/MAX_P2P_NCHANNELS.",
 }
 CSS = """body{font-family:-apple-system,system-ui,sans-serif;margin:12px;max-width:1280px;
 background:#14161a;color:#d8dbe0}
@@ -244,10 +247,27 @@ for coll in COLLS:
             "NCCL_ALGO/NCCL_PROTO requests are no-ops, <code>-A 1</code> "
             "prints N/A, and the tuner plugin cannot apply per-size rules. "
             "The search therefore sweeps the channel request only "
-            "('P2P/-/N'), the deployable artifact is one global "
-            "NCCL_MIN/MAX_NCHANNELS value, and the A/B validates that env "
-            "setting against the untouched default. Executed channels are "
-            "read from the debug logs' 'p2p channels' line.</p>")
+            "('P2P/-/N'), the deployable artifact is one global channel "
+            "value, and the A/B validates that env setting against the "
+            "untouched default. Executed channels are read from the debug "
+            "logs' 'p2p channels' line.</p>")
+        page.append(
+            "<p class=note><b>Correction, 2026-08-30.</b> The 2026-08-26 runs "
+            "used <code>NCCL_MIN/MAX_NCHANNELS</code>, which bounds the "
+            "<i>collective</i> path and does not control p2p channels "
+            "(<code>src/graph/paths.cc:982-983</code>) - so those runs changed "
+            "nothing and their '+0.00% median' measured nothing. Re-run at 2 "
+            "nodes with the correct <code>NCCL_MIN/MAX_P2P_NCHANNELS</code>: "
+            "forcing 8 channels costs 11-27%, while 16/32/64 all match the "
+            "default, so no gain is available. The 'tuner never consulted' "
+            "claim is now backed by a log as well as by source - a full run "
+            "with the plugin loaded produced zero 'Applied config' and zero "
+            "'Config does not match' lines. Note <code>pow2Up</code> "
+            "(<code>paths.cc:1015</code>) rounds the request to a power of "
+            "two, so only 8/16/32/64 are reachable - this is why an earlier "
+            "request for 40 executed 64. See "
+            "<code>results-tuning/2026-08-30-1-value/alltoall-2n/</code> and "
+            "<code>findings/12-alltoall-not-tunable.md</code>.</p>")
     strip = []
     for scale in SCALES:
         txt, cls = scale_status(R.get((coll, scale)), coll, scale)
@@ -569,9 +589,13 @@ for coll in COLLS:
 idx.append("</table></div>")
 idx.append("<p class=note>alltoall: runs on the p2p path (send/recv tasks) - "
            "NCCL_ALGO/NCCL_PROTO are no-ops and the tuner plugin is never "
-           "consulted, so its search is channels-only and its A/B uses "
-           "NCCL_MIN/MAX_NCHANNELS as the ON arm (in the CLI since "
-           "2026-08-26).</p>")
+           "consulted, so its search is channels-only. <b>Corrected "
+           "2026-08-30:</b> the ON arm must be "
+           "<code>NCCL_MIN/MAX_P2P_NCHANNELS</code>, not "
+           "<code>NCCL_MIN/MAX_NCHANNELS</code> - the latter does not reach "
+           "the p2p path, so the 2026-08-26 A/Bs changed nothing. Re-measured "
+           "at 2 nodes with the right knob: still no gain, defaults already "
+           "sit at the plateau (findings/12).</p>")
 idx.append("<p><a href='overview.html'><b>Overview: verified gains heatmap "
            "+ shipped configs</b></a> &nbsp;·&nbsp; "
            "<a href='audit.html'><b>Verdict audit</b></a></p>")

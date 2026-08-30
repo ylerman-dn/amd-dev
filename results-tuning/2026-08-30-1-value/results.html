@@ -1,0 +1,159 @@
+<title>GPU-107 value runs — 2026-08-30</title>
+<style>
+:root{--bg:#fbfaf8;--fg:#22201d;--muted:#6b6660;--line:#e3ded6;--card:#fff;
+--up:#1a7f4b;--bigup:#0f5c34;--down:#b3402c;--bigdown:#8a2c1c;--accent:#8a5a2b}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);
+font:15px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:40px 24px 72px}
+h1{font-size:30px;margin:0 0 6px;letter-spacing:-.02em}
+h2{font-size:21px;margin:44px 0 10px;padding-bottom:7px;border-bottom:2px solid var(--fg);
+letter-spacing:-.01em}
+h3{font-size:16px;margin:26px 0 4px}
+.lede{color:var(--muted);margin:0 0 4px}
+.meta{color:var(--muted);font-size:13px;margin:0 0 8px}
+.note{color:var(--muted);font-size:13.5px;margin:0 0 12px;max-width:78ch}
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:9px;background:var(--card)}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:13.5px}
+th,td{padding:6px 10px;text-align:right;white-space:nowrap}
+thead th{background:#f3efe8;font-weight:600;border-bottom:1px solid var(--line);
+position:sticky;top:0}
+thead th.sub{font-weight:500;color:var(--muted);font-size:12px}
+th.size{text-align:left;font-weight:600}
+td.n,th.n{color:var(--muted);font-size:12px}
+td.med{font-weight:600}
+tbody tr:nth-child(even){background:#faf8f4}
+tbody tr:hover{background:#f2ede4}
+.up{color:var(--up)}.big-up{color:var(--bigup);font-weight:700}
+.down{color:var(--down)}.big-down{color:var(--bigdown);font-weight:700}
+.flat{color:var(--muted)}
+.rule-tag{background:var(--accent);color:#fff;font-size:10px;padding:1px 5px;
+border-radius:9px;vertical-align:middle;letter-spacing:.03em}
+.cards{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));margin:18px 0 6px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:15px 17px}
+.card h4{margin:0 0 5px;font-size:13px;text-transform:uppercase;letter-spacing:.05em;
+color:var(--muted)}
+.card .big{font-size:25px;font-weight:700;letter-spacing:-.02em}
+.card p{margin:5px 0 0;font-size:13px;color:var(--muted)}
+code{background:#f0ebe2;padding:1px 5px;border-radius:4px;font-size:12.5px}
+.foot{margin-top:52px;padding-top:16px;border-top:1px solid var(--line);
+color:var(--muted);font-size:12.5px}
+@media (prefers-color-scheme:dark){
+:root:not([data-theme=light]){--bg:#16150f;--fg:#ece7dd;--muted:#9d968a;--line:#332f27;
+--card:#1e1c15;--up:#5fd39a;--bigup:#7ee3b0;--down:#f08a72;--bigdown:#ff9d85;--accent:#c08a4a}
+:root:not([data-theme=light]) thead th{background:#252219}
+:root:not([data-theme=light]) tbody tr:nth-child(even){background:#1a1811}
+:root:not([data-theme=light]) tbody tr:hover{background:#272319}
+:root:not([data-theme=light]) code{background:#272319}
+}
+</style>
+<div class="wrap">
+<h1>Proving value — 2026-08-30</h1>
+<p class="lede">Leaf placement, alltoall re-test, and a first inference attempt.</p>
+<p class="meta">Allocation 20856 · nodes amd-mi355x-[2-3,5,9] · RCCL 2.17.9-develop:2e42aa8 ·
+busbw in GB/s, out-of-place rows · medians in bold, percent changes computed on medians</p>
+
+<h2>1 &nbsp;Leaf placement — does a tuning gain survive the spine?</h2>
+<p class="note">Same-leaf <code>{3,5}</code> (both L1) versus cross-leaf <code>{3,9}</code>
+(L1&rarr;L2, over the shared spine). Node 3 anchors both arms. 5 interleaved repeats per arm,
+<code>all_reduce_perf -b 4K -e 512M -n 20 -w 5</code>. Every tuned run verified by
+<code>Applied config</code> in 16/16 rank logs; every default run shows 0/16. The shipped 2-node
+config carries rules at 256K and 32M only — those rows are tagged.</p>
+<div class="cards">
+<div class="card"><h4>Baseline shift, 16K</h4><div class="big big-down">-17.4%</div>
+<p>cross-leaf slower; penalty decays with size and is gone above 8M</p></div>
+<div class="card"><h4>32M rule, same leaf</h4><div class="big big-up">+9.5%</div>
+<p>every tuned repeat above every default repeat</p></div>
+<div class="card"><h4>32M rule, across spine</h4><div class="big big-up">+7.7%</div>
+<p>gain survives the extra hops — no overlap between arms</p></div>
+</div>
+<section>
+<h3>All four arms against the same-leaf default</h3>
+<p class="note">Reference is <code>same_def</code>. So the <code>cross_def</code> column is the pure placement effect, and <code>same_tun</code> is the pure tuning effect.</p>
+<div class="scroll">
+<table>
+<thead>
+<tr><th rowspan="2" class="size">size</th><th rowspan="2" class="n">n</th><th colspan='2'>same_def</th><th colspan='2'>same_tun</th><th colspan='2'>cross_def</th><th colspan='2'>cross_tun</th>
+    <th colspan="3">change vs same_def (median)</th></tr>
+<tr><th class='sub'>mean</th><th class='sub'>median</th><th class='sub'>mean</th><th class='sub'>median</th><th class='sub'>mean</th><th class='sub'>median</th><th class='sub'>mean</th><th class='sub'>median</th><th>same_tun</th><th>cross_def</th><th>cross_tun</th></tr>
+</thead>
+<tbody><tr><th class='size'>4K</th><td class='n'>5</td><td>0.16</td><td class='med'>0.18</td><td>0.18</td><td class='med'>0.18</td><td>0.17</td><td class='med'>0.16</td><td>0.17</td><td class='med'>0.17</td><td class='down'>-2.1%</td><td class='big-down'>-9.1%</td><td class='down'>-2.7%</td></tr><tr><th class='size'>8K</th><td class='n'>5</td><td>0.35</td><td class='med'>0.35</td><td>0.36</td><td class='med'>0.38</td><td>0.33</td><td class='med'>0.32</td><td>0.32</td><td class='med'>0.31</td><td class='big-up'>+8.6%</td><td class='big-down'>-6.9%</td><td class='big-down'>-10.2%</td></tr><tr><th class='size'>16K</th><td class='n'>5</td><td>0.76</td><td class='med'>0.76</td><td>0.71</td><td class='med'>0.73</td><td>0.63</td><td class='med'>0.63</td><td>0.66</td><td class='med'>0.67</td><td class='down'>-4.5%</td><td class='big-down'>-17.4%</td><td class='big-down'>-12.1%</td></tr><tr><th class='size'>32K</th><td class='n'>5</td><td>1.42</td><td class='med'>1.45</td><td>1.48</td><td class='med'>1.48</td><td>1.27</td><td class='med'>1.25</td><td>1.29</td><td class='med'>1.31</td><td class='up'>+2.6%</td><td class='big-down'>-13.3%</td><td class='big-down'>-9.3%</td></tr><tr><th class='size'>64K</th><td class='n'>5</td><td>2.75</td><td class='med'>2.78</td><td>2.69</td><td class='med'>2.74</td><td>2.54</td><td class='med'>2.56</td><td>2.47</td><td class='med'>2.49</td><td class='down'>-1.6%</td><td class='big-down'>-8.0%</td><td class='big-down'>-10.4%</td></tr><tr><th class='size'>128K</th><td class='n'>5</td><td>4.56</td><td class='med'>4.83</td><td>4.74</td><td class='med'>4.79</td><td>4.41</td><td class='med'>4.40</td><td>4.35</td><td class='med'>4.32</td><td class='flat'>-0.8%</td><td class='big-down'>-8.8%</td><td class='big-down'>-10.6%</td></tr><tr><th class='size'>256K <span class='rule-tag'>rule</span></th><td class='n'>5</td><td>8.35</td><td class='med'>8.50</td><td>8.77</td><td class='med'>8.96</td><td>7.67</td><td class='med'>7.78</td><td>8.13</td><td class='med'>8.06</td><td class='big-up'>+5.4%</td><td class='big-down'>-8.5%</td><td class='big-down'>-5.2%</td></tr><tr><th class='size'>512K</th><td class='n'>5</td><td>15.99</td><td class='med'>16.25</td><td>16.18</td><td class='med'>16.37</td><td>15.20</td><td class='med'>15.11</td><td>15.25</td><td class='med'>15.28</td><td class='flat'>+0.7%</td><td class='big-down'>-7.0%</td><td class='big-down'>-6.0%</td></tr><tr><th class='size'>1M</th><td class='n'>5</td><td>26.58</td><td class='med'>27.99</td><td>29.76</td><td class='med'>29.94</td><td>27.52</td><td class='med'>27.19</td><td>27.19</td><td class='med'>27.30</td><td class='big-up'>+7.0%</td><td class='down'>-2.8%</td><td class='down'>-2.5%</td></tr><tr><th class='size'>2M</th><td class='n'>5</td><td>51.45</td><td class='med'>52.04</td><td>52.37</td><td class='med'>52.82</td><td>50.50</td><td class='med'>50.79</td><td>51.21</td><td class='med'>51.25</td><td class='flat'>+1.5%</td><td class='down'>-2.4%</td><td class='down'>-1.5%</td></tr><tr><th class='size'>4M</th><td class='n'>5</td><td>89.64</td><td class='med'>89.65</td><td>89.59</td><td class='med'>89.51</td><td>87.10</td><td class='med'>87.22</td><td>86.58</td><td class='med'>85.92</td><td class='flat'>-0.2%</td><td class='down'>-2.7%</td><td class='down'>-4.2%</td></tr><tr><th class='size'>8M</th><td class='n'>5</td><td>135.54</td><td class='med'>134.50</td><td>137.33</td><td class='med'>135.09</td><td>134.87</td><td class='med'>135.60</td><td>134.77</td><td class='med'>134.46</td><td class='flat'>+0.4%</td><td class='flat'>+0.8%</td><td class='flat'>-0.0%</td></tr><tr><th class='size'>16M</th><td class='n'>5</td><td>190.70</td><td class='med'>192.51</td><td>188.48</td><td class='med'>191.63</td><td>190.46</td><td class='med'>190.36</td><td>190.57</td><td class='med'>190.40</td><td class='flat'>-0.5%</td><td class='flat'>-1.1%</td><td class='flat'>-1.1%</td></tr><tr><th class='size'>32M <span class='rule-tag'>rule</span></th><td class='n'>5</td><td>221.18</td><td class='med'>221.85</td><td>242.82</td><td class='med'>242.95</td><td>221.09</td><td class='med'>221.41</td><td>239.46</td><td class='med'>238.41</td><td class='big-up'>+9.5%</td><td class='flat'>-0.2%</td><td class='big-up'>+7.5%</td></tr><tr><th class='size'>64M</th><td class='n'>5</td><td>288.37</td><td class='med'>287.97</td><td>289.44</td><td class='med'>289.26</td><td>290.53</td><td class='med'>290.51</td><td>289.84</td><td class='med'>290.06</td><td class='flat'>+0.4%</td><td class='flat'>+0.9%</td><td class='flat'>+0.7%</td></tr><tr><th class='size'>128M</th><td class='n'>5</td><td>319.09</td><td class='med'>320.24</td><td>320.24</td><td class='med'>319.53</td><td>304.54</td><td class='med'>304.53</td><td>307.58</td><td class='med'>308.59</td><td class='flat'>-0.2%</td><td class='down'>-4.9%</td><td class='down'>-3.6%</td></tr><tr><th class='size'>256M</th><td class='n'>5</td><td>372.45</td><td class='med'>372.12</td><td>373.78</td><td class='med'>373.82</td><td>372.32</td><td class='med'>372.40</td><td>371.70</td><td class='med'>371.74</td><td class='flat'>+0.5%</td><td class='flat'>+0.1%</td><td class='flat'>-0.1%</td></tr><tr><th class='size'>512M</th><td class='n'>5</td><td>376.88</td><td class='med'>378.94</td><td>379.05</td><td class='med'>378.92</td><td>379.43</td><td class='med'>379.55</td><td>378.99</td><td class='med'>379.08</td><td class='flat'>-0.0%</td><td class='flat'>+0.2%</td><td class='flat'>+0.0%</td></tr></tbody>
+</table>
+</div>
+</section>
+<section>
+<h3>Tuning effect measured inside the cross-leaf arm</h3>
+<p class="note">Both arms crossed the spine, so placement cancels and only the tuner differs. The 32M rule holds at +7.7%. The 256K rule reads +3.7%, but repeat spread at that size is 7-12% and a no-rule 16K control swings +6% on noise alone, so it is not resolvable at 5 repeats.</p>
+<div class="scroll">
+<table>
+<thead>
+<tr><th rowspan="2" class="size">size</th><th rowspan="2" class="n">n</th><th colspan='2'>cross_def</th><th colspan='2'>cross_tun</th>
+    <th colspan="1">change vs cross_def (median)</th></tr>
+<tr><th class='sub'>mean</th><th class='sub'>median</th><th class='sub'>mean</th><th class='sub'>median</th><th>cross_tun</th></tr>
+</thead>
+<tbody><tr><th class='size'>4K</th><td class='n'>5</td><td>0.17</td><td class='med'>0.16</td><td>0.17</td><td class='med'>0.17</td><td class='big-up'>+7.1%</td></tr><tr><th class='size'>8K</th><td class='n'>5</td><td>0.33</td><td class='med'>0.32</td><td>0.32</td><td class='med'>0.31</td><td class='down'>-3.6%</td></tr><tr><th class='size'>16K</th><td class='n'>5</td><td>0.63</td><td class='med'>0.63</td><td>0.66</td><td class='med'>0.67</td><td class='big-up'>+6.4%</td></tr><tr><th class='size'>32K</th><td class='n'>5</td><td>1.27</td><td class='med'>1.25</td><td>1.29</td><td class='med'>1.31</td><td class='up'>+4.6%</td></tr><tr><th class='size'>64K</th><td class='n'>5</td><td>2.54</td><td class='med'>2.56</td><td>2.47</td><td class='med'>2.49</td><td class='down'>-2.5%</td></tr><tr><th class='size'>128K</th><td class='n'>5</td><td>4.41</td><td class='med'>4.40</td><td>4.35</td><td class='med'>4.32</td><td class='down'>-1.9%</td></tr><tr><th class='size'>256K <span class='rule-tag'>rule</span></th><td class='n'>5</td><td>7.67</td><td class='med'>7.78</td><td>8.13</td><td class='med'>8.06</td><td class='up'>+3.6%</td></tr><tr><th class='size'>512K</th><td class='n'>5</td><td>15.20</td><td class='med'>15.11</td><td>15.25</td><td class='med'>15.28</td><td class='flat'>+1.1%</td></tr><tr><th class='size'>1M</th><td class='n'>5</td><td>27.52</td><td class='med'>27.19</td><td>27.19</td><td class='med'>27.30</td><td class='flat'>+0.4%</td></tr><tr><th class='size'>2M</th><td class='n'>5</td><td>50.50</td><td class='med'>50.79</td><td>51.21</td><td class='med'>51.25</td><td class='flat'>+0.9%</td></tr><tr><th class='size'>4M</th><td class='n'>5</td><td>87.10</td><td class='med'>87.22</td><td>86.58</td><td class='med'>85.92</td><td class='flat'>-1.5%</td></tr><tr><th class='size'>8M</th><td class='n'>5</td><td>134.87</td><td class='med'>135.60</td><td>134.77</td><td class='med'>134.46</td><td class='flat'>-0.8%</td></tr><tr><th class='size'>16M</th><td class='n'>5</td><td>190.46</td><td class='med'>190.36</td><td>190.57</td><td class='med'>190.40</td><td class='flat'>+0.0%</td></tr><tr><th class='size'>32M <span class='rule-tag'>rule</span></th><td class='n'>5</td><td>221.09</td><td class='med'>221.41</td><td>239.46</td><td class='med'>238.41</td><td class='big-up'>+7.7%</td></tr><tr><th class='size'>64M</th><td class='n'>5</td><td>290.53</td><td class='med'>290.51</td><td>289.84</td><td class='med'>290.06</td><td class='flat'>-0.2%</td></tr><tr><th class='size'>128M</th><td class='n'>5</td><td>304.54</td><td class='med'>304.53</td><td>307.58</td><td class='med'>308.59</td><td class='flat'>+1.3%</td></tr><tr><th class='size'>256M</th><td class='n'>5</td><td>372.32</td><td class='med'>372.40</td><td>371.70</td><td class='med'>371.74</td><td class='flat'>-0.2%</td></tr><tr><th class='size'>512M</th><td class='n'>5</td><td>379.43</td><td class='med'>379.55</td><td>378.99</td><td class='med'>379.08</td><td class='flat'>-0.1%</td></tr></tbody>
+</table>
+</div>
+</section>
+<h2>2 &nbsp;alltoall — the knob that was never turned</h2>
+<p class="note">Earlier alltoall work drove <code>NCCL_MIN/MAX_NCHANNELS</code>, which bounds the
+<em>collective</em> path. alltoall runs on the <em>p2p</em> path, controlled by
+<code>NCCL_MIN/MAX_P2P_NCHANNELS</code> (<code>src/graph/paths.cc:982-983</code>). Those runs
+changed nothing, so the "+0.00% median" they reported was a null edit. Redone here with the
+correct variable, 5 repeats per arm on <code>{3,5}</code>.</p>
+<div class="cards">
+<div class="card"><h4>8 p2p channels, 256M</h4><div class="big big-down">-26.6%</div>
+<p>the knob demonstrably moves busbw — the measurement is real now</p></div>
+<div class="card"><h4>16 / 32 / 64 channels</h4><div class="big flat">~0%</div>
+<p>default already sits at the plateau; only downward moves are available</p></div>
+<div class="card"><h4>Tuner consultations</h4><div class="big flat">0</div>
+<p>plugin loaded and holding rules; RCCL never asked it, for any size</p></div>
+</div>
+<section>
+<h3>alltoall 2 nodes — all eight arms</h3>
+<p class="note"><code>p2pN</code> forces N p2p channels. <code>pivot</code> sets <code>RCCL_ALL_TO_ALL_PIVOT_ENABLE=1</code>, which would route alltoall through the collective path where the tuner lives — it did not engage on this topology. <code>plugdef</code> and <code>plugpivot</code> load the tuner plugin; both produced zero <code>Applied config</code> and zero <code>Config does not match</code> lines across the whole run, which is the log proof that RCCL never consults the tuner for alltoall. 2 of 40 runs died with the known intermittent <code>ionic_comp</code> error, so some cells rest on 4 repeats.</p>
+<div class="scroll">
+<table>
+<thead>
+<tr><th rowspan="2" class="size">size</th><th rowspan="2" class="n">n</th><th colspan='2'>def</th><th colspan='2'>p2p8</th><th colspan='2'>p2p16</th><th colspan='2'>p2p32</th><th colspan='2'>p2p64</th><th colspan='2'>pivot</th><th colspan='2'>plugdef</th><th colspan='2'>plugpivot</th>
+    <th colspan="7">change vs def (median)</th></tr>
+<tr><th class='sub'>mean</th><th class='sub'>median</th><th class='sub'>mean</th><th class='sub'>median</th><th class='sub'>mean</th><th class='sub'>median</th><th class='sub'>mean</th><th class='sub'>median</th><th class='sub'>mean</th><th class='sub'>median</th><th class='sub'>mean</th><th class='sub'>median</th><th class='sub'>mean</th><th class='sub'>median</th><th class='sub'>mean</th><th class='sub'>median</th><th>p2p8</th><th>p2p16</th><th>p2p32</th><th>p2p64</th><th>pivot</th><th>plugdef</th><th>plugpivot</th></tr>
+</thead>
+<tbody><tr><th class='size'>4K</th><td class='n'>4</td><td>0.10</td><td class='med'>0.10</td><td>0.09</td><td class='med'>0.09</td><td>0.10</td><td class='med'>0.10</td><td>0.10</td><td class='med'>0.10</td><td>0.10</td><td class='med'>0.10</td><td>0.10</td><td class='med'>0.10</td><td>0.10</td><td class='med'>0.10</td><td>0.10</td><td class='med'>0.10</td><td class='big-down'>-11.1%</td><td class='down'>-2.1%</td><td class='flat'>-0.3%</td><td class='flat'>+0.2%</td><td class='flat'>-0.8%</td><td class='flat'>+1.3%</td><td class='flat'>-0.3%</td></tr><tr><th class='size'>8K</th><td class='n'>4</td><td>0.18</td><td class='med'>0.18</td><td>0.18</td><td class='med'>0.18</td><td>0.20</td><td class='med'>0.20</td><td>0.20</td><td class='med'>0.20</td><td>0.19</td><td class='med'>0.20</td><td>0.20</td><td class='med'>0.20</td><td>0.20</td><td class='med'>0.20</td><td>0.17</td><td class='med'>0.20</td><td class='flat'>+0.1%</td><td class='big-up'>+11.4%</td><td class='big-up'>+9.9%</td><td class='big-up'>+7.6%</td><td class='big-up'>+9.4%</td><td class='big-up'>+9.5%</td><td class='big-up'>+8.6%</td></tr><tr><th class='size'>16K</th><td class='n'>4</td><td>0.38</td><td class='med'>0.39</td><td>0.35</td><td class='med'>0.35</td><td>0.39</td><td class='med'>0.39</td><td>0.39</td><td class='med'>0.40</td><td>0.40</td><td class='med'>0.40</td><td>0.40</td><td class='med'>0.39</td><td>0.39</td><td class='med'>0.39</td><td>0.39</td><td class='med'>0.39</td><td class='big-down'>-9.5%</td><td class='flat'>+0.7%</td><td class='up'>+2.3%</td><td class='flat'>+1.1%</td><td class='flat'>+0.5%</td><td class='flat'>-0.3%</td><td class='flat'>-0.1%</td></tr><tr><th class='size'>32K</th><td class='n'>4</td><td>0.76</td><td class='med'>0.81</td><td>0.72</td><td class='med'>0.72</td><td>0.81</td><td class='med'>0.81</td><td>0.79</td><td class='med'>0.80</td><td>0.81</td><td class='med'>0.81</td><td>0.81</td><td class='med'>0.81</td><td>0.79</td><td class='med'>0.80</td><td>0.72</td><td class='med'>0.71</td><td class='big-down'>-11.6%</td><td class='flat'>-0.5%</td><td class='down'>-1.5%</td><td class='flat'>+0.1%</td><td class='flat'>+0.5%</td><td class='flat'>-0.9%</td><td class='big-down'>-12.5%</td></tr><tr><th class='size'>64K</th><td class='n'>4</td><td>1.57</td><td class='med'>1.58</td><td>1.38</td><td class='med'>1.38</td><td>1.62</td><td class='med'>1.61</td><td>1.57</td><td class='med'>1.57</td><td>1.59</td><td class='med'>1.59</td><td>1.58</td><td class='med'>1.58</td><td>1.58</td><td class='med'>1.58</td><td>1.58</td><td class='med'>1.58</td><td class='big-down'>-12.4%</td><td class='up'>+2.4%</td><td class='flat'>-0.5%</td><td class='flat'>+0.8%</td><td class='flat'>+0.4%</td><td class='flat'>+0.2%</td><td class='flat'>+0.3%</td></tr><tr><th class='size'>128K</th><td class='n'>4</td><td>3.18</td><td class='med'>3.16</td><td>2.57</td><td class='med'>2.59</td><td>3.16</td><td class='med'>3.19</td><td>2.84</td><td class='med'>3.12</td><td>3.11</td><td class='med'>3.19</td><td>2.75</td><td class='med'>3.13</td><td>3.10</td><td class='med'>3.10</td><td>3.19</td><td class='med'>3.19</td><td class='big-down'>-18.1%</td><td class='flat'>+1.0%</td><td class='flat'>-1.2%</td><td class='flat'>+0.7%</td><td class='flat'>-1.0%</td><td class='down'>-2.0%</td><td class='flat'>+0.9%</td></tr><tr><th class='size'>256K</th><td class='n'>4</td><td>6.20</td><td class='med'>6.19</td><td>5.33</td><td class='med'>5.33</td><td>6.18</td><td class='med'>6.21</td><td>6.20</td><td class='med'>6.19</td><td>6.12</td><td class='med'>6.23</td><td>5.83</td><td class='med'>5.79</td><td>6.22</td><td class='med'>6.21</td><td>6.21</td><td class='med'>6.20</td><td class='big-down'>-14.0%</td><td class='flat'>+0.2%</td><td class='flat'>+0.0%</td><td class='flat'>+0.7%</td><td class='big-down'>-6.5%</td><td class='flat'>+0.3%</td><td class='flat'>+0.1%</td></tr><tr><th class='size'>512K</th><td class='n'>4</td><td>10.50</td><td class='med'>11.10</td><td>9.08</td><td class='med'>9.49</td><td>11.20</td><td class='med'>11.19</td><td>11.20</td><td class='med'>11.21</td><td>11.00</td><td class='med'>11.15</td><td>11.18</td><td class='med'>11.17</td><td>11.08</td><td class='med'>11.14</td><td>11.23</td><td class='med'>11.23</td><td class='big-down'>-14.5%</td><td class='flat'>+0.9%</td><td class='flat'>+1.0%</td><td class='flat'>+0.5%</td><td class='flat'>+0.7%</td><td class='flat'>+0.4%</td><td class='flat'>+1.2%</td></tr><tr><th class='size'>1M</th><td class='n'>4</td><td>17.94</td><td class='med'>17.95</td><td>15.45</td><td class='med'>15.45</td><td>17.97</td><td class='med'>18.00</td><td>18.07</td><td class='med'>18.08</td><td>18.07</td><td class='med'>18.04</td><td>17.04</td><td class='med'>17.97</td><td>18.01</td><td class='med'>18.02</td><td>17.56</td><td class='med'>17.83</td><td class='big-down'>-13.9%</td><td class='flat'>+0.3%</td><td class='flat'>+0.7%</td><td class='flat'>+0.5%</td><td class='flat'>+0.1%</td><td class='flat'>+0.4%</td><td class='flat'>-0.7%</td></tr><tr><th class='size'>2M</th><td class='n'>4</td><td>29.99</td><td class='med'>29.98</td><td>24.84</td><td class='med'>24.82</td><td>29.94</td><td class='med'>29.90</td><td>30.00</td><td class='med'>30.03</td><td>30.01</td><td class='med'>30.03</td><td>30.00</td><td class='med'>30.01</td><td>29.81</td><td class='med'>29.80</td><td>29.66</td><td class='med'>29.98</td><td class='big-down'>-17.2%</td><td class='flat'>-0.3%</td><td class='flat'>+0.2%</td><td class='flat'>+0.2%</td><td class='flat'>+0.1%</td><td class='flat'>-0.6%</td><td class='flat'>+0.0%</td></tr><tr><th class='size'>4M</th><td class='n'>4</td><td>42.69</td><td class='med'>42.68</td><td>34.11</td><td class='med'>34.08</td><td>40.89</td><td class='med'>41.30</td><td>41.58</td><td class='med'>42.75</td><td>42.06</td><td class='med'>42.45</td><td>42.02</td><td class='med'>42.82</td><td>42.45</td><td class='med'>42.81</td><td>42.87</td><td class='med'>42.91</td><td class='big-down'>-20.2%</td><td class='down'>-3.2%</td><td class='flat'>+0.2%</td><td class='flat'>-0.5%</td><td class='flat'>+0.3%</td><td class='flat'>+0.3%</td><td class='flat'>+0.5%</td></tr><tr><th class='size'>8M</th><td class='n'>4</td><td>51.78</td><td class='med'>54.91</td><td>43.88</td><td class='med'>43.88</td><td>54.84</td><td class='med'>56.50</td><td>55.11</td><td class='med'>55.12</td><td>55.06</td><td class='med'>55.05</td><td>55.10</td><td class='med'>55.13</td><td>54.12</td><td class='med'>54.92</td><td>53.66</td><td class='med'>55.10</td><td class='big-down'>-20.1%</td><td class='up'>+2.9%</td><td class='flat'>+0.4%</td><td class='flat'>+0.2%</td><td class='flat'>+0.4%</td><td class='flat'>+0.0%</td><td class='flat'>+0.3%</td></tr><tr><th class='size'>16M</th><td class='n'>4</td><td>67.21</td><td class='med'>67.23</td><td>52.72</td><td class='med'>52.73</td><td>68.61</td><td class='med'>68.61</td><td>66.98</td><td class='med'>67.53</td><td>66.96</td><td class='med'>67.37</td><td>67.67</td><td class='med'>67.73</td><td>65.80</td><td class='med'>67.71</td><td>67.11</td><td class='med'>67.68</td><td class='big-down'>-21.6%</td><td class='up'>+2.0%</td><td class='flat'>+0.4%</td><td class='flat'>+0.2%</td><td class='flat'>+0.7%</td><td class='flat'>+0.7%</td><td class='flat'>+0.7%</td></tr><tr><th class='size'>32M</th><td class='n'>4</td><td>75.54</td><td class='med'>75.54</td><td>57.24</td><td class='med'>57.32</td><td>75.65</td><td class='med'>75.63</td><td>75.61</td><td class='med'>75.61</td><td>75.63</td><td class='med'>75.62</td><td>75.22</td><td class='med'>75.49</td><td>75.69</td><td class='med'>75.72</td><td>75.54</td><td class='med'>75.56</td><td class='big-down'>-24.1%</td><td class='flat'>+0.1%</td><td class='flat'>+0.1%</td><td class='flat'>+0.1%</td><td class='flat'>-0.1%</td><td class='flat'>+0.2%</td><td class='flat'>+0.0%</td></tr><tr><th class='size'>64M</th><td class='n'>4</td><td>81.99</td><td class='med'>82.00</td><td>61.71</td><td class='med'>61.68</td><td>82.38</td><td class='med'>82.37</td><td>81.96</td><td class='med'>81.97</td><td>81.99</td><td class='med'>82.00</td><td>81.68</td><td class='med'>81.97</td><td>82.07</td><td class='med'>82.05</td><td>82.09</td><td class='med'>82.09</td><td class='big-down'>-24.8%</td><td class='flat'>+0.4%</td><td class='flat'>-0.0%</td><td class='flat'>-0.0%</td><td class='flat'>-0.0%</td><td class='flat'>+0.1%</td><td class='flat'>+0.1%</td></tr><tr><th class='size'>128M</th><td class='n'>4</td><td>86.52</td><td class='med'>86.52</td><td>63.96</td><td class='med'>63.95</td><td>86.31</td><td class='med'>86.33</td><td>86.48</td><td class='med'>86.50</td><td>86.49</td><td class='med'>86.49</td><td>86.52</td><td class='med'>86.54</td><td>86.49</td><td class='med'>86.47</td><td>86.48</td><td class='med'>86.49</td><td class='big-down'>-26.1%</td><td class='flat'>-0.2%</td><td class='flat'>-0.0%</td><td class='flat'>-0.0%</td><td class='flat'>+0.0%</td><td class='flat'>-0.1%</td><td class='flat'>-0.0%</td></tr><tr><th class='size'>256M</th><td class='n'>4</td><td>88.78</td><td class='med'>88.79</td><td>64.92</td><td class='med'>65.22</td><td>88.44</td><td class='med'>88.44</td><td>88.76</td><td class='med'>88.75</td><td>88.76</td><td class='med'>88.79</td><td>88.71</td><td class='med'>88.78</td><td>88.81</td><td class='med'>88.81</td><td>88.75</td><td class='med'>88.78</td><td class='big-down'>-26.5%</td><td class='flat'>-0.4%</td><td class='flat'>-0.0%</td><td class='flat'>+0.0%</td><td class='flat'>-0.0%</td><td class='flat'>+0.0%</td><td class='flat'>-0.0%</td></tr><tr><th class='size'>512M</th><td class='n'>4</td><td>88.18</td><td class='med'>88.04</td><td>65.96</td><td class='med'>65.95</td><td>89.76</td><td class='med'>89.80</td><td>88.36</td><td class='med'>88.34</td><td>88.30</td><td class='med'>88.15</td><td>89.24</td><td class='med'>89.42</td><td>88.14</td><td class='med'>88.03</td><td>88.78</td><td class='med'>88.84</td><td class='big-down'>-25.1%</td><td class='up'>+2.0%</td><td class='flat'>+0.3%</td><td class='flat'>+0.1%</td><td class='up'>+1.6%</td><td class='flat'>-0.0%</td><td class='flat'>+0.9%</td></tr></tbody>
+</table>
+</div>
+</section>
+<h2>3 &nbsp;Inference — Llama-3.1-8B, TP=8, single node</h2>
+<p class="note">SGLang v0.5.17, dense model so all_reduce is effectively the only collective.
+<code>hidden_size</code> 4096 in bf16 puts the per-layer all_reduce at 8KB — inside the shipped
+1-node rule band. ISL 512 / OSL 512, concurrency 32, 128 prompts.</p>
+<div class="scroll">
+<table>
+<thead><tr><th class="size">arm</th><th>RCCL</th><th>all_reduce path</th>
+<th>tok/s</th><th>TPOT ms</th><th>median ITL ms</th><th class="size">outcome</th></tr></thead>
+<tbody>
+<tr><th class="size">A</th><td>ours</td><td>SGLang custom kernel (default)</td>
+<td class="med">687.35</td><td>14.09</td><td>13.97</td>
+<td class="size">RCCL bypassed — only 6 AllReduce calls in the entire log</td></tr>
+<tr><th class="size">B</th><td>ours</td><td>RCCL</td><td colspan="3" class="big-down">hang</td>
+<td class="size">deterministic, twice, at p2p Send/Recv <code>opCount 989</code></td></tr>
+<tr><th class="size">C</th><td>stock</td><td>RCCL</td>
+<td class="med">668.22</td><td>15.69</td><td>15.61</td>
+<td class="size">completes — so the hang is our build, not the SGLang path</td></tr>
+<tr><th class="size">D</th><td>stock</td><td>RCCL + tuner</td><td colspan="3" class="flat">tuner never fires</td>
+<td class="size">72 consultations, all at init; 0 across 12488 steady-state all_reduces</td></tr>
+<tr><th class="size">E</th><td>stock</td><td>rccl-tests in the same container</td>
+<td colspan="3" class="big-up">9 rules applied</td>
+<td class="size">all 8 rule sizes incl. 8192 and 16384 — so the library is fine</td></tr>
+</tbody></table></div>
+<p class="note" style="margin-top:14px">Arm E is the one that matters: the same stock RCCL, in the
+same container, <em>does</em> consult the tuner per collective. So arm D's silence is something in
+SGLang's calling pattern, not a library limitation. The demo is reachable. Separately, arm A vs C
+shows that routing all_reduce through RCCL at all costs <strong>2.8%</strong> throughput versus
+SGLang's own kernel — a deficit any tuning must first make up.</p>
+<p class="foot">Raw CSVs, logs and per-task SUMMARY.md live beside this file in
+<code>results-tuning/2026-08-30-1-value/</code>. Regenerate with
+<code>python3 build_page.py</code>. Node 2 is excluded throughout: every MPI benchmark on
+<code>{3,2}</code> died with <code>pmixp_server.c:1582: Cannot send message</code> while
+<code>{3,5}</code> ran clean with identical environment.</p>
+</div>
