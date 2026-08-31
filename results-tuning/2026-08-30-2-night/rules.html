@@ -69,15 +69,30 @@ td.dim,tr.dim td{color:var(--ink-3);}
 <h1>Which tuner rules fire on real inference — and what it costs</h1>
 <p class="sub">
 Tuned-vs-default A/B, 30 repeats per arm per model, SGLang TP=8 on one MI355X node
-(amd-mi355x-5, 2026-08-30/31 night). Tuned arm = DN tuner plugin +
-<code>all_reduce_1n.final.conf</code> (8 rules). Hit counts are <code>Applied config</code>
-lines from the tuned arm's RCCL logs (sum of 30 reps, all 8 ranks). Default arm has no plugin.
+(amd-mi355x-5, 2026-08-30/31). Tuned arm = DN tuner plugin +
+<code>all_reduce_1n.final.conf</code> (8 rules); default arm has no plugin.
 Bench: ISL 512 / OSL 512 / concurrency 32 / 128 prompts, MSCCL off, custom all-reduce off.
+Two run modes: <b>detect</b> (per-op tuner logging on — source of the hit histograms below) and
+<b>quiet</b> (per-op logging off in both arms — source of all performance verdicts).
 </p>
 
 <section>
-  <div class="kpis" id="kpis"></div>
+  <h2>UPDATE 2026-08-31 — the regression was the logging, not the rules</h2>
+  <p class="desc">
+    The tuner plugin writes a log line for <b>every consultation</b> (matched or not) when the
+    <code>TUNING</code> debug topic is on — 32–213M lines per run, written mid-benchmark, only in the
+    tuned arm. Reruns with per-op logging off in <b>both</b> arms (<code>NCCL_DEBUG_SUBSYS=INIT,ENV</code>)
+    change every finished verdict: models whose dominant size has a rule (llama8b, qwen30b) move to
+    parity-or-slightly-ahead; gpt-oss — whose dominant sizes match no rule — keeps a small real loss
+    (−0.5%), the honest cost of running the tuner with no coverage.
+  </p>
+  <div class="kpis" id="kpis2"></div>
+  <div class="card" style="margin-top:12px"><div id="deltas2"></div>
+    <div class="legend"><span class="it"><span class="sw" style="background:var(--s1)"></span>quiet rerun (fair)</span>
+    <span class="it"><span class="sw" style="background:var(--ink-3)"></span>original logged run (tuned arm paid logging tax)</span></div>
+  </div>
 </section>
+
 
 <section>
   <h2>Traffic map — where each model's all_reduces land, and which rule catches them</h2>
@@ -100,13 +115,6 @@ Bench: ISL 512 / OSL 512 / concurrency 32 / 128 prompts, MSCCL off, custom all-r
 </section>
 
 <section>
-  <h2>Outcome — tuned throughput change vs default (median of 30 reps)</h2>
-  <p class="desc">Every tuned arm is slower. Zero of 30 tuned reps exceeded the default median in any
-  model (Mann-Whitney p ≤ 5×10⁻⁷ each).</p>
-  <div class="card"><div id="deltas"></div></div>
-</section>
-
-<section>
   <h2>Table view — rules × models</h2>
   <div class="card" style="overflow-x:auto"><table id="ruletable"></table></div>
 </section>
@@ -122,9 +130,18 @@ step over the whole batch: 32 tokens × hidden_size × 2 B. That single size car
 llama8b and qwen235b (262144 B → R6) and for qwen30b (131072 B → top edge of range rule R5). Single-token
 (ramp-up/drain) decode and 16 K-token prefill chunks make up the rest. gpt-oss (hidden 2880) emits
 5760 B decode and 184320 B batched decode — neither matches any rule; only its prefill chunks
-(k×5760, k=12–22) fall into R5's 64–128 K range, and that alone coincided with a −1.7% throughput
-regression.<br>
-<b>Evidence:</b> node5 <code>/data/ylerman/models-2026-08-30/&lt;model&gt;_{def,tun}/</code>
+(k×5760, k=12–22) fall into R5's 64–128 K range. Its logged-run −1.7% is now explained by the
+logging confound below (the plugin logged every consultation, and gpt-oss consults millions of
+times even when almost nothing matches).<br>
+<b>The logging confound (found 2026-08-31 morning):</b> the plugin logs one line per consultation —
+matched or not — under debug topic <code>TUNING</code>. A no-R6 ablation arm held <b>212,824,296</b>
+DN-TUNER lines in 22 reps with only 521,040 "Applied": the tuned arm was paying a mid-benchmark
+write tax the default arm never paid. Quiet reruns (topic off, both arms) flip llama8b from −2.8%
+to +0.7% and qwen30b from −1.8% to +0.7% (individually p≈0.11/0.055 — parity or slightly ahead).
+Detect-which-rules-fire and measure-performance are now separate run modes: 1 logged rep for the
+histogram, quiet 30-rep pairs for timing.<br>
+<b>Evidence:</b> node5 <code>/data/ylerman/models-2026-08-30/&lt;model&gt;_{def,tun}/</code> and
+<code>{llamaq,qwen30bq,llamanr6,…}_{def,tun}/</code>, <code>campaign3.log</code> / <code>campaign4.log</code>;
 (bench_rep*.log, logs/*.log.gz), <code>campaign.log</code> / <code>campaign2.log</code>;
 conf at <code>/opt/shared/ylerman/GPU-107/infer-2026-08-30/all_reduce_1n.final.conf</code>;
 RUNLOG rows 2026-08-30T15:07Z→2026-08-31T02:43Z. gpt-oss runs use
@@ -184,6 +201,14 @@ const MODELS = [
      {bytes:97920,  n:15768, rule:"R5", type:"pf", note:"prefill chunks 12–22 tok × 5760B (grouped; 69120–126720B)"},
    ]},
 ];
+// quiet reruns (NCCL_DEBUG_SUBSYS=INIT,ENV both arms; same bench params). null = still running.
+const QUIET = {
+  llama8b:   {def:2053.89, tun:2069.07, p:"0.11",  above:"19/30"},
+  qwen30b:   {def:812.88,  tun:818.74,  p:"0.055", above:"23/30"},
+  qwen235b:  {def:329.59, tun:329.89, p:"0.77", above:"17/30"},
+  gptoss120b:{def:976.27, tun:971.17, p:"0.009", above:"8/30"},
+};
+const QSTATUS = {};
 const TYPE = {
   bd:{label:"batched decode (conc 32)", css:"--s1"},
   sd:{label:"single/2-token decode",    css:"--s2"},
@@ -205,22 +230,66 @@ function bindTip(el, html){
 const svgEl=(t,at)=>{const e=document.createElementNS("http://www.w3.org/2000/svg",t);
   for(const k in at) e.setAttribute(k,at[k]); return e;};
 
-// ---------------- KPI row ----------------
+// ---------------- KPI row: quiet reruns ----------------
 {
-  const box=document.getElementById("kpis");
+  const box=document.getElementById("kpis2");
   for(const m of MODELS){
-    const d=pct(m.def,m.tun);
+    const q=QUIET[m.name];
     const el=document.createElement("div"); el.className="kpi";
-    el.innerHTML=`<div class="m">${m.full}</div>
-      <div class="v"><span class="arrow">▼</span>${d.toFixed(1)}%</div>
-      <div class="d">tuned ${m.tun.toFixed(1)} vs default ${m.def.toFixed(1)} tok/s</div>
-      <div class="p">0/30 tuned reps above default median · MWU p≈${m.p}</div>`;
-    bindTip(el, `<b>${m.full}</b><br>output throughput, median of 30 reps<br>
-      default ${m.def.toFixed(2)} · tuned ${m.tun.toFixed(2)} tok/s<br>
-      TTFT ${m.ttftD}→${m.ttftT} ms (${pct(m.ttftD,m.ttftT).toFixed(1)}%)<br>
-      TPOT ${m.tpotD}→${m.tpotT} ms (${pct(m.tpotD,m.tpotT).toFixed(1)}%)`);
+    if(!q){
+      el.innerHTML=`<div class="m">${m.full}</div>
+        <div class="v" style="color:var(--ink-3);font-size:22px;padding:9px 0">rerun in progress…</div>
+        <div class="p">quiet pair queued/running on node 5</div>`;
+    } else {
+      const d=pct(q.def,q.tun), up=d>=0;
+      el.innerHTML=`<div class="m">${m.full}</div>
+        <div class="v" style="color:var(${up?"--good":"--crit"})"><span class="arrow">${up?"▲":"▼"}</span>${up?"+":""}${d.toFixed(1)}%</div>
+        <div class="d">tuned ${q.tun.toFixed(1)} vs default ${q.def.toFixed(1)} tok/s</div>
+        <div class="p">${q.above} tuned reps above default median · MWU p≈${q.p}${up?" — parity or slightly ahead, not yet conclusive alone":" — small real loss: no rule covers this model's dominant sizes, overhead only"}</div>`;
+      bindTip(el,`<b>${m.full}</b> — quiet rerun, 30+30 reps<br>default ${q.def.toFixed(2)} · tuned ${q.tun.toFixed(2)} tok/s<br>logged run said ${pct(m.def,m.tun).toFixed(1)}%`);
+    }
     box.appendChild(el);
   }
+}
+
+// ---------------- deltas2: logged vs quiet per model ----------------
+{
+  const W=1040, rowH=58, padL=110, padT=24, padR=64;
+  const H=padT+MODELS.length*rowH+34;
+  const maxAbs=3.2;
+  const X=v=>padL+((v+maxAbs)/(2*maxAbs))*(W-padL-padR);
+  const svg=svgEl("svg",{width:"100%",viewBox:`0 0 ${W} ${H}`,role:"img",
+    "aria-label":"Tuned-vs-default change per model: logged run vs quiet rerun"});
+  for(let g=-3; g<=3; g++){
+    const x=X(g);
+    svg.appendChild(svgEl("line",{x1:x,y1:padT-6,x2:x,y2:H-26,stroke:g===0?css("--axis"):css("--grid"),"stroke-width":1}));
+    const t=svgEl("text",{x:x,y:H-10,"text-anchor":"middle","font-size":"11",fill:css("--ink-3")});
+    t.textContent=g+"%"; svg.appendChild(t);
+  }
+  MODELS.forEach((m,i)=>{
+    const y=padT+i*rowH+6;
+    const nm=svgEl("text",{x:8,y:y+16,"font-size":"12.5","font-weight":"600",fill:css("--ink-1")});
+    nm.textContent=m.name; svg.appendChild(nm);
+    const xz=X(0);
+    const dl=pct(m.def,m.tun);
+    const gb=svgEl("rect",{x:X(dl),y:y+22,width:xz-X(dl),height:12,fill:css("--ink-3"),rx:3,opacity:.55});
+    svg.appendChild(gb);
+    bindTip(gb,`<b>${m.name}</b> logged run: ${dl.toFixed(2)}% (tuned arm wrote per-op logs mid-benchmark)`);
+    const q=QUIET[m.name];
+    if(q){
+      const dq=pct(q.def,q.tun), xd=X(dq);
+      const bar=svgEl("rect",{x:Math.min(xz,xd),y:y,width:Math.abs(xd-xz),height:18,fill:css("--s1"),rx:4});
+      svg.appendChild(bar);
+      const lbl=svgEl("text",{x:dq>=0?xd+8:xd-8,y:y+13,"font-size":"11.5","font-weight":"600",
+        "text-anchor":dq>=0?"start":"end",fill:css("--ink-1")});
+      lbl.textContent=(dq>=0?"+":"")+dq.toFixed(2)+"%"; svg.appendChild(lbl);
+      bindTip(bar,`<b>${m.name}</b> quiet rerun: ${(dq>=0?"+":"")+dq.toFixed(2)}% (tuned ${q.tun.toFixed(2)} vs default ${q.def.toFixed(2)})`);
+    } else {
+      const t=svgEl("text",{x:xz+8,y:y+13,"font-size":"11",fill:css("--ink-3")});
+      t.textContent="quiet rerun in progress…"; svg.appendChild(t);
+    }
+  });
+  document.getElementById("deltas2").appendChild(svg);
 }
 
 // ---------------- traffic map ----------------
@@ -330,41 +399,6 @@ const svgEl=(t,at)=>{const e=document.createElementNS("http://www.w3.org/2000/sv
   document.getElementById("heatmap").appendChild(svg);
 }
 
-// ---------------- deltas ----------------
-{
-  const models=MODELS;
-  const W=1040, rowH=44, padL=110, padT=24, padR=60;
-  const H=padT+models.length*rowH+34;
-  const maxAbs=3.2;
-  const x0=W-padR-0, xL=padL; // zero at right? better: zero baseline near right, bars extend left
-  const X=v=>padL+((v+maxAbs)/maxAbs)*(W-padL-padR-0)* (1); // v in [-maxAbs,0]
-  const svg=svgEl("svg",{width:"100%",viewBox:`0 0 ${W} ${H}`,role:"img",
-    "aria-label":"Tuned vs default throughput change per model"});
-  // gridlines each 1%
-  for(let g=-3; g<=0; g++){
-    const x=X(g);
-    svg.appendChild(svgEl("line",{x1:x,y1:padT-6,x2:x,y2:H-26,stroke:g===0?css("--axis"):css("--grid"),
-      "stroke-width":1}));
-    const t=svgEl("text",{x:x,y:H-10,"text-anchor":"middle","font-size":"11",fill:css("--ink-3")});
-    t.textContent=g+"%"; svg.appendChild(t);
-  }
-  models.forEach((m,i)=>{
-    const d=pct(m.def,m.tun);
-    const y=padT+i*rowH+8;
-    const nm=svgEl("text",{x:8,y:y+13,"font-size":"12.5","font-weight":"600",fill:css("--ink-1")});
-    nm.textContent=m.name; svg.appendChild(nm);
-    const x=X(d), xz=X(0);
-    const bar=svgEl("rect",{x:x,y:y,width:xz-x,height:18,fill:css("--crit"),rx:4});
-    svg.appendChild(bar);
-    const lbl=svgEl("text",{x:x-8,y:y+13,"text-anchor":"end","font-size":"11.5","font-weight":"600",
-      fill:css("--ink-1")});
-    lbl.textContent=d.toFixed(2)+"%"; svg.appendChild(lbl);
-    bindTip(bar,`<b>${m.full}</b><br>median tok/s: default ${m.def.toFixed(2)} → tuned ${m.tun.toFixed(2)}<br>
-      change ${d.toFixed(2)}% · 0/30 tuned reps above default median · p≈${m.p}`);
-  });
-  document.getElementById("deltas").appendChild(svg);
-}
-
 // ---------------- tables ----------------
 {
   const t=document.getElementById("ruletable");
@@ -387,18 +421,20 @@ const svgEl=(t,at)=>{const e=document.createElementNS("http://www.w3.org/2000/sv
 }
 {
   const t=document.getElementById("modeltable");
-  let h=`<tr><th>model</th><th>def tok/s</th><th>tun tok/s</th><th>Δ tput</th>
-    <th>def TTFT ms</th><th>tun TTFT</th><th>Δ</th>
-    <th>def TPOT ms</th><th>tun TPOT</th><th>Δ</th><th>MWU p</th></tr>`;
+  let h=`<tr><th>model</th><th>quiet def tok/s</th><th>quiet tun</th><th>quiet Δ</th><th>quiet MWU p</th>
+    <th>logged Δ (biased)</th><th>logged TTFT Δ</th><th>logged TPOT Δ</th></tr>`;
   for(const m of MODELS){
-    h+=`<tr><td>${m.full}</td><td>${m.def.toFixed(2)}</td><td>${m.tun.toFixed(2)}</td>
-      <td class="neg">${pct(m.def,m.tun).toFixed(2)}%</td>
-      <td>${m.ttftD.toFixed(2)}</td><td>${m.ttftT.toFixed(2)}</td>
-      <td class="neg">+${pct(m.ttftD,m.ttftT).toFixed(1)}%</td>
-      <td>${m.tpotD.toFixed(2)}</td><td>${m.tpotT.toFixed(2)}</td>
-      <td class="neg">+${pct(m.tpotD,m.tpotT).toFixed(1)}%</td><td>${m.p}</td></tr>`;
+    const q=QUIET[m.name];
+    const qd=q?pct(q.def,q.tun):0;
+    const qc=q?`<td>${q.def.toFixed(2)}</td><td>${q.tun.toFixed(2)}</td>
+      <td class="${qd>=0?"pos":"neg"}">${qd>=0?"+":""}${qd.toFixed(2)}%</td><td>${q.p}</td>`
+      :`<td colspan="4" class="dim">${QSTATUS[m.name]||"quiet rerun pending"}</td>`;
+    h+=`<tr><td>${m.full}</td>${qc}
+      <td class="dim">${pct(m.def,m.tun).toFixed(2)}%</td>
+      <td class="dim">+${pct(m.ttftD,m.ttftT).toFixed(1)}%</td>
+      <td class="dim">+${pct(m.tpotD,m.tpotT).toFixed(1)}%</td></tr>`;
   }
-  h+=`<tr class="dim"><td>Qwen3.5-397B-A17B</td><td colspan="10">not runnable: hub snapshot holds 48 of 94 weight shards (half-finished download, ~390 GB missing; no node has disk to complete it)</td></tr>`;
+  h+=`<tr class="dim"><td>Qwen3.5-397B-A17B</td><td colspan="7">not runnable: hub snapshot holds 48 of 94 weight shards (half-finished download, ~390 GB missing; no node has disk to complete it)</td></tr>`;
   t.innerHTML=h;
 }
 </script>
