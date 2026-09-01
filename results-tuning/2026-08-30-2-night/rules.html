@@ -124,6 +124,30 @@ Two run modes: <b>detect</b> (per-op tuner logging on — source of the hit hist
   <div class="card" style="overflow-x:auto"><table id="modeltable"></table></div>
 </section>
 
+<section>
+  <h2>In-model rule sweep results — 2026-09-01 overnight (campaign 5/6)</h2>
+  <p class="desc">Per model: 30 single-rule confs screened at the dominant all_reduce size (5 quiet reps),
+  then VERIFIED finals — only combos proven to apply (logged probes; ll128 and tree+simple are
+  plugin-IGNOREd on this arch and silently run as no-rule) — 3 rotated passes × 10 reps per arm to
+  average time drift. An earlier unverified finals pass crowned a phantom ll128 "winner" (+2% of pure
+  drift) — retracted; see RUNLOG 2026-08-31T21:20Z.</p>
+  <div class="card" style="overflow-x:auto"><table>
+    <tr><th>model @ size</th><th>arm</th><th>median tok/s (30 reps)</th><th>vs no-rule</th><th>MWU p</th></tr>
+    <tr><td rowspan="4">llama8b @ 262144B<br>(node 3)</td><td>no rule</td><td>1969.44</td><td>—</td><td>—</td></tr>
+    <tr><td><b>ring, simple, 16 ch — WINNER</b></td><td><b>2009.78</b></td><td class="pos">+2.05%</td><td>0.0036</td></tr>
+    <tr><td>current conf (ring,ll,32)</td><td>1984.17</td><td class="pos">+0.75%</td><td>0.037</td></tr>
+    <tr><td>tree,ll,16 / ring,simple,48</td><td>1989.16 / 1971.93</td><td>+1.0% / +0.1%</td><td>0.16 / 0.60</td></tr>
+    <tr><td rowspan="4">qwen30b @ 131072B<br>(node 9)</td><td>no rule</td><td>816.03</td><td>—</td><td>—</td></tr>
+    <tr><td><b>tree, ll, 16 ch — best</b></td><td><b>820.00</b></td><td class="pos">+0.49%</td><td>0.009</td></tr>
+    <tr><td>current conf (range tree,ll,48)</td><td>812.88</td><td>−0.39%</td><td>0.85</td></tr>
+    <tr><td>ring,simple,16 / ring,simple,48</td><td>815.45 / 819.07</td><td>−0.1% / +0.4%</td><td>0.79 / 0.16</td></tr>
+  </table></div>
+  <p class="desc" style="margin-top:10px">Take-away: per-size in-model tuning is real but model-dependent —
+  llama8b gains +2% from <code>ring,simple,16</code> at its decode size; qwen30b's headroom at the same
+  concurrency is ~0.5% (<code>tree,ll,16</code>). Winners verified firing via logged probes (1.06M hits).
+  Evidence: node3/node9 <code>/data/ylerman/models-2026-08-30/{lf2_*,qf2_*,probe_*}</code>, <code>campaign5.log</code>, <code>campaign6.log</code>.</p>
+</section>
+
 <p class="foot" id="foot">
 <b>Reading the data:</b> with concurrency 32, steady-state decode does one all_reduce per layer per
 step over the whole batch: 32 tokens × hidden_size × 2 B. That single size carries ~98% of hits for
