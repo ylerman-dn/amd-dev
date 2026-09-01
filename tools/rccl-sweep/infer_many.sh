@@ -26,8 +26,8 @@ IMAGE=${IM_IMAGE:-lmsysorg/sglang:v0.5.17-rocm720-mi35x}
 PORT=8899
 CNAME=ylerman-many-${NAME}-${ARM}
 
-ISL=512
-OSL=512
+ISL=${IM_ISL:-512}
+OSL=${IM_OSL:-512}
 CONC=32
 NUM_PROMPTS=128
 
