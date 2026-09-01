@@ -7,6 +7,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stddef.h>
+#include <sys/stat.h>
+#include <time.h>
 
 #ifdef DN_TUNER_V5
 #include "tuner_v5.h"
@@ -54,6 +56,14 @@ typedef struct {
   size_t nRanks;
   size_t nNodes;
   ncclDebugLogger_t logFunction;
+  // Hot-reload (DN_TUNER_HOT_RELOAD=1): re-read the config file when its mtime changes,
+  // so rules can be swapped on a live server without a restart. The mtime check is
+  // throttled to once per second, and reload runs inside getCollInfo — the same thread
+  // that reads the table for this communicator — so no locking is needed.
+  int hotReload;
+  char configFile[512];
+  time_t cfgMtime;
+  time_t lastCheck;
 } TunerContext;
 
 // Parse collective type from string
@@ -296,6 +306,50 @@ static ncclResult_t loadConfig(TunerContext* ctx, const char* filename) {
   return ncclSuccess;
 }
 
+// mtime of a file, 0 if unreadable
+static time_t configMtime(const char* filename) {
+  struct stat st;
+  if (stat(filename, &st) != 0) return 0;
+  return st.st_mtime;
+}
+
+// If hot-reload is enabled and the config file changed on disk, re-parse it and swap the
+// rules table. Parse errors keep the previous table. Called from getCollInfo (serial per
+// communicator), throttled to one stat() per second.
+static void maybeReloadConfig(TunerContext* ctx) {
+  if (!ctx->hotReload || ctx->configFile[0] == '\0') return;
+  time_t now = time(NULL);
+  if (now == ctx->lastCheck) return;   // at most one stat per second
+  ctx->lastCheck = now;
+  time_t m = configMtime(ctx->configFile);
+  if (m == 0 || m == ctx->cfgMtime) return;
+
+  TunerContext tmp;
+  memset(&tmp, 0, sizeof(tmp));
+  tmp.logFunction = ctx->logFunction;
+  tmp.nRanks = ctx->nRanks;
+  tmp.nNodes = ctx->nNodes;
+  if (loadConfig(&tmp, ctx->configFile) != ncclSuccess) {
+    if (tmp.configs) free(tmp.configs);
+    if (ctx->logFunction) {
+      ctx->logFunction(NCCL_LOG_INFO, NCCL_TUNING, __FILE__, __LINE__,
+                       "DN-TUNER/Plugin: hot-reload of %s FAILED, keeping previous %d configs",
+                       ctx->configFile, ctx->numConfigs);
+    }
+    return;
+  }
+  if (ctx->configs) free(ctx->configs);
+  ctx->configs = tmp.configs;
+  ctx->numConfigs = tmp.numConfigs;
+  ctx->maxConfigs = tmp.maxConfigs;
+  ctx->cfgMtime = m;
+  if (ctx->logFunction) {
+    ctx->logFunction(NCCL_LOG_INFO, NCCL_TUNING, __FILE__, __LINE__,
+                     "DN-TUNER/Plugin: hot-reloaded %d tuning configurations from %s",
+                     ctx->numConfigs, ctx->configFile);
+  }
+}
+
 __hidden ncclResult_t pluginInit(size_t nRanks, size_t nNodes, ncclDebugLogger_t logFunction, void **context) {
   TunerContext* ctx = (TunerContext*)malloc(sizeof(TunerContext));
   if (!ctx) return ncclSystemError;
@@ -327,6 +381,18 @@ __hidden ncclResult_t pluginInit(size_t nRanks, size_t nNodes, ncclDebugLogger_t
     return result;
   }
 
+  // Hot-reload setup (opt-in via DN_TUNER_HOT_RELOAD=1; default off = old behavior)
+  const char* hr = getenv("DN_TUNER_HOT_RELOAD");
+  ctx->hotReload = (hr && strcmp(hr, "1") == 0) ? 1 : 0;
+  strncpy(ctx->configFile, configFile, sizeof(ctx->configFile) - 1);
+  ctx->configFile[sizeof(ctx->configFile) - 1] = '\0';
+  ctx->cfgMtime = configMtime(configFile);
+  ctx->lastCheck = time(NULL);
+  if (ctx->hotReload && logFunction) {
+    logFunction(NCCL_LOG_INFO, NCCL_TUNING, __FILE__, __LINE__,
+                "DN-TUNER/Plugin: hot-reload ENABLED for %s", ctx->configFile);
+  }
+
   *context = ctx;
   return ncclSuccess;
 }
@@ -336,6 +402,8 @@ __hidden ncclResult_t pluginGetCollInfo(void* context, ncclFunc_t collType, size
                               int regBuff, int* nChannels) {
   TunerContext* ctx = (TunerContext*)context;
   if (!ctx) return ncclInternalError;
+
+  maybeReloadConfig(ctx);
 
   // Set default channels to 0 to ensure RCCL uses its default channel selection logic in case no match is found or wildcard is used in config.
   *nChannels = 0;
