@@ -34,6 +34,11 @@ NUM_PROMPTS=128
 mkdir -p "$OUT/logs"
 rm -rf "${OUT:?}/logs"/* "$OUT"/bench_rep*.log
 
+# IM_KEEP_CUSTOM_AR=1 keeps SGLang's custom all-reduce kernel (RCCL then carries ~0 of the
+# TP all_reduce - stock behavior). Default: disabled, so collectives reach RCCL/the tuner.
+DISABLE_AR_FLAG="--disable-custom-all-reduce"
+[ -n "${IM_KEEP_CUSTOM_AR:-}" ] && DISABLE_AR_FLAG=""
+
 TUNER_ENV=""
 if [ "$ARM" = "tun" ]; then
   TUNER_ENV="-e NCCL_TUNER_PLUGIN=/opt/rccl/tuner/librccl-tunerv4-dn.so -e NCCL_TUNER_CONFIG_FILE=/opt/rccl/tuner/${RM_CONF:-all_reduce_1n.final.conf}"
@@ -65,7 +70,7 @@ python3 -m sglang.launch_server \
   --tp 8 \
   --host 0.0.0.0 --port $PORT \
   --disable-cuda-graph \
-  --disable-custom-all-reduce \
+  $DISABLE_AR_FLAG \
   --trust-remote-code $EXTRA \
   > /workspace/out/server.log 2>&1
 " > /dev/null
