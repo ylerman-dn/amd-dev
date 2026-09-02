@@ -240,6 +240,30 @@ Two run modes: <b>detect</b> (per-op tuner logging on — source of the hit hist
   2026-09-01→02, results-tuning/2026-09-0{1,2}-* summaries, commits 441605d…9f5e0f9.</p>
 </section>
 
+<section>
+  <h2>Channel-unit campaign 2026-09-02 — four experiments, one mechanism closed</h2>
+  <p class="desc">Hypothesis: all prefill-band losses were channel under-provisioning (rules wrote 8–48 while
+  the running communicator uses 112). Four parallel tests:</p>
+  <div class="card" style="overflow-x:auto"><table>
+    <tr><th>experiment</th><th>verdict</th><th>key numbers</th></tr>
+    <tr><td>rccl-tests fill, allreduce ≥64MiB (des2-2, 155 runs)</td><td>no rule wins</td>
+      <td>ring,simple,112 exact-ties default (340–374 GB/s); all else −13…−95%</td></tr>
+    <tr><td>llama prefill retest (node 5)</td><td>rs112 ties none (p=0.96)</td>
+      <td>old −38…−68% = unit trap; rs168/224 −4.5% (+11% TTFT)</td></tr>
+    <tr><td>qwen prefill retest (ses2-1, MI350x)</td><td>rs112 ties none (p=0.60)</td>
+      <td>old −3.5% closed; rs168/224 −4.4%</td></tr>
+    <tr><td>gpt-oss prefill retest (node 3)</td><td>rs112 ties none (p=0.79)</td>
+      <td>old +15% TTFT closed; rs168/224 +12.5% TTFT</td></tr>
+  </table></div>
+  <p class="desc" style="margin-top:10px"><b>Mechanism, final form:</b> the parity unit for a rule's channel
+  value is the communicator's channel count — <b>112</b> on this stack (the serving image pins
+  <code>NCCL_MIN_NCHANNELS=112</code>). Writing the right value buys parity, never a win, in the big-message
+  band; writing above it costs 4–13% despite clamping; and the channel field is 8-bit — 256 wraps to 0 and
+  crashes librccl (SIGFPE, deterministic). The ×4 "write 224" model from the 2026-08-03 bare-metal sweeps does
+  not apply on v0.5.17. Where rules DO win remains the decode coverage gaps (see proven-rules table above).
+  Evidence: results-tuning/2026-09-02-{2,3,4,5}-*, RUNLOG rows 2026-09-02, commits 3412dd0/3cc5989/b521ec8/ab15165.</p>
+</section>
+
 <p class="foot" id="foot">
 <b>Reading the data:</b> with concurrency 32, steady-state decode does one all_reduce per layer per
 step over the whole batch: 32 tokens × hidden_size × 2 B. That single size carries ~98% of hits for
