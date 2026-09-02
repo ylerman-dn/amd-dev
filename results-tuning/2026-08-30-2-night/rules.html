@@ -170,6 +170,32 @@ Two run modes: <b>detect</b> (per-op tuner logging on — source of the hit hist
 </section>
 
 <section>
+  <h2>Per-case hit tables — sizes, hits, rule matched (six cases)</h2>
+  <p class="desc">Counts from detect (logged) runs. Decode cases: 30-rep totals across 8 ranks (2026-08-31 campaigns).
+  Prefill cases: 1 detect rep, rank 0 (no-cache canaries/probes, 2026-09-01/02). Scale prefill counts ×8 ranks ×reps for totals.</p>
+  <div class="card" style="overflow-x:auto"><table>
+    <tr><th>case</th><th>msg size (B)</th><th>hits</th><th>what it is</th><th>rule matched</th></tr>
+    <tr><td rowspan="4">1. llama decode</td><td>262,144</td><td>31,915,000</td><td>batched decode (32 tok)</td><td>R6 → winner ring,simple,16</td></tr>
+    <tr><td>8,192</td><td>589,680</td><td>1-tok ramp</td><td>tree,ll,4</td></tr>
+    <tr><td>16,384</td><td>22,880</td><td>2-tok ramp</td><td>tree,ll,16</td></tr>
+    <tr><td>98–131K</td><td>102,960</td><td>partial batches</td><td>range 64–128K</td></tr>
+    <tr><td rowspan="3">2. qwen30b decode</td><td>131,072</td><td>47,640,192</td><td>batched decode</td><td>range top → winner tree,ll,16</td></tr>
+    <tr><td>4,096</td><td>866,016</td><td>1-tok ramp</td><td>tree,ll,2</td></tr>
+    <tr><td>8,192</td><td>31,040</td><td>2-tok ramp</td><td>tree,ll,4</td></tr>
+    <tr><td rowspan="2">3. gpt-oss decode</td><td>184,320</td><td>1,196,032 (1 rep, 8 ranks)</td><td>batched decode</td><td>was GAP → winner ring,simple,8</td></tr>
+    <tr><td>k×5,760 (69–127K)</td><td>15,768 (30 reps)</td><td>ramp batches</td><td>range 64–128K</td></tr>
+    <tr><td rowspan="2">4. llama prefill (no-cache)</td><td>134,217,728</td><td>31,200</td><td>16k-tok packed pass</td><td>band 48–144MiB (rules LOSE)</td></tr>
+    <tr><td>67,108,864</td><td>4,680</td><td>8k-tok pass</td><td>band</td></tr>
+    <tr><td rowspan="3">5. qwen30b prefill (no-cache)</td><td>67,108,864</td><td>11,640</td><td>16k-tok pass</td><td>band 24–96MiB (rules LOSE)</td></tr>
+    <tr><td>33,554,432</td><td>776</td><td>8k-tok pass</td><td>band</td></tr>
+    <tr><td>26–32MB</td><td>194×5</td><td>tail passes</td><td>band</td></tr>
+    <tr><td rowspan="3">6. gpt-oss prefill (no-cache)</td><td>94,371,840</td><td>4,380</td><td>16k-tok pass</td><td>band 33–100MiB (rules LOSE)</td></tr>
+    <tr><td>47,185,920</td><td>365</td><td>8k-tok pass</td><td>band</td></tr>
+    <tr><td>37–43MB</td><td>~150×4</td><td>tail passes</td><td>band</td></tr>
+  </table></div>
+</section>
+
+<section>
   <h2>Overnight campaigns 2026-09-01/02 — prefill regime, decode gap, and the Regev attribution</h2>
   <p class="desc"><b>Methodology event:</b> the earlier prefill "nulls" were retracted — bench_serving repeats
   identical prompts and the radix cache served prefill from cache after round 1, so prefill all_reduces
