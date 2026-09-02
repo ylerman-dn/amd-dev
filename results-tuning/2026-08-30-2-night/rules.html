@@ -6,28 +6,18 @@
 <title>Tuner rules vs real inference traffic — 2026-08-30/31 night campaign</title>
 <style>
 .viz-root {
-  color-scheme: light;
-  --surface-1:#fcfcfb; --page:#f9f9f7;
-  --ink-1:#0b0b0b; --ink-2:#52514e; --ink-3:#898781;
-  --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,.10);
-  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a;
+  color-scheme: dark;
+  --surface-1:#1a1a19; --page:#0d0d0d;
+  --ink-1:#ffffff; --ink-2:#c3c2b7; --ink-3:#898781;
+  --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10);
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70;
   --seq100:#cde2fb; --seq200:#9ec5f4; --seq300:#6da7ec; --seq400:#3987e5;
   --seq500:#256abf; --seq600:#184f95; --seq700:#0d366b;
-  --crit:#d03b3b; --good:#006300;
-  --band:#f0efec;
+  --crit:#e66767; --good:#0ca30c;
+  --band:#242423;
 }
-@media (prefers-color-scheme: dark) {
-  :root:where(:not([data-theme="light"])) .viz-root {
-    color-scheme: dark;
-    --surface-1:#1a1a19; --page:#0d0d0d;
-    --ink-1:#ffffff; --ink-2:#c3c2b7; --ink-3:#898781;
-    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10);
-    --s1:#3987e5; --s2:#d95926; --s3:#199e70;
-    --crit:#e66767; --good:#0ca30c;
-    --band:#242423;
-  }
-}
-html,body{margin:0;padding:0;background:var(--page);}
+
+html,body{margin:0;padding:0;background:#0d0d0d;}
 .viz-root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink-1);
   background:var(--page);max-width:1120px;margin:0 auto;padding:28px 24px 64px;}
 h1{font-size:22px;font-weight:650;margin:0 0 4px;}
@@ -133,19 +123,64 @@ Two run modes: <b>detect</b> (per-op tuner logging on — source of the hit hist
   drift) — retracted; see RUNLOG 2026-08-31T21:20Z.</p>
   <div class="card" style="overflow-x:auto"><table>
     <tr><th>model @ size</th><th>arm</th><th>median tok/s (30 reps)</th><th>vs no-rule</th><th>MWU p</th></tr>
-    <tr><td rowspan="4">llama8b @ 262144B<br>(node 3)</td><td>no rule</td><td>1969.44</td><td>—</td><td>—</td></tr>
+    <tr><td rowspan="4">llama8b @ 262144B<br>(node 3)</td><td>no rule — RCCL default: tree,ll,~112ch (probed)</td><td>1969.44</td><td>—</td><td>—</td></tr>
     <tr><td><b>ring, simple, 16 ch — WINNER</b></td><td><b>2009.78</b></td><td class="pos">+2.05%</td><td>0.0036</td></tr>
-    <tr><td>current conf (ring,ll,32)</td><td>1984.17</td><td class="pos">+0.75%</td><td>0.037</td></tr>
+    <tr><td>current conf, rccl-tests-derived (ring,ll,32)</td><td>1984.17</td><td class="pos">+0.75%</td><td>0.037</td></tr>
     <tr><td>tree,ll,16 / ring,simple,48</td><td>1989.16 / 1971.93</td><td>+1.0% / +0.1%</td><td>0.16 / 0.60</td></tr>
-    <tr><td rowspan="4">qwen30b @ 131072B<br>(node 9)</td><td>no rule</td><td>816.03</td><td>—</td><td>—</td></tr>
+    <tr><td rowspan="4">qwen30b @ 131072B<br>(node 9)</td><td>no rule — RCCL default: tree,ll,~112ch (probed)</td><td>816.03</td><td>—</td><td>—</td></tr>
     <tr><td><b>tree, ll, 16 ch — best</b></td><td><b>820.00</b></td><td class="pos">+0.49%</td><td>0.009</td></tr>
-    <tr><td>current conf (range tree,ll,48)</td><td>812.88</td><td>−0.39%</td><td>0.85</td></tr>
+    <tr><td>current conf, rccl-tests-derived (range rule tree,ll,48)</td><td>812.88</td><td>−0.39%</td><td>0.85</td></tr>
     <tr><td>ring,simple,16 / ring,simple,48</td><td>815.45 / 819.07</td><td>−0.1% / +0.4%</td><td>0.79 / 0.16</td></tr>
   </table></div>
   <p class="desc" style="margin-top:10px">Take-away: per-size in-model tuning is real but model-dependent —
   llama8b gains +2% from <code>ring,simple,16</code> at its decode size; qwen30b's headroom at the same
   concurrency is ~0.5% (<code>tree,ll,16</code>). Winners verified firing via logged probes (1.06M hits).
   Evidence: node3/node9 <code>/data/ylerman/models-2026-08-30/{lf2_*,qf2_*,probe_*}</code>, <code>campaign5.log</code>, <code>campaign6.log</code>.</p>
+</section>
+
+<section>
+  <h2>Overnight campaigns 2026-09-01/02 — prefill regime, decode gap, and the Regev attribution</h2>
+  <p class="desc"><b>Methodology event:</b> the earlier prefill "nulls" were retracted — bench_serving repeats
+  identical prompts and the radix cache served prefill from cache after round 1, so prefill all_reduces
+  vanished. All prefill runs below carry <code>--disable-radix-cache</code> (verified per run).</p>
+  <div class="card" style="overflow-x:auto"><table>
+    <tr><th>experiment</th><th>verdict</th><th>key numbers (30 paired rounds/arm, p by MWU)</th></tr>
+    <tr><td>llama8b prefill 48–144MB</td><td class="neg">rules catastrophic</td>
+      <td>ring,simple,16: −38.6% tok/s, TTFT +149%; tree,ll,16: −68%; current conf ≡ no-rule (p=0.41)</td></tr>
+    <tr><td>qwen30b prefill 24–96MB</td><td class="neg">rules hurt</td>
+      <td>ring,simple,48 −3.5%, …,24 −11.7% (p=3e-11, 0/30); current ≡ no-rule</td></tr>
+    <tr><td>gpt-oss prefill 33–100MB</td><td class="neg">rules hurt</td>
+      <td>ring,simple,48 TTFT +15%, tree,ll,16 TTFT +316% (30/30 worse); current ≡ no-rule</td></tr>
+    <tr><td><b>gpt-oss DECODE @184320B</b></td><td class="pos"><b>WINNER: ring,simple,8</b></td>
+      <td>TPOT −0.93% vs no-rule (p=0.0003, 25/30), canary 1.196M in-band hits — fills the coverage gap</td></tr>
+    <tr><td>Attribution (Regev −30% TTFT)</td><td>does not transfer — inverted</td>
+      <td>customAR (stock kernel) beats RCCL-default by +7–8% tok/s (p=3e-11) at his own ISL window; Tree vs default: nothing (p≥0.07)</td></tr>
+  </table></div>
+  <p class="desc" style="margin-top:10px"><b>Mechanism (closed):</b> RCCL's default at 32–256MB is
+  RING/SIMPLE at <b>112 channels</b> (probed, `-A 1` + nc lines); our rule grids only went up to 48 channels
+  (inherited from the rccl-tests sweeps; whether a rule with 112 channels is honored is UNTESTED —
+  next experiment), so every prefill-band rule we tried under-provisions bandwidth — the bigger the message, the worse
+  (16ch at 134MB = −38.6%). <b>Where the tool wins:</b> exact-size decode rules in coverage gaps
+  (llama +2.05% ring,simple,16 @256K; gpt-oss +0.93% TPOT ring,simple,8 @180K; qwen +0.5% tree,ll,16 @128K).
+  <b>Proven rules (recommended for the shipped conf, pending sign-off):</b></p>
+  <div class="card" style="overflow-x:auto"><table>
+    <tr><th>rule (conf line)</th><th>model / traffic it serves</th><th>verified gain</th><th>evidence</th></tr>
+    <tr><td><code>allreduce,262144,262144,ring,simple,16,1,8,-1,-1</code></td><td>llama8b batched decode (conc 32)</td>
+      <td class="pos">+2.05% tok/s (p=0.0036)</td><td>lf2 finals + 1.06M-hit probe</td></tr>
+    <tr><td><code>allreduce,184320,184320,ring,simple,8,1,8,-1,-1</code></td><td>gpt-oss batched decode (conc 32)</td>
+      <td class="pos">TPOT −0.93% (p=0.0003)</td><td>gdec finals + 1.196M-hit canary</td></tr>
+    <tr><td><code>allreduce,131072,131072,tree,ll,16,1,8,-1,-1</code></td><td>qwen30b batched decode (conc 32)</td>
+      <td class="pos">+0.49% (p=0.009)</td><td>qf2 finals</td></tr>
+  </table></div>
+  <p class="desc" style="margin-top:10px"><b>What the no-cache prefill runs actually hit</b> (detect canaries, counts per 1 rep, rank 0):
+  llama: 31,200 lines @134,217,728B + 4,680 @67,108,864B (band rule matched 100%);
+  qwen: 11,640 @67,108,864 + 776 @33,554,432 + small tail;
+  gpt-oss: 4,380 @94,371,840 + 365 @47,185,920 + tail; gpt-oss decode canary: 1,196,032 @184,320 exactly.
+  RCCL default at all these prefill sizes: RING/SIMPLE, nc:112 (probed).</p>
+  <p class="desc"><b>Strategic note:</b> stock SGLang's custom all-reduce kernel beats the whole RCCL path by ~7% on
+  single-node gpt-oss prefill — tuner value lives where RCCL genuinely carries collectives
+  (decode gaps, multi-node, training, engines without a custom kernel). Evidence: RUNLOG rows
+  2026-09-01→02, results-tuning/2026-09-0{1,2}-* summaries, commits 441605d…9f5e0f9.</p>
 </section>
 
 <p class="foot" id="foot">
