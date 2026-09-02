@@ -139,6 +139,37 @@ Two run modes: <b>detect</b> (per-op tuner logging on — source of the hit hist
 </section>
 
 <section>
+  <h2>Run index — the six model×mode sweeps</h2>
+  <p class="desc">One row per (model, traffic mode): what sizes the model emitted, what rule shape was swept,
+  the verdict, and where the data lives (node dirs hold raw reps/logs; results-tuning dirs hold summaries).</p>
+  <div class="card" style="overflow-x:auto"><table>
+    <tr><th>model / mode</th><th>dominant sizes seen</th><th>rule swept</th><th>verdict</th><th>data</th></tr>
+    <tr><td>llama8b decode (512/512, conc 32)</td><td>262,144 B (98% of ops), 8K/16K ramp</td>
+      <td>exact @262144, 15→verified-5 combos</td><td class="pos">ring,simple,16 +2.05%</td>
+      <td>node3 lscr_*/lf2_*; 2026-08-31-1-sweep/</td></tr>
+    <tr><td>llama8b prefill (8k/128)</td><td>134MB packed passes + 67MB tails</td>
+      <td>range 48–144MiB, 5 arms no-cache</td><td class="neg">rules −38..−68%; none wins</td>
+      <td>node5 lp8kv_*; 2026-09-01-2-prefill8k/ (v1) + RUNLOG 09-02 rows</td></tr>
+    <tr><td>qwen30b decode (512/512)</td><td>131,072 B (98%), 4K/8K ramp</td>
+      <td>exact @131072</td><td class="pos">tree,ll,16 +0.49%</td>
+      <td>node9 qscr_*/qf2_*; RUNLOG 09-01</td></tr>
+    <tr><td>qwen30b prefill (8k/128)</td><td>67MB passes + 33MB, tail</td>
+      <td>range 24–96MiB, no-cache (v2)</td><td class="neg">rules −3.5..−11.7%; none wins</td>
+      <td>node2 qp8k*; 2026-09-01-3-qwenprefill/</td></tr>
+    <tr><td>gpt-oss decode (512/512, triton)</td><td>184,320 B exactly (uncovered gap)</td>
+      <td>exact @184320</td><td class="pos">ring,simple,8, TPOT −0.93%</td>
+      <td>node5 gdec*; 2026-09-01-5-gptossdecode/</td></tr>
+    <tr><td>gpt-oss prefill (8k/128, triton)</td><td>94MB passes + 47MB, 37–43MB tail</td>
+      <td>range 33–100MiB, no-cache (v2)</td><td class="neg">rules TTFT +15..+316%; none wins</td>
+      <td>node2 gp8kv*; 2026-09-01-6-gptossprefill-v2/</td></tr>
+  </table></div>
+  <p class="desc" style="margin-top:8px"><b>Channel-unit trap (findings/INSIGHTS.md:232):</b> at ≥64MB single-node,
+  WarpSpeed multiplies channels ×4 and a plugin-rule channel value is the POST-multiplier total (env var = base).
+  Default at the prefill sizes ≈ 56 base = 224 total; our rules wrote 8–48 totals — the whole prefill-band loss
+  is unit-confusion under-provisioning. Retest with ~224-total rules is the open follow-up.</p>
+</section>
+
+<section>
   <h2>Overnight campaigns 2026-09-01/02 — prefill regime, decode gap, and the Regev attribution</h2>
   <p class="desc"><b>Methodology event:</b> the earlier prefill "nulls" were retracted — bench_serving repeats
   identical prompts and the radix cache served prefill from cache after round 1, so prefill all_reduces
