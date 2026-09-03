@@ -10,6 +10,7 @@
 # Optional env overrides (2026-08-31, ablation/quiet experiments — defaults keep old behavior):
 #   RM_SUBSYS  NCCL_DEBUG_SUBSYS value        (default INIT,TUNING,ENV)
 #   RM_CONF    tuner conf filename in CONF_DIR (default all_reduce_1n.final.conf)
+#   RM_MSCCL   RCCL_MSCCL_ENABLE value         (default 0; set 1 for deployment-default MSCCL)
 #
 # Usage: run_many.sh <model-path> <short-name> <arm: def|tun> <reps> [extra sglang args...]
 set -u
@@ -55,7 +56,7 @@ docker run -d --ipc=host --shm-size=16g --network=host --name="$CNAME" \
   -v /huggingface:/huggingface:ro \
   -v "$CONF_DIR":/opt/rccl/tuner:ro \
   -v "$OUT":/workspace/out -w /workspace \
-  -e RCCL_MSCCL_ENABLE=0 \
+  -e RCCL_MSCCL_ENABLE=${RM_MSCCL:-0} \
   -e NCCL_DEBUG=INFO \
   -e NCCL_DEBUG_SUBSYS=${RM_SUBSYS:-INIT,TUNING,ENV} \
   -e NCCL_DEBUG_FILE=/workspace/out/logs/rccl.%h.%p.log \
