@@ -29,8 +29,9 @@ CNAME=ylerman-many-${NAME}-${ARM}
 
 ISL=${IM_ISL:-512}
 OSL=${IM_OSL:-512}
-CONC=32
-NUM_PROMPTS=128
+# IM_CONC/IM_NPROMPTS added 2026-09-06 (verify campaign) — defaults keep frozen params
+CONC=${IM_CONC:-32}
+NUM_PROMPTS=${IM_NPROMPTS:-128}
 
 mkdir -p "$OUT/logs"
 rm -rf "${OUT:?}/logs"/* "$OUT"/bench_rep*.log
