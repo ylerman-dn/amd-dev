@@ -34,8 +34,11 @@ LIVE=live_${PFX}.conf
 L=$B/paired_${PFX}.log
 ISL=${IM_ISL:-512}
 OSL=${IM_OSL:-512}
-CONC=32
-NUM_PROMPTS=128
+# IM_CONC/IM_NPROMPTS added 2026-09-06 for the multi-mode campaigns (decode message size
+# = concurrency x hidden x 2, so conc is the knob that moves decode sizes). Defaults keep
+# the frozen campaign params.
+CONC=${IM_CONC:-32}
+NUM_PROMPTS=${IM_NPROMPTS:-128}
 HDR="collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff"
 
 mkdir -p "$B"
@@ -43,7 +46,11 @@ for spec in $ARMS; do mkdir -p "$B/${PFX}_${spec%%:*}/logs"; done
 echo "$HDR" > "$CONF_DIR/$LIVE"   # start empty; first swap sets the real rules
 
 docker rm -f "$CNAME" >/dev/null 2>&1
-docker run -d --ipc=host --shm-size=16g --network=host --name="$CNAME" \
+# IM_DROP_FLOOR=1 (2026-09-06): REMOVE the image's NCCL_MIN_NCHANNELS=112 from the server
+# env — `docker run -e VAR` with VAR unset on the host deletes the image-provided value.
+FLOORDROP=""
+if [ -n "${IM_DROP_FLOOR:-}" ]; then unset NCCL_MIN_NCHANNELS; FLOORDROP="-e NCCL_MIN_NCHANNELS"; fi
+docker run -d --ipc=host --shm-size=16g --network=host --name="$CNAME" $FLOORDROP \
   --privileged --ulimit memlock=-1 \
   --cap-add=CAP_SYS_ADMIN --cap-add=IPC_LOCK --cap-add=SYS_PTRACE \
   --security-opt seccomp=unconfined \
