@@ -2,6 +2,29 @@
 
 A systematic test automation tool for running RCCL collective tests across multiple configurations including node scaling and channel sweeps.
 
+## Runtimes (added 2026-09-06)
+
+The sweep and the A/B validator can launch the benchmark in two runtimes, selected by
+`runtime.mode` in `sweep_config.yaml` (sweep) or `--runtime` (validator):
+
+- **container** (default): `docker run <runtime.image>` + `mpirun -np 8 ... -g 1` inside
+  the container — stock RCCL plus the image's environment (`NCCL_MIN_NCHANNELS=112`).
+  This is the stack tuner configs actually deploy on (SGLang), and the only runtime whose
+  numbers transfer to deployment: the bare-metal fork measured a different library, a
+  different channel policy, and (until 2026-09-03) even a different launch regime — see
+  `results-tuning/2026-09-03-2-stackcmp/` and `-3-regime/`. Single node only; the tool
+  must run on the target node itself (docker is local). `runtime.msccl_enable` defaults
+  to 0 because MSCCL executes small/mid sizes without consulting any tuner — set it to 1
+  only to measure the deployment default itself, in which sizes below ~32M stop being
+  tunable at all.
+- **bare**: the original path — host `mpirun`/`srun` with `LD_PRELOAD` of the team
+  librccl fork from `rccl_path`. Required for multi-node sweeps and for testing team
+  fork builds. Its absolute numbers do NOT transfer to the container stack.
+
+Parity check for the container runtime (2026-09-06, node 8): tool-launched run vs the
+hand-driven regime harness — 4K 0.38 vs 0.36, 1M 40.42 vs 40.18, 512M 390.5 vs 390.5
+GB/s busbw (`/data/ylerman/parity-2026-09-06/`, `results-tuning/2026-09-06-1-env224/`).
+
 ## Features
 
 - **Multiple Collectives**: Support for all standard RCCL collectives (all_reduce, reduce_scatter, all_gather, alltoall, broadcast, reduce)

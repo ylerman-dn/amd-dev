@@ -2,6 +2,19 @@
 # This file contains default settings for the sweep tool.
 # Command-line arguments override these defaults.
 
+# Runtime: where the benchmark runs (added 2026-09-06).
+#   container (default) — docker run <image> + mpirun inside it, stock RCCL + the
+#     image's env. This is the stack tuner rules deploy on (SGLang). 1 node only.
+#   bare — the original path: host mpirun + LD_PRELOAD of the fork from rccl_path.
+#     Required for multi-node sweeps and for testing team librccl builds.
+# msccl_enable: RCCL_MSCCL_ENABLE in container mode (default 0 — MSCCL executes
+#   small/mid sizes without consulting any tuner, so sweeps measure the tunable path;
+#   set 1 only to measure the deployment default itself).
+runtime:
+  mode: "container"
+  image: "lmsysorg/sglang:v0.5.17-rocm720-mi35x"
+  msccl_enable: 0
+
 # MPI Configuration
 mpi:
   mpirun_path: "/opt/ompi-4.1.6/bin/mpirun"

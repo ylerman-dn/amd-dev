@@ -378,7 +378,7 @@ def run_sweep(args, config: Dict[str, Any]):
                 for num_channels in channels:
                     for algo in algos:
                         for proto in protos:
-                            cmd, _ = executor.build_mpirun_command(
+                            cmd, _, _cname = executor.build_mpirun_command(
                                 collective=collective,
                                 host_string=host_string,
                                 num_gpus=num_gpus,

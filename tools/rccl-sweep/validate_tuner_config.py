@@ -446,28 +446,78 @@ def run_once(args, nodes, conf_path, log_path):
             env["NCCL_TUNER_PLUGIN"] = args.plugin
             env["NCCL_TUNER_CONFIG_FILE"] = conf_path
 
-    cmd = args.launcher.split() + [
-        "-N", str(nodes),
-    ]
-    # GPU-107: run inside the existing allocation rather than requesting a new one.
-    if args.jobid:
-        cmd += [f"--jobid={args.jobid}"]
-    if args.nodelist:
-        cmd += [f"--nodelist={args.nodelist}"]
-    cmd += [
-        # GPU-107: 8 ranks x 1 GPU, NOT 1 rank x 8 GPUs. Every measurement in
-        # results-tuning/ uses 8x1; the original 1x8 here would have produced an A/B
-        # that is not comparable to the sweep that generated the config.
-        f"--ntasks-per-node={args.ranks_per_node}", "--gres=gpu:8", "--mpi=pmix", "--export=ALL",
-        args.binary, "-b", str(args.min_bytes), "-e", str(args.max_bytes),
-        "-f", "2", "-g", str(args.gpus_per_rank),
-        "-n", str(args.iters), "-w", str(args.warmup),
-        # GPU-107: -A is --output_algo_proto_channels on this build. -M here is
-        # --memory_report and -R is --local_register (which silently changes
-        # performance), so the original "-M 1 -R 1" both failed to report selection
-        # and perturbed the measurement.
-        "-c", "1", "-A", "1",
-    ]
+    cname = None
+    if getattr(args, "runtime", "container") == "container":
+        # Container runtime (default since 2026-09-06): docker + mpirun-in-container on
+        # the stock RCCL — the stack rules deploy on. NCCL env travels via mpirun -x
+        # (comma-safe); host-path env assembled above is for the bare branch only.
+        import container_run
+        if nodes > 1:
+            raise SystemExit("--runtime container supports 1 node only; use --runtime bare")
+        cenv = {k: env[k] for k in ("NCCL_DEBUG", "NCCL_DEBUG_SUBSYS") if k in env}
+        if log_path:
+            # container-side path; host globs keep working because dirname(log_path)
+            # is mounted at OUT_MOUNT
+            base = os.path.splitext(os.path.basename(log_path))[0]
+            cenv["NCCL_DEBUG_FILE"] = f"{container_run.OUT_MOUNT}/{base}_dbg_%p.log"
+        # MSCCL executes small/mid sizes without consulting any tuner; default off so
+        # the A/B measures the tunable path. Override with --env RCCL_MSCCL_ENABLE=1.
+        cenv.setdefault("RCCL_MSCCL_ENABLE", "0")
+        cenv.update(getattr(args, "_sweep_env", {}) or {})
+        for kv in args.env:
+            if "=" in kv:
+                k, v = kv.split("=", 1)
+                cenv[k] = v
+        tuner_dir = conf_dir = None
+        if conf_path:
+            if getattr(args, "arm_env", None):
+                for kv in args.arm_env:
+                    if "=" in kv:
+                        k, v = kv.split("=", 1)
+                        cenv[k] = v
+            else:
+                tuner_dir = os.path.dirname(os.path.abspath(args.plugin))
+                conf_dir = os.path.dirname(os.path.abspath(conf_path))
+                cenv["NCCL_TUNER_PLUGIN"] = f"{container_run.TUNER_MOUNT}/{os.path.basename(args.plugin)}"
+                cmount = container_run.TUNER_MOUNT if conf_dir == tuner_dir else container_run.CONF_MOUNT
+                cenv["NCCL_TUNER_CONFIG_FILE"] = f"{cmount}/{os.path.basename(conf_path)}"
+        test_argv = [f"{container_run.BIN_MOUNT}/{os.path.basename(args.binary)}",
+                     "-b", str(args.min_bytes), "-e", str(args.max_bytes),
+                     "-f", "2", "-g", str(args.gpus_per_rank),
+                     "-n", str(args.iters), "-w", str(args.warmup),
+                     "-c", "1", "-A", "1"]
+        cname = f"rcclval-{os.getpid()}-{int(time.time()) % 100000}"
+        cmd = container_run.build_docker_mpirun(
+            name=cname, image=args.image,
+            num_ranks=nodes * args.ranks_per_node,
+            bin_dir=os.path.dirname(os.path.abspath(args.binary)),
+            out_dir=os.path.dirname(os.path.abspath(log_path)) if log_path else ".",
+            test_argv=test_argv, env_vars=cenv,
+            tuner_dir=tuner_dir, conf_dir=conf_dir)
+        env = dict(os.environ)  # env for the docker CLIENT only
+    else:
+        cmd = args.launcher.split() + [
+            "-N", str(nodes),
+        ]
+        # GPU-107: run inside the existing allocation rather than requesting a new one.
+        if args.jobid:
+            cmd += [f"--jobid={args.jobid}"]
+        if args.nodelist:
+            cmd += [f"--nodelist={args.nodelist}"]
+        cmd += [
+            # GPU-107: 8 ranks x 1 GPU, NOT 1 rank x 8 GPUs. Every measurement in
+            # results-tuning/ uses 8x1; the original 1x8 here would have produced an A/B
+            # that is not comparable to the sweep that generated the config.
+            f"--ntasks-per-node={args.ranks_per_node}", "--gres=gpu:8", "--mpi=pmix", "--export=ALL",
+            args.binary, "-b", str(args.min_bytes), "-e", str(args.max_bytes),
+            "-f", "2", "-g", str(args.gpus_per_rank),
+            "-n", str(args.iters), "-w", str(args.warmup),
+            # GPU-107: -A is --output_algo_proto_channels on this build. -M here is
+            # --memory_report and -R is --local_register (which silently changes
+            # performance), so the original "-M 1 -R 1" both failed to report selection
+            # and perturbed the measurement.
+            "-c", "1", "-A", "1",
+        ]
     started = time.time()
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                             text=True, env=env)
@@ -475,6 +525,10 @@ def run_once(args, nodes, conf_path, log_path):
         text, _ = proc.communicate(timeout=args.timeout)
     except subprocess.TimeoutExpired:
         proc.kill()
+        if cname:
+            # killing the docker CLIENT does not stop a GPU-hung container (2026-09-03)
+            import container_run
+            container_run.kill_container(cname)
         text, _ = proc.communicate()          # keep the partial output: it distinguishes a real
         text = (text or "") + "\n# [validator] killed after timeout\n"   # hang from a bad launch
     elapsed = time.time() - started
@@ -545,7 +599,15 @@ def main():
     ap.add_argument("--binary", required=True, help="collective benchmark, e.g. .../all_reduce_perf")
     ap.add_argument("--plugin", default=os.environ.get("NCCL_TUNER_PLUGIN", ""),
                     help="path to the tuner plugin .so")
-    ap.add_argument("--launcher", default="srun", help="launcher prefix (default: srun)")
+    ap.add_argument("--launcher", default="srun", help="launcher prefix (bare runtime only; default: srun)")
+    # GPU-107 2026-09-06: container is the default runtime — rules deploy on the SGLang
+    # container's stock RCCL + image env; bare metal measures a stack nothing runs on
+    # (results-tuning/2026-09-03-2-stackcmp, -3-regime). bare remains for multi-node and
+    # for validating team librccl fork builds.
+    ap.add_argument("--runtime", choices=["container", "bare"], default="container",
+                    help="where to run the benchmark (default: container; 1 node only)")
+    ap.add_argument("--image", default="lmsysorg/sglang:v0.5.17-rocm720-mi35x",
+                    help="docker image for --runtime container")
     # GPU-107 additions
     ap.add_argument("--jobid", default="", help="run inside this existing Slurm allocation")
     ap.add_argument("--nodelist", default="", help="pin to these nodes (comma separated)")
