@@ -1,122 +1,45 @@
-# Handover — GPU-107, end of 2026-08-16
+# HANDOVER — GPU-107 tuner-value work (updated 2026-09-07)
 
-State of the work, so anyone (including a future session) can pick up without re-deriving.
+## Where things stand
+1. **Solid, verified 3× (do not re-litigate):** in-model, the deployment env (image's
+   `NCCL_MIN_NCHANNELS=112` + MSCCL on) beats the tuner-visible env (flag removed, MSCCL off)
+   by **+3..+6.6% tok/s** on qwen30b / gpt-oss-120b / DeepSeek-R1 at n≈49 rounds/arm.
+   MSCCL becomes default-OFF in RCCL 2.28.3 (ROCm 7.11) — when the image moves there, the
+   tuner-visible path becomes the deployment default and our conf work becomes directly relevant.
+2. **Microbenchmark (rccl-tests, correct 8-proc container harness):** conf `gpu107_1n_v2/v3`
+   beats vanilla by +22..+76% (allreduce 8K–2M) and +118..+171% (broadcast 512K–2M); ties image
+   default except the RING/LL window (512K–2M: +74/+68/+18%). Detailed evidence pages below.
+3. **In-model: the conf is a statistical TIE on all 3 models** (30+ mode-runs, then 50-round
+   verify) — all_reduce is too small a share of serving step time at every mode tested.
 
----
+## THE OPEN FLAW (why the conf is not final)
+The 2026-09-06 "resweep" did NOT run the full combo × channel grid:
+combos were swept only at 112 channels; channels only at default combos; the winning
+RING/LL window was never channel-laddered; and in the final env (flag removed) the channel
+dimension has only 2 measured points. **Next session's first job: run the real grid via the
+tool** — {ring/ll, ring/simple, tree/ll} × channels {1,2,4,8,16,32,48,64,84,96,112} × sizes,
+flag removed, MSCCL=0, `--runtime container` (now the tool default), 5 reps — derive conf v4
+with per-size A/B gates (P(sup)≥0.95), THEN re-run the window-mode model A/Bs against v4.
 
-## What is verified and shippable
+## Branches / repo
+- Work branch: `gpu107-value-runs` (= `gpu107-cli` + 46 commits). `gpu107-cli` = stable base;
+  keep it, work only on value-runs. Tool commits that matter: e2e8985 (container runtime),
+  345f0a8 (infer_modes/paired knobs), ada84ca (hot-reload plugin). Everything else = evidence
+  commits indexed one-row-each in `results-tuning/RUNLOG.md` (the only index you need).
+- Git tracks summaries/pages/confs (~2MB); raw `.log`/`.txt` are gitignored by design — raw
+  data lives on the nodes (paths in each RUNLOG row) + `raw/` copies in some run dirs.
+- `findings/` was NOT updated during these campaigns (entries need user approval; none written).
 
-A tuner config that beats RCCL's default, A/B-tested through the plugin, 7 repeats per arm,
-probability-of-superiority 1.00 on every rule.
+## Evidence pages (http://10.10.73.168:8410/)
+`verify.html` (pending, final 50-round tables) · `modes_matrix.html` (30 mode-runs) ·
+`conf_v3_sweep.html` (kept/dropped + raw reps) · `channels.html` (every channel value vs 112) ·
+`rulehits.html` (rule-hit heat map) · `models_status.html` · `env224.html` · older: `rules.html`.
 
-| scale | rules | gains | config |
-|---|---|---|---|
-| 1 node | 7 of 12 | +9.4% … **+65.3%** across 4K–1M | `2026-08-16-3-ab1node-valid/gen_1n_t1.conf` |
-| 2 nodes | 3 of 13 | +6.6% @256K, +9.5% @32M, +3.3% @128M | `2026-08-16-10-ab-t05/gen_2n_t05.conf` |
-| 3 nodes | 4 of 12 | +11.7% @256K, +7.2% @32M, +11.8% @64–128M, **+17.3% @256M** | `2026-08-16-10-ab-t05/gen_3n_t05.conf` |
-
-Validated outputs are the `*.validated.csv` next to each — those contain only the rules that passed.
-
-Deploy with:
-```
-export NCCL_TUNER_PLUGIN=/opt/shared/ylerman/GPU-107/ab-tuner-test/librccl-tunerv4-dn.so
-export NCCL_TUNER_CONFIG_FILE=<path to a .validated.csv>
-```
-
-**Scope:** all_reduce only, MI355X (gfx950), RCCL 2.28.3-develop:2e42aa8, 8 ranks × 1 GPU per node.
-Nodes 5,6,7. A different RCCL version invalidates the acceptance map and the defaults being beaten.
-
----
-
-## Branch and history
-
-- Branch `gpu107-opt2-sweep`, pushed. History squashed from 23 commits to 6 on 2026-08-16.
-- `backup-pre-squash-20260816` on the remote holds the pre-squash history. Delete when comfortable:
-  `git push origin --delete backup-pre-squash-20260816`
-- `results-tuning/` is tracked for evidence (`.md`, `.conf`, `.csv`) but not raw logs (~870 MB stay
-  local). `OPEN-ITEMS.md` is deliberately gitignored — it churns.
-
----
-
-## Two sessions running in parallel
-
-Both were started 2026-08-16 evening, each in its own git worktree, each told to present a plan and
-wait for approval before running autonomously.
-
-| worktree | branch | task |
-|---|---|---|
-| `../amd-dev-optuna` | `gpu107-optuna` | can guided search cut the number of benchmark runs? |
-| `../amd-dev-v5` | `gpu107-tuner-v5` | port the plugin v4 → v5, prove parity, then explore constants |
-
-**They share one cluster.** Both were told to check `squeue -p XAI` for a job named `ylerman-ab`
-before booking. That is a convention, not a lock. **First thing to check tomorrow: did they collide?**
-If both booked nodes at once, their numbers are contaminated — though `--preflight` should have
-refused rather than reported noise.
-
----
-
-## Where everything lives
-
-| what | where |
-|---|---|
-| **the insights, in plain language** | `results-tuning/INSIGHTS.md` ← start here |
-| confirmed facts about RCCL | `findings/` (5 entries, `README.md` indexes them) |
-| open items | `results-tuning/OPEN-ITEMS.md` (7 of 9 closed) |
-| every command per stage | `results-tuning/COMMANDS.md` |
-| every run with env and result | `results-tuning/RUNLOG.md` |
-| phase timings | `results-tuning/TIMINGS.md` |
-| working rules for this project | `CLAUDE.md` (binding) |
-| presentation pages | served at `http://10.10.73.168:8502/` |
-
-Pages are served by a detached `python3 -m http.server` from
-`results-tuning/2026-08-10-2-pages/`. It survives a session ending but **not a reboot** — restart with
-`cd <that dir> && setsid nohup python3 -m http.server 8502 --bind 0.0.0.0 &`.
-
----
-
-## What the tool does now that it did not this morning
-
-Nine gates and fixes, all committed:
-
-1. `-A 1` reports the real selection (was `-M`, a memory report)
-2. `-R` dropped — it was buffer registration, silently altering performance
-3. rows record what RCCL **did**, not what we asked, with a `substituted` flag
-4. ranking on bandwidth, not a time column that `-C` could corrupt
-5. selection tolerance 5% → **0.5%** (5% was ~7× the measurement noise)
-6. `merge_metrics --median` — the repeat-collapse step that previously existed only as shell history
-7. `--warmup-runs` — GPUs idle at 195 MHz; cold runs once rejected all 11 rules
-8. `--preflight` (exit 3) and a post-run validity gate (exit 2) — a run that cannot decide is
-   reported as such instead of as "RCCL's defaults are already optimal"
-9. sweep keeps its `NCCL_DEBUG=INFO` logs, so a run can be verified after the fact
-
-Exit codes now mean four things: `0` rules kept, `1` none kept but run valid, `2` run invalid,
-`3` preflight failed.
-
----
-
-## Still open
-
-**#5 is now done** (build-guarded combo rules). Remaining:
-
-- **#9** — the hotspot/adaptive loop finds nothing on these curves. Informational; see INSIGHTS §10.
-- **v5 plugin** — the biggest lever, being explored in the `gpu107-tuner-v5` worktree. See INSIGHTS §12.
-- **Other collectives** — everything we know is all_reduce. Five untouched.
-- **Workload sizes** — we can prove each rule helps, but not what the config is worth, because that
-  depends on which message sizes your models actually use.
-
----
-
-## Traps that cost real time today, so nobody repeats them
-
-- **Two validator processes at once** blocked each other's Slurm step creation and looked exactly
-  like a hang. Kill by PID; `pkill -f` patterns miss the full path.
-- **`pgrep -f <pattern>` matches your own command line.** It caused three wrong diagnoses in one day.
-- **Hand-typing the fabric env** produced a wrong GID index and a truncated HCA list. The A/B now
-  reads `env_vars:` from `sweep_config.yaml` instead.
-- **`servers.txt` node order matters.** Taking "the first two hosts" gave nodes 5,6 (crossing a spine)
-  where our results use 5,7 (same leaf). Not comparable.
-- **One waiter per condition.** At one point eight background shells were polling the same file.
-
----
-
-*Written 2026-08-16. Cluster left free, no allocations held, working tree clean, everything pushed.*
+## Process rules for the next session (lessons paid for)
+1. Before ANY derivation campaign: write the exact grid (dimensions × values × env) in one
+   message and get an explicit OK — "resweep" without a spelled-out grid caused this flaw.
+2. Use `tools/rccl-sweep` (rccl_sweep.py / validate_tuner_config.py, container runtime) as the
+   single auditable entrypoint — no ad-hoc drivers for derivation runs.
+3. RUNLOG row at LAUNCH (goal + grid), completed at finish — drift becomes visible early.
+4. Canary (detect) + quiet (measure) split; P(sup)≥0.95 gates; warm-round trimming; both arms
+   always same env; MSCCL/flag state verified from the ENV log lines every run.
