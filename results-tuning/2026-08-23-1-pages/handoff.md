@@ -172,3 +172,16 @@ Still open: reduce/reduce_scatter/all_gather 4n + all five 5n A/B refills -
 blocked by a multi-node co-tenant (regeveyal hpo night, nodes 1,3,5,7); a
 window watcher relaunches refill_ab2.sh when nodes 3,5,6,7,8 go idle with an
 empty pending queue. broadcast 4n gave up again (rc=3,2,2,2).
+
+## 2026-08-27 session close
+
+cv-core noise gate adopted everywhere (user decision): MAD outlier
+rejection, CV<=8%, core>=7, verdicts on cores; all 395 rules re-judged -
+120 kept / 275 dropped; the whole 5n row gained verdicts from stored
+runs (provenance-noted). Site: overview.html (gains heatmap + shipped
+configs), audit.html (every accept/reject sanity-checked + 6-rule retry
+shortlist), value.html (DRAFT - awaiting user review, not linked/committed),
+noise-dig on :8808. Servers on :8807/:8808 are detached and survive this
+session. Pending user: approaches-page review, value.html review, retry
+batch for the 6 suspect drops, finding drafts approval, gpu107-optuna
+worktree retirement.
