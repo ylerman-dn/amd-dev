@@ -226,29 +226,6 @@ FROM sweep_runs WHERE status='success' GROUP BY collective;
 SELECT * FROM sweep_runs WHERE status='success';
 ```
 
-## Plotting Results
-
-Generate bus bandwidth vs message size graphs using `plot_busbw.py`:
-
-```bash
-# Plot specific collective and node count
-python plot_busbw.py all_reduce_perf 1 -o all_reduce_1node.png
-python plot_busbw.py all_reduce_perf 2 -o all_reduce_2node.png
-
-# Use custom database path
-python plot_busbw.py reduce_scatter_perf 1 --db /path/to/sweep_results.db -o output.png
-
-# Display interactively (no -o flag)
-python plot_busbw.py alltoall_perf 2
-```
-
-**Collective types**: `all_reduce_perf`, `reduce_scatter_perf`, `all_gather_perf`, `alltoall_perf`, `broadcast_perf`, `reduce_perf`
-
-The script will:
-- Query the database for matching runs
-- Plot bus bandwidth (in-place) vs message size on a log₂ x-axis
-- Show multiple sessions as separate curves if data spans multiple sweeps
-
 ## Merging Results and Generating Tuner Config
 
 When running multiple sweeps, you can merge all results into a single CSV file and then convert it to an RCCL tuner configuration file.
@@ -376,9 +353,13 @@ The tool sets these NCCL environment variables (from sweep_config.yaml):
 | File | Description |
 |------|-------------|
 | rccl_sweep.py | Main CLI entry point |
-| analyze_sweep.py | Results analysis tool |
-| plot_busbw.py | Generate bus bandwidth graphs |
-| merge_metrics.py | Merge metrics.csv files from multiple runs |
+| merge_metrics.py | Merge run_*/metrics.csv; --median collapses repeats, --exec-from-logs reads executed algo/proto/channels |
+| optimize_metrics.py | Per size: fewest channels within tolerance of best busbw_ip (drops substituted rows) |
+| generate_tuner_config.py | optimized.csv -> tuner .conf (uses autotune/config_generator.py) |
+| validate_tuner_config.py | Rule-by-rule A/B vs RCCL default; writes <conf>.validated.csv |
+| container_run.py | docker run <image> + mpirun-in-container argv; kill_container |
+| adaptive_search.py | Racing/prune search over the grid (bare runtime; needs container port before use) |
+| infer_paired.sh / infer_many.sh / infer_modes.sh | In-model (SGLang) drivers, see section below |
 | sweep_config.yaml | Default configuration |
 | sweep_executor.py | Test execution engine |
 | sweep_parser.py | Output parsing |
@@ -391,3 +372,32 @@ The tool sets these NCCL environment variables (from sweep_config.yaml):
 
 Part of AMD ROCm development tools.
 
+## In-model mode (SGLang) — rules folded from INFER-MODE.md, 2026-09-07
+
+Drivers: `infer_paired.sh` (one live server, hot-reload plugin, arms interleaved per round — the A/B),
+`infer_many.sh` (one server per arm — the no-plugin / deployment-env reference only),
+`infer_modes.sh` (per-traffic-mode campaign over infer_paired.sh).
+
+## The two run modes (do not mix)
+
+- **detect** (`RM_SUBSYS=INIT,TUNING,ENV`): per-op tuner logging on. Use for 1-rep runs only:
+  which sizes the model emits, which rules fire, whether a combo is honored. NEVER for timing —
+  the plugin logs EVERY consultation (millions of lines mid-benchmark); this asymmetric write
+  tax produced fake regressions of 1.8–2.8% (RUNLOG 2026-08-31T05:57Z).
+- **quiet** (`RM_SUBSYS=INIT,ENV`): startup-only logging, both arms identical. All timing runs.
+
+## Hard-won rules (violating these produced retracted results)
+
+1. **Verify requested-vs-selected per combo.** The plugin silently IGNOREs some algo/proto
+   pairs (this arch: ring+ll128, tree+ll128, tree+simple — log line
+   `Algorithm/protocol combination [x][y] is marked as IGNORE`); such an arm runs as no-rule.
+   Probe every combo class with a 1-rep detect run before trusting its timing arm
+   (RUNLOG 2026-08-31T21:20Z, 21:30Z).
+2. **Interleave arms.** Node speed drifts ~1% over hours; a 30-rep block per arm let a de facto
+   no-rule arm "beat" the real no-rule arm by +2% (p=1e-4!). `infer_finals.sh` rotates
+   3×10-rep passes for this reason.
+3. **First rep after server start is a warm-up** (20–50% low). Medians absorb it; report
+   STD/CV on warm-up-trimmed data (<0.9× median) and say so.
+4. **Message sizes are workload-determined:** decode = concurrency × hidden × 2B;
+   prefill = packed chunk tokens × hidden × 2B. Sweep the size that a 1-rep detect histogram
+   shows dominant (~98% of ops at our params).
