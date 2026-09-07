@@ -1,0 +1,13 @@
+# Validated by validate_tuner_config.py: only rules that beat RCCL default
+# with P(sup) >= 0.95 over 7 repeats, gain > 2.0%,
+# and no size in range regressing more than 2.0%.
+# dropped: allreduce,8388608,8388608,ring,simple,96,1,8,-1,-1   (best gain only +0.8%)
+# dropped: allreduce,16777216,536870912,ring,simple,112,1,8,-1,-1   (best gain only +0.1%)
+collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff
+allreduce,4096,4096,tree,ll,64,1,8,-1,-1
+allreduce,8192,32768,tree,ll,84,1,8,-1,-1
+allreduce,65536,65536,tree,ll,32,1,8,-1,-1
+allreduce,131072,131072,tree,ll,112,1,8,-1,-1
+allreduce,262144,262144,tree,ll,84,1,8,-1,-1
+allreduce,524288,524288,ring,ll,64,1,8,-1,-1
+allreduce,1048576,4194304,ring,ll,96,1,8,-1,-1
