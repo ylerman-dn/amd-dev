@@ -493,7 +493,8 @@ def run_once(args, nodes, conf_path, log_path):
             bin_dir=os.path.dirname(os.path.abspath(args.binary)),
             out_dir=os.path.dirname(os.path.abspath(log_path)) if log_path else ".",
             test_argv=test_argv, env_vars=cenv,
-            tuner_dir=tuner_dir, conf_dir=conf_dir)
+            tuner_dir=tuner_dir, conf_dir=conf_dir,
+            drop_env=getattr(args, "drop_env", []))
         env = dict(os.environ)  # env for the docker CLIENT only
     else:
         cmd = args.launcher.split() + [
@@ -608,6 +609,9 @@ def main():
                     help="where to run the benchmark (default: container; 1 node only)")
     ap.add_argument("--image", default="lmsysorg/sglang:v0.5.17-rocm720-mi35x",
                     help="docker image for --runtime container")
+    ap.add_argument("--drop-env", action="append", default=[],
+                    help="container runtime: REMOVE this image-provided env var from BOTH arms "
+                         "(e.g. NCCL_MIN_NCHANNELS). Repeatable.")
     # GPU-107 additions
     ap.add_argument("--jobid", default="", help="run inside this existing Slurm allocation")
     ap.add_argument("--nodelist", default="", help="pin to these nodes (comma separated)")

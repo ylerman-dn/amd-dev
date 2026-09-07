@@ -33,7 +33,8 @@ def build_docker_mpirun(name: str,
                         env_vars: Dict[str, str],
                         tuner_dir: Optional[str] = None,
                         conf_dir: Optional[str] = None,
-                        bind_to: str = "numa") -> List[str]:
+                        bind_to: str = "numa",
+                        drop_env: Optional[List[str]] = None) -> List[str]:
     """Build the full `docker run ... mpirun ...` argv for one rccl-tests run.
 
     test_argv: the binary basename + its flags, with paths already expressed in
@@ -48,7 +49,14 @@ def build_docker_mpirun(name: str,
     inner += test_argv
     inner_str = " ".join(inner)
 
-    cmd = ["docker", "run", "--rm", f"--name={name}",
+    cmd = ["docker", "run", "--rm", f"--name={name}"]
+    # drop_env: REMOVE an image-provided env var (e.g. NCCL_MIN_NCHANNELS=112 in the
+    # SGLang image): `docker run -e VAR` with VAR unset on the host deletes it from the
+    # container env. The caller must ensure the var is unset in its own environment.
+    for var in (drop_env or []):
+        os.environ.pop(var, None)
+        cmd += ["-e", var]
+    cmd += [
            "--ipc=host", "--shm-size=16g", "--network=host", "--privileged",
            "--ulimit", "memlock=-1",
            "--cap-add=CAP_SYS_ADMIN", "--cap-add=IPC_LOCK", "--cap-add=SYS_PTRACE",
