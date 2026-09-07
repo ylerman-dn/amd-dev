@@ -1,45 +1,34 @@
-# HANDOVER — GPU-107 tuner-value work (updated 2026-09-07)
+# HANDOVER — GPU-107 tuner value (updated 2026-09-07, end of session)
 
-## Where things stand
-1. **Solid, verified 3× (do not re-litigate):** in-model, the deployment env (image's
-   `NCCL_MIN_NCHANNELS=112` + MSCCL on) beats the tuner-visible env (flag removed, MSCCL off)
-   by **+3..+6.6% tok/s** on qwen30b / gpt-oss-120b / DeepSeek-R1 at n≈49 rounds/arm.
-   MSCCL becomes default-OFF in RCCL 2.28.3 (ROCm 7.11) — when the image moves there, the
-   tuner-visible path becomes the deployment default and our conf work becomes directly relevant.
-2. **Microbenchmark (rccl-tests, correct 8-proc container harness):** conf `gpu107_1n_v2/v3`
-   beats vanilla by +22..+76% (allreduce 8K–2M) and +118..+171% (broadcast 512K–2M); ties image
-   default except the RING/LL window (512K–2M: +74/+68/+18%). Detailed evidence pages below.
-3. **In-model: the conf is a statistical TIE on all 3 models** (30+ mode-runs, then 50-round
-   verify) — all_reduce is too small a share of serving step time at every mode tested.
+Branch: `gpu107-value-runs` (base `gpu107-cli`, keep both). Index of every run: `results-tuning/RUNLOG.md`.
+Pages (http://10.10.73.168:8410/): `collective_all_reduce_v2.html` (conf of record) · `verify.html` (in-model verdicts) ·
+`channels.html` · `modes_matrix.html` · `rulehits.html` · `models_status.html`.
 
-## THE OPEN FLAW (why the conf is not final)
-The 2026-09-06 "resweep" did NOT run the full combo × channel grid:
-combos were swept only at 112 channels; channels only at default combos; the winning
-RING/LL window was never channel-laddered; and in the final env (flag removed) the channel
-dimension has only 2 measured points. **Next session's first job: run the real grid via the
-tool** — {ring/ll, ring/simple, tree/ll} × channels {1,2,4,8,16,32,48,64,84,96,112} × sizes,
-flag removed, MSCCL=0, `--runtime container` (now the tool default), 5 reps — derive conf v4
-with per-size A/B gates (P(sup)≥0.95), THEN re-run the window-mode model A/Bs against v4.
+## Settled facts
+1. **Conf of record: `gpu107_1n_v4_scripted.validated.csv`** (on /opt/shared/.../infer-2026-08-30/) — derived and judged 100%
+   by the tool chain (`rccl_sweep --runtime container` 44-cell grid → `optimize_metrics` → `generate_tuner_config` →
+   `validate_tuner_config --runtime container --drop-env NCCL_MIN_NCHANNELS`, 7 reps/arm, BOTH arms flag-off).
+   **7 rules KEPT, all P(sup)=1.00**: tree/ll 64@4K, 84@8–32K, 32@64K, 112@128K, 84@256K; ring/ll 64@512K, 96@1–4M
+   (+5.9..+75.7% vs flag-off default). 8M/≥16M: default optimal, no rules.
+   Raw: `results-tuning/2026-09-07-1-fullgrid/` (grid raw/, ab_v4_noflag/).
+2. **In-model (serving, 1-node TP-8): per-size rules are a tie** — 50 rounds/arm × 3 modes × 3 models (qwen30b/gptoss/DeepSeek-R1):
+   −0.1..−1.1%, P(sup) 0.21–0.51. Ceiling effect: all_reduce ≈ few % of step time. BUT: that verify used conf v3 (flat 112 channels);
+   **the v4 conf (fewer channels = less CU theft) was NEVER tested in-model — genuinely open.**
+3. **Deployment env (image 112-flag + MSCCL on) beats the tuner-visible env in-model: +1.9..+6.6% tok/s, TTFT −30% (gptoss)** —
+   verified 3 models. MSCCL goes default-OFF in RCCL 2.28.3 / ROCm 7.11 → the tuner path becomes deployment default then.
+4. Per-collective map (deployment): alltoall never tunable (p2p); reduce_scatter/broadcast always tuner-visible; all_gather partial,
+   its Direct algo unbeatable & inexpressible. Channels: real executed spans ≠ `-A` plan (validator reads truth).
+5. Training exists in-house: **Arik Gelman** ran multi-node GROK1 training on this cluster (#ai-xai-poc, 2025-12-18),
+   explicitly "without any RCCL optimization" — the partner for the multi-node/training value question.
 
-## Branches / repo
-- Work branch: `gpu107-value-runs` (= `gpu107-cli` + 46 commits). `gpu107-cli` = stable base;
-  keep it, work only on value-runs. Tool commits that matter: e2e8985 (container runtime),
-  345f0a8 (infer_modes/paired knobs), ada84ca (hot-reload plugin). Everything else = evidence
-  commits indexed one-row-each in `results-tuning/RUNLOG.md` (the only index you need).
-- Git tracks summaries/pages/confs (~2MB); raw `.log`/`.txt` are gitignored by design — raw
-  data lives on the nodes (paths in each RUNLOG row) + `raw/` copies in some run dirs.
-- `findings/` was NOT updated during these campaigns (entries need user approval; none written).
+## Next steps (in value order)
+a. In-model A/B of the **v4** conf (window modes d128/d256, paired driver, flag-off) — the untested low-channel hypothesis.
+b. Multi-node: rccl-tests probe first (tool bare runtime supports multi-node), then Arik's training harness for the real comm-share case.
+c. findings/ entries (need user approval): MSCCL verdict, flag story, v4 conf, executed-channels truth.
+d. Housekeeping: old 8807-page edit still uncommitted on main checkout; broadcast rules exist only in v3 (v4 = allreduce-only).
 
-## Evidence pages (http://10.10.73.168:8410/)
-`verify.html` (pending, final 50-round tables) · `modes_matrix.html` (30 mode-runs) ·
-`conf_v3_sweep.html` (kept/dropped + raw reps) · `channels.html` (every channel value vs 112) ·
-`rulehits.html` (rule-hit heat map) · `models_status.html` · `env224.html` · older: `rules.html`.
-
-## Process rules for the next session (lessons paid for)
-1. Before ANY derivation campaign: write the exact grid (dimensions × values × env) in one
-   message and get an explicit OK — "resweep" without a spelled-out grid caused this flaw.
-2. Use `tools/rccl-sweep` (rccl_sweep.py / validate_tuner_config.py, container runtime) as the
-   single auditable entrypoint — no ad-hoc drivers for derivation runs.
-3. RUNLOG row at LAUNCH (goal + grid), completed at finish — drift becomes visible early.
-4. Canary (detect) + quiet (measure) split; P(sup)≥0.95 gates; warm-round trimming; both arms
-   always same env; MSCCL/flag state verified from the ENV log lines every run.
+## Process rules (paid for in blood this session)
+- Any derivation = the tool CLI end-to-end, never hand steps: sweep → optimize → generate → validate.
+- Spell out the exact grid + BASELINE ENV (flag on/off!) and get explicit OK before running.
+- RUNLOG row at launch. P(sup)≥0.95 gates. Canary/quiet split. Verify env from ENV log lines per run.
+- pkill over ssh needs the [b]racket trick. Container hangs need `docker kill`, not client timeout.
