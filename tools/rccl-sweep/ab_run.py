@@ -85,6 +85,10 @@ def main():
             logdir = outdir / (stem if attempt == 1 else f"{stem}_retry{attempt}")
             cmd = [sys.executable, str(TOOL / "validate_tuner_config.py"),
                    "--config", conf, "--binary", binary,
+                   # deployment-faithful A/B (2026-09-06/08): stock RCCL inside the
+                   # SGLang image, and the image's NCCL_MIN_NCHANNELS=112 REMOVED from
+                   # BOTH arms so the baseline is RCCL's own default, not the flag
+                   "--runtime", "container", "--drop-env", "NCCL_MIN_NCHANNELS",
                    "--jobid", args.jobid,
                    "--nodelist", ",".join(nodes_all[:n]),
                    "--repeats", str(args.repeats),
