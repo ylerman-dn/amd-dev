@@ -21,9 +21,8 @@ A needed new script or flag is committed and shown as a diff BEFORE its first us
 ## 3. Receipts per run
 - The executed command line is saved in the run dir (the tool's command.txt) and quoted in the
   RUNLOG launch row (written AT LAUNCH, completed at finish).
-- Environment receipt: grep the NCCL ENV log lines of the actual run
-  ("<VAR> set by environment" present/absent) into `env_receipt.txt` in the run dir.
-  A run whose receipt contradicts PLAN.md is discarded, not reinterpreted.
+- The run's own NCCL INFO logs (dbg_*.log per cell / per arm) are the environment
+  receipt. A run whose logs contradict PLAN.md is discarded, not reinterpreted.
 
 ## 4. No made-up numbers
 Every number in chat/pages cites the file it came from. If a value isn't in a file, it doesn't
