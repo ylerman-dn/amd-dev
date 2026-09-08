@@ -14,6 +14,12 @@ runtime:
   mode: "container"
   image: "lmsysorg/sglang:v0.5.17-rocm720-mi35x"
   msccl_enable: 0
+  # drop_env (2026-09-08): image-provided env vars REMOVED inside the container.
+  # The SGLang image sets NCCL_MIN_NCHANNELS=112; the A/B's default arm runs with
+  # it removed (validate --drop-env), so the sweep's NCCL-default runs must too,
+  # or the two "default" numbers disagree. Forced cells are unaffected: they set
+  # NCCL_MIN/MAX_NCHANNELS explicitly anyway.
+  drop_env: ["NCCL_MIN_NCHANNELS"]
 
 # MPI Configuration
 mpi:

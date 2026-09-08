@@ -45,6 +45,12 @@ SHARED = "/opt/shared/ylerman/GPU-107"
 REMOTE_TOOL = f"{SHARED}/rccl-sweep-optuna"
 PLUGIN = f"{SHARED}/ab-tuner-test/librccl-tunerv4-dn.so"
 MY_PATH = f"{SHARED}/bin"
+# 2026-09-08: benchmark OUTPUT dirs live on the exec node's LOCAL disk. The
+# container runs as root and /opt/shared (NFS, root_squash) refuses root writes:
+# NCCL_DEBUG_FILE could not be opened, INFO spilled onto stdout, the parser lost
+# every data row and metrics.csv was never written (sanity-check-1 attempt 2).
+# Confs and the A/B launch log stay on SHARED (written by dn on the host side).
+DATA_ROOT = "/data/ylerman"
 
 FORBIDDEN_NODES = set()           # none (user decision 2026-08-27); node 2's
                                   # old "orchestrator" label was never traced
@@ -195,7 +201,7 @@ def node_ip_map(c):
     return out
 
 
-def write_servers_file(c, nodes, remote_dir):
+def write_servers_file(c, nodes, remote_dir, host=SLURM_HOST):
     ips = node_ip_map(c)
     missing = [n for n in nodes if n not in ips]
     if missing and not c.dry:
@@ -203,7 +209,7 @@ def write_servers_file(c, nodes, remote_dir):
                            f"{REMOTE_TOOL}/servers.txt")
     content = "\\n".join(f"{ips.get(n, '?')} #{n}" for n in nodes)
     path = f"{remote_dir}/servers.txt"
-    c.remote(f"mkdir -p {remote_dir} && printf '{content}\\n' > {path}")
+    c.remote(f"mkdir -p {remote_dir} && printf '{content}\\n' > {path}", host=host)
     return path
 
 
@@ -263,13 +269,16 @@ def results_dir(name):
 
 
 def phase_search(c, coll, scale, nodes, outdir, remote_base, exec_node,
-                 jobid=None):
+                 jobid=None, data_base=None):
     """Adaptive live search -> emitted optimized csv -> tuner conf."""
     tag = f"{coll}_{scale}n"
     # unique per attempt: a reused remote dir leaves stale run_* dirs whose
     # metrics get concatenated into the parse (stage3a incident, 2026-08-24)
-    remote_out = f"{remote_base}/{tag}-{int(time.time())}"
-    servers = write_servers_file(c, nodes[:scale], remote_out)
+    # outputs on the exec node's local disk (see DATA_ROOT); remote_base (shared)
+    # is kept only as the fallback for callers that pass no data_base
+    remote_out = f"{data_base or remote_base}/{tag}-{int(time.time())}"
+    servers = write_servers_file(c, nodes[:scale], remote_out,
+                                 host=f"amd-mi355x-{exec_node}")
     local_out = outdir / tag
     opt_csv = local_out / f"{tag}_optimized.csv"
     conf = outdir / f"{tag}.conf"
@@ -377,7 +386,7 @@ def alltoall_env_conf(report_path, conf_path, scale):
 
 
 def phase_ab(c, confs, jobid, nodes, repeats, remote_base, outdir,
-             ab_retries=3):
+             ab_retries=3, data_base=None, exec_node=None):
     """Run the A/B batch remotely via ab_run.py and wait for its summary."""
     remote_confs = f"{remote_base}/confs"
     c.remote(f"mkdir -p {remote_confs}")
@@ -386,7 +395,10 @@ def phase_ab(c, confs, jobid, nodes, repeats, remote_base, outdir,
                  f"{SLURM_HOST}:{remote_confs}/"], quiet=True)
     nodelist = ",".join(f"amd-mi355x-{n}" for n in nodes)
     conf_args = " ".join(f"{remote_confs}/{Path(cf).name}" for cf in confs)
-    ab_log = f"{remote_base}/ab_run.log"
+    ab_log = f"{remote_base}/ab_run.log"   # written by dn on the Slurm host: shared is fine
+    ab_out = f"{data_base or remote_base}/ab_out"   # validator dbg logs: local disk (DATA_ROOT)
+    data_host = f"amd-mi355x-{exec_node}" if exec_node else SLURM_HOST
+    c.remote(f"mkdir -p {ab_out}", host=data_host)
     # the launch ssh can hang even though the remote process detaches fine
     # (observed 2026-08-24: 600s TimeoutExpired killed the whole run and the
     # finally-release orphaned a live ab_run against a dead allocation).
@@ -399,7 +411,7 @@ def phase_ab(c, confs, jobid, nodes, repeats, remote_base, outdir,
         inner = (f"cd {SHARED} && python3 {REMOTE_TOOL}/ab_run.py "
                  f"--jobid {jobid} --nodelist {nodelist} --repeats {repeats} "
                  f"--retries {ab_retries} "
-                 f"--outdir {remote_base}/ab_out {conf_args}")
+                 f"--outdir {ab_out} {conf_args}")
         c.remote(f"setsid nohup srun --jobid={jobid} -N1 -w {nodelist.split(',')[0]} "
                  f"bash -c {shlex.quote(inner)} "
                  f"> {ab_log} 2>&1 < /dev/null & echo started",
@@ -434,9 +446,10 @@ def phase_ab(c, confs, jobid, nodes, repeats, remote_base, outdir,
     c.local(["bash", "-c",
              f"scp -o BatchMode=yes '{SLURM_HOST}:{remote_confs}/"
              f"*.validated.csv' {outdir}/ 2>/dev/null; "
-             f"ssh -o BatchMode=yes {SLURM_HOST} 'cd {remote_base} && "
-             f"tar czf /tmp/rt_ab.tgz ab_run.log ab_out/*/validate.log ab_out/*/per_size_stats.csv' && "
-             f"scp -o BatchMode=yes {SLURM_HOST}:/tmp/rt_ab.tgz {outdir}/ && "
+             f"scp -o BatchMode=yes {SLURM_HOST}:{ab_log} {outdir}/ 2>/dev/null; "
+             f"ssh -o BatchMode=yes {data_host} 'cd {ab_out}/.. && "
+             f"tar czf /tmp/rt_ab.tgz ab_out/*/validate.log ab_out/*/per_size_stats.csv' && "
+             f"scp -o BatchMode=yes {data_host}:/tmp/rt_ab.tgz {outdir}/ && "
              f"cd {outdir} && tar xzf rt_ab.tgz && rm rt_ab.tgz"],
             check=False)
     stats = list(outdir.glob("**/per_size_stats.csv"))
@@ -511,6 +524,7 @@ def cmd_run(args):
     need = max(scales)
     outdir = RESULTS / "DRY-RUN" if args.dry_run else results_dir(args.name)
     remote_base = f"{SHARED}/rccl-tune-{datetime.date.today().isoformat()}-{args.name}"
+    data_base = f"{DATA_ROOT}/rccl-tune-{datetime.date.today().isoformat()}-{args.name}"
     log(f"plan: {pairs}; {need} nodes; results -> {outdir}")
 
     co_tenant_report(c)
@@ -537,13 +551,15 @@ def cmd_run(args):
         for coll, scale in pairs:
             log(f"=== search {coll} {scale}n ===")
             cf = phase_search(c, coll, scale, nodes, outdir,
-                              remote_base, exec_node, jobid=jobid)
+                              remote_base, exec_node, jobid=jobid,
+                              data_base=data_base)
             if cf is not None:   # None = defaults won at the search stage
                 confs.append(cf)
         if confs:
             log(f"=== A/B: {len(confs)} confs, {args.repeats} repeats ===")
             phase_ab(c, confs, jobid, nodes, args.repeats, remote_base,
-                     outdir, args.ab_retries)
+                     outdir, args.ab_retries, data_base=data_base,
+                     exec_node=exec_node)
         else:
             log("no confs to A/B - every pair resolved to 'defaults win' "
                 "at the search stage")
@@ -558,7 +574,7 @@ def cmd_run(args):
             f"{args.repeats} --grid {POLICY['grid']}` (policy: tol {POLICY['tol']}, anchors "
             f"{POLICY['anchors']}, margin {POLICY['margin']}, median-of-3) | "
             f"sweep_config.yaml env | `results-tuning/{outdir.name}` (remote "
-            f"`{remote_base}`) | see per-scale validate.log + "
+            f"`{remote_base}`, raw on node `{data_base}`) | see per-scale validate.log + "
             f".validated.csv |\n")
         log(f"done in {dur}s; results in {outdir}")
     return 0

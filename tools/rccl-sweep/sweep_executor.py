@@ -206,6 +206,10 @@ class SweepExecutor:
                 test_argv=test_argv,
                 env_vars=env_vars,
                 bind_to=mpi_config.get('bind_to', 'numa'),
+                # runtime.drop_env (2026-09-08): image env vars REMOVED from the
+                # container, e.g. NCCL_MIN_NCHANNELS=112, so the sweep's default
+                # runs see the same baseline as the validator's --drop-env arm
+                drop_env=list(runtime.get('drop_env', []) or []),
             )
             return cmd, env_vars, cname
 
