@@ -125,8 +125,19 @@ def idle_nodes(c):
     return usable
 
 
+def has_sweep_python(c, n):
+    """rccl_sweep.py runs on the booked node's HOST python and needs
+    tabulate+yaml (+colorama); nodes 4 and 5 lack them (2026-09-08)."""
+    p = c.remote("python3 -c 'import tabulate, yaml, colorama'",
+                 host=f"amd-mi355x-{n}", check=False, quiet=True)
+    return c.dry or p.returncode == 0
+
+
 def pick_nodes(c, k):
-    avail = idle_nodes(c)
+    # 2026-09-08: benchmarks run as srun steps INSIDE the allocation, so the
+    # exec node must be a booked node - book only nodes whose host python can
+    # run rccl_sweep.py (was: book anything idle, drive from a fallback node)
+    avail = [n for n in idle_nodes(c) if has_sweep_python(c, n)]
     ranked = [n for n in NODE_PREFERENCE if n in avail] + \
              sorted(n for n in avail if n not in NODE_PREFERENCE)
     if c.dry:
@@ -201,17 +212,16 @@ def pick_exec_node(c, booked):
     python3 with tabulate+yaml - not every node has them (node 5 does not,
     2026-08-24 pilot). Probe the booked nodes first, then healthy fallbacks;
     the exec node only drives, so it need not be part of the allocation."""
-    candidates = list(booked) + [n for n in (7, 3, 1) if n not in booked]
-    for n in candidates:
-        if n in FORBIDDEN_NODES or n in BROKEN_NODES:
-            continue
-        p = c.remote("python3 -c 'import tabulate, yaml'",
-                     host=f"amd-mi355x-{n}", check=False, quiet=True)
-        if c.dry or p.returncode == 0:
+    # 2026-09-08: booked nodes ONLY - the benchmark is an srun step inside the
+    # allocation and a non-booked exec node makes every step fail in 2s
+    # (sanity-check-1 attempt 1: node 5 lacked tabulate, fell back to node 7)
+    for n in booked:
+        if has_sweep_python(c, n):
             log(f"exec node: amd-mi355x-{n} (python env OK)")
             return n
-    raise RuntimeError("no node has a python3 with tabulate+yaml - "
-                       "cannot drive the sweep")
+    raise RuntimeError(f"no booked node {booked} has a python3 with "
+                       "tabulate+yaml+colorama - pass --nodes with one that "
+                       "does (1,3,8,9 verified 2026-09-08)")
 
 
 def sync_tool(c):
