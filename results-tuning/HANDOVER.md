@@ -32,3 +32,13 @@ d. Housekeeping: old 8807-page edit still uncommitted on main checkout; broadcas
 - Spell out the exact grid + BASELINE ENV (flag on/off!) and get explicit OK before running.
 - RUNLOG row at launch. P(sup)≥0.95 gates. Canary/quiet split. Verify env from ENV log lines per run.
 - pkill over ssh needs the [b]racket trick. Container hangs need `docker kill`, not client timeout.
+
+## Future improvements (parked, not blocking; 2026-09-08)
+- **Sweep through the tuner plugin instead of NCCL_MIN/MAX_NCHANNELS + NCCL_ALGO/PROTO env vars.**
+  One-rule conf per cell, plugin mounted like the validator does; default cell = empty conf.
+  Why: measure on the deployed path. At >=64M a plugin rule pins channels and disables WarpSpeed
+  (-63..-66%, findings/11) while the env cap is ignored (222-224ch executed, 2026-08-03-4-infocap) -
+  an env-var sweep cannot see that collapse, only the A/B catches it. Does NOT fix per-call channel
+  trimming: plugin-set 96 runs as 94 at 8M exactly like the env var
+  (2026-09-07-1-fullgrid/ab_v4_noflag/per_size_stats.csv cfg_applied_ch vs cfg_exec). ~30 lines in
+  sweep_executor.py.
