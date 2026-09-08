@@ -30,6 +30,7 @@ import csv
 import datetime
 import json
 import re
+import shlex
 import statistics
 import subprocess
 import sys
@@ -226,10 +227,14 @@ def sync_tool(c):
     # and its parser/db/executor run ON the exec node, so an unsynced parser
     # silently serves stale logic there (the 2026-08-26 alltoall N/A fix was
     # live locally but every remote run still produced zero metrics)
+    # 2026-09-08: + the container runtime pieces added 2026-09-06 (container_run,
+    # sweep_config.yaml with runtime.mode) and the conf generator's package
     for f in ("adaptive_search.py", "validate_tuner_config.py", "ab_run.py",
               "merge_metrics.py", "optimize_metrics.py",
               "generate_tuner_config.py", "rccl_sweep.py", "sweep_parser.py",
-              "sweep_executor.py", "sweep_db.py"):
+              "sweep_executor.py", "sweep_db.py", "container_run.py",
+              "sweep_config.yaml", "autotune/__init__.py",
+              "autotune/config_generator.py"):
         c.local(["scp", "-o", "BatchMode=yes", str(TOOL / f),
                  f"{SLURM_HOST}:{REMOTE_TOOL}/{f}"], quiet=True)
     log("tool synced to shared")
@@ -247,7 +252,8 @@ def results_dir(name):
     return d
 
 
-def phase_search(c, coll, scale, nodes, outdir, remote_base, exec_node):
+def phase_search(c, coll, scale, nodes, outdir, remote_base, exec_node,
+                 jobid=None):
     """Adaptive live search -> emitted optimized csv -> tuner conf."""
     tag = f"{coll}_{scale}n"
     # unique per attempt: a reused remote dir leaves stale run_* dirs whose
@@ -267,6 +273,10 @@ def phase_search(c, coll, scale, nodes, outdir, remote_base, exec_node):
              "--servers-file", servers, "--my-path", MY_PATH,
              "--local-out", local_out, "--default-runs", "3",
              "--emit-optimized", opt_csv]
+    if jobid:
+        # 2026-09-08: benchmarks run as srun steps INSIDE our allocation
+        # (killed with it, never orphaned on a released node), not bare ssh
+        args_ += ["--jobid", jobid, "--slurm-host", SLURM_HOST]
     c.local(args_, timeout=4 * 3600)
     if not c.dry:
         with open(opt_csv) as f:
@@ -372,10 +382,16 @@ def phase_ab(c, confs, jobid, nodes, repeats, remote_base, outdir,
     # finally-release orphaned a live ab_run against a dead allocation).
     # Short client-side timeout, no check - then verify the launch by the log.
     try:
-        c.remote(f"cd {SHARED} && setsid nohup python3 {REMOTE_TOOL}/ab_run.py "
+        # 2026-09-08: the validator's container runtime runs docker on the
+        # host it is started from, so ab_run must execute ON the booked node:
+        # launched as an srun step inside the allocation (was: bare on the
+        # Slurm login node, which is only right for the srun-based bare path)
+        inner = (f"cd {SHARED} && python3 {REMOTE_TOOL}/ab_run.py "
                  f"--jobid {jobid} --nodelist {nodelist} --repeats {repeats} "
                  f"--retries {ab_retries} "
-                 f"--outdir {remote_base}/ab_out {conf_args} "
+                 f"--outdir {remote_base}/ab_out {conf_args}")
+        c.remote(f"setsid nohup srun --jobid={jobid} -N1 -w {nodelist.split(',')[0]} "
+                 f"bash -c {shlex.quote(inner)} "
                  f"> {ab_log} 2>&1 < /dev/null & echo started",
                  timeout=30, check=False)
     except subprocess.TimeoutExpired:
@@ -475,6 +491,7 @@ def cmd_run(args):
         if not RESULTS.is_dir():
             sys.exit(f"--results-root {RESULTS} does not exist")
     c = Cmd(args.dry_run)
+    POLICY["grid"] = args.grid
     colls = args.collectives.split(",")
     scales = [int(s) for s in args.scales.split(",")]
     for coll in colls:
@@ -496,7 +513,9 @@ def cmd_run(args):
             sys.exit(f"--nodes gives {len(nodes)} nodes, plan needs {need}")
     else:
         nodes = pick_nodes(c, need)
-    minutes = min(480, 45 + 40 * len(pairs))
+    # 2026-09-08: container runtime is slower per run (docker start) and the
+    # A/B is 9 reps x 2 arms x every rule; 85 min timed out in planning.
+    minutes = min(480, 120 + 60 * len(pairs))
     jobid = None
     t0 = time.time()
     try:
@@ -508,7 +527,7 @@ def cmd_run(args):
         for coll, scale in pairs:
             log(f"=== search {coll} {scale}n ===")
             cf = phase_search(c, coll, scale, nodes, outdir,
-                              remote_base, exec_node)
+                              remote_base, exec_node, jobid=jobid)
             if cf is not None:   # None = defaults won at the search stage
                 confs.append(cf)
         if confs:
@@ -526,7 +545,7 @@ def cmd_run(args):
             f"\n| {utc()} | {dur}s wall | {jobid} (own alloc, released) | "
             f"{nodelist} | {args.scales} | `rccl_tune.py run --collectives "
             f"{args.collectives} --scales {args.scales} --repeats "
-            f"{args.repeats}` (policy: tol {POLICY['tol']}, anchors "
+            f"{args.repeats} --grid {POLICY['grid']}` (policy: tol {POLICY['tol']}, anchors "
             f"{POLICY['anchors']}, margin {POLICY['margin']}, median-of-3) | "
             f"sweep_config.yaml env | `results-tuning/{outdir.name}` (remote "
             f"`{remote_base}`) | see per-scale validate.log + "
@@ -570,6 +589,9 @@ def main():
     pr.add_argument("--ab-retries", type=int, default=4,
                     help="A/B attempts per conf before giving up (preflight "
                          "refusals and noisy runs both consume attempts)")
+    pr.add_argument("--grid", default=POLICY["grid"],
+                    help="channel grid for the search (measurement parameter; "
+                         f"default = validated policy {POLICY['grid']})")
     pr.add_argument("--nodes", default=None,
                     help="override node pick, e.g. 5,8 (still blacklisted-checked)")
     pr.add_argument("--dry-run", action="store_true",

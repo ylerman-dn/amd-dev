@@ -527,14 +527,29 @@ def run_sampler_baseline(data, sampler_name, tol, seed, gap_ok=5.0,
 
 # ------------------------------------------------------------------- live
 
+def remote_argv(cmd, exec_node, jobid=None, slurm_host="amd-mi355x-1"):
+    """How a benchmark command reaches the compute node.
+    With --jobid (2026-09-08): an srun step inside our Slurm allocation, issued
+    from the Slurm login host - Slurm tracks it and kills it with the job, so a
+    released node never keeps running our benchmark. Without: plain ssh (old)."""
+    if jobid:
+        import shlex
+        return ["ssh", "-o", "BatchMode=yes", slurm_host,
+                f"srun --jobid={jobid} -N1 -w {exec_node} bash -c {shlex.quote(cmd)}"]
+    return ["ssh", exec_node, cmd]
+
+
 class LiveOracle:
     """Runs rccl_sweep.py on a cluster node over ssh, one config per call.
     Every invocation gets its own --output-dir (r0000, r0001, ...) so each
     benchmark run keeps its own command.txt / output.log / dbg logs."""
 
     def __init__(self, exec_node, remote_tool, remote_out, servers_file,
-                 nodes, collective, min_size, max_size, my_path, log):
+                 nodes, collective, min_size, max_size, my_path, log,
+                 jobid=None, slurm_host="amd-mi355x-1"):
         self.exec_node = exec_node
+        self.jobid = jobid
+        self.slurm_host = slurm_host
         self.remote_tool = remote_tool
         self.remote_out = remote_out
         self.servers_file = servers_file
@@ -567,7 +582,8 @@ class LiveOracle:
         if algo != "P2P":
             cmd += f" --algo {algo} --proto {proto}"
         t0 = time.time()
-        p = subprocess.run(["ssh", self.exec_node, cmd],
+        p = subprocess.run(remote_argv(cmd, self.exec_node, self.jobid,
+                                       self.slurm_host),
                            stdin=subprocess.DEVNULL, capture_output=True,
                            text=True, timeout=900)
         dt = time.time() - t0
@@ -758,7 +774,8 @@ def cmd_live(args):
     log = Path(args.local_out) / "live_runs.log"
     oracle = LiveOracle(args.exec_node, args.remote_tool, args.remote_out,
                         args.servers_file, args.nodes, args.collective,
-                        args.min_size, args.max_size, args.my_path, log)
+                        args.min_size, args.max_size, args.my_path, log,
+                        jobid=args.jobid, slurm_host=args.slurm_host)
 
     # substitution-aware wrapper: a substituted combo is dropped whole
     class Guard:
@@ -798,7 +815,8 @@ def cmd_live(args):
                f"--output-dir {out} --nodes {args.nodes} "
                f"--collective {args.collective} "
                f"--min-size {args.min_size} --max-size {args.max_size}")
-        p = subprocess.run(["ssh", args.exec_node, cmd],
+        p = subprocess.run(remote_argv(cmd, args.exec_node, args.jobid,
+                                       args.slurm_host),
                            stdin=subprocess.DEVNULL, capture_output=True,
                            text=True, timeout=900)
         m = subprocess.run(["ssh", args.exec_node,
@@ -982,6 +1000,10 @@ def main():
     pl.add_argument("--emit-optimized", default=None,
                     help="also write the winners as an optimize_metrics.py-"
                          "shaped CSV, ready for generate_tuner_config.py")
+    pl.add_argument("--jobid", default=None,
+                    help="run benchmarks as srun steps inside this Slurm "
+                         "allocation (via --slurm-host) instead of bare ssh")
+    pl.add_argument("--slurm-host", default="amd-mi355x-1")
     pl.add_argument("--ranks-per-node", type=int, default=8,
                     help="cluster topology, for the num_gpus column of "
                          "--emit-optimized")
