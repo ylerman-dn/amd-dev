@@ -259,10 +259,13 @@ def sync_tool(c):
 # ------------------------------------------------------------------- phases
 
 def results_dir(name):
+    """results-tuning/<date>-<N>-<name>, N = next run number of the DAY
+    (CLAUDE.md: N starts at 1 each day and increments per run, so the folders
+    sort in run order). Was: N counted only same-name dirs (2026-09-08)."""
     date = datetime.date.today().isoformat()
-    n = 1
-    while (RESULTS / f"{date}-{n}-{name}").exists():
-        n += 1
+    taken = [int(m.group(1)) for d in RESULTS.glob(f"{date}-*")
+             for m in [re.match(rf"{date}-(\d+)-", d.name)] if m]
+    n = max(taken, default=0) + 1
     d = RESULTS / f"{date}-{n}-{name}"
     d.mkdir(parents=True)
     return d
