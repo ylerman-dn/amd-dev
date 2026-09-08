@@ -84,6 +84,8 @@ def main():
     ap.add_argument("--base", required=True, help="IM_BASE of the campaign")
     ap.add_argument("--prefix", required=True, help="run prefix given to infer_paired.sh")
     ap.add_argument("--ref", default="none", help="reference arm name (default: none)")
+    ap.add_argument("--skip", default=r"can_",
+                    help="regex; arm folders matching it are ignored (default: detect runs 'can_')")
     ap.add_argument("--drop-first", type=int, default=1,
                     help="rounds dropped per arm as warm-up (default 1)")
     args = ap.parse_args()
@@ -93,6 +95,8 @@ def main():
         name = os.path.basename(d)[len(args.prefix) + 1:]
         if name.endswith("srv") or not os.path.isdir(d):
             continue
+        if re.search(args.skip, os.path.basename(d)):
+            continue  # detect/canary runs (<prefix>_<arm>can_<arm>) are not arms
         data = read_arm(d)
         for r in sorted(data)[:args.drop_first]:
             del data[r]
