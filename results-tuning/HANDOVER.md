@@ -42,3 +42,12 @@ d. Housekeeping: old 8807-page edit still uncommitted on main checkout; broadcas
   trimming: plugin-set 96 runs as 94 at 8M exactly like the env var
   (2026-09-07-1-fullgrid/ab_v4_noflag/per_size_stats.csv cfg_applied_ch vs cfg_exec). ~30 lines in
   sweep_executor.py.
+
+
+## 2026-09-08 sanity-check campaign (see results-tuning/2026-09-08-LOG.md, top section)
+- Process A runs end to end with `tools/rccl-sweep/rccl_tune.py run --collectives all_reduce --scales 1 --name <n> [--grid ...]`
+  (restored + container-era fixes today). Three grids done (1..48 / 1..112 / 1..224): 9/10/10 of 18 sizes kept, all P=1.00,
+  defaults reproducible across all runs. Confs: results-tuning/2026-09-08-{1,2,3}-sanity-check-*/all_reduce_1n.final.conf.
+- In-model (Qwen3-30B-A3B, conc 32): decode ties for every conf incl. a 1-channel dummy; prefill not measured (radix cache);
+  dummy TTFT 12x on real prefill. Open: settling A/B for the 4M -73% plugin collapse; prefill-mode run; decode null vs arithmetic.
+- Parked tool items: the three REVIEW.md files + 2026-09-08-4-qwen/REVIEW.md.
