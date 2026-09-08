@@ -157,6 +157,23 @@ def parse_exec_log(paths):
     return out
 
 
+def cell_dir_name(row, idx):
+    """Folder name sweep_executor.execute_test gives one cell:
+    <collective>_<num_nodes>node[_<ch>ch][_<Algo>][_<PROTO>], where Algo is the
+    executor's capitalised form (Ring/Tree/Direct) and PROTO is as requested."""
+    name = f"{row[idx['collective']]}_{row[idx['num_nodes']]}node"
+    ch = row[idx['requested_nchannels']] if 'requested_nchannels' in idx else ""
+    algo = row[idx['requested_algo']] if 'requested_algo' in idx else ""
+    proto = row[idx['requested_proto']] if 'requested_proto' in idx else ""
+    if ch:
+        name += f"_{ch}ch"
+    if algo:
+        name += f"_{algo.capitalize()}"
+    if proto:
+        name += f"_{proto}"
+    return name
+
+
 def merge_metrics(
     base_path: Path,
     output_file: Path,
@@ -200,11 +217,24 @@ def merge_metrics(
                      "report_mismatch"]
         for run_name, metrics_path in metrics_files:
             try:
-                # executed truth for this run, from its own NCCL debug logs
+                # executed truth from the run's own NCCL debug logs.
+                # rccl_sweep.py layout: ONE metrics.csv for all cells, each cell's
+                # logs under outputs/<coll>_<n>node_<ch>ch_<Algo>_<PROTO>/ -> one
+                # table per cell folder, looked up by the row's requested values.
+                # Old one-cell-per-run_* layout (no outputs/): one run-wide table.
+                # (2026-09-08: the run-wide table applied to a multi-cell run
+                # stamped the sweep-wide mode on every cell - wrong labels.)
                 truth = {}
+                cell_truth = {}
                 if exec_from_logs:
-                    dbg = list(metrics_path.parent.rglob("*dbg*.log*"))
-                    truth = parse_exec_log(dbg)
+                    outputs_dir = metrics_path.parent / "outputs"
+                    if outputs_dir.is_dir():
+                        for cell in sorted(d for d in outputs_dir.iterdir() if d.is_dir()):
+                            cell_truth[cell.name] = parse_exec_log(
+                                list(cell.glob("*dbg*.log*")))
+                    else:
+                        truth = parse_exec_log(
+                            list(metrics_path.parent.rglob("*dbg*.log*")))
                 with open(metrics_path, 'r', newline='') as infile:
                     reader = csv.reader(infile)
                     file_header = next(reader)
@@ -235,9 +265,20 @@ def merge_metrics(
                     i_size = file_header.index("size_bytes")
                     i_algo = file_header.index("algo") if "algo" in file_header else None
                     i_proto = file_header.index("proto") if "proto" in file_header else None
+                    idx = {c: file_header.index(c) for c in
+                           ("collective", "num_nodes", "requested_nchannels",
+                            "requested_algo", "requested_proto") if c in file_header}
+                    unmatched_cells = set()
                     for row in reader:
                         if exec_from_logs:
-                            t = truth.get(int(row[i_size])) if row[i_size] else None
+                            if cell_truth:
+                                cell = cell_dir_name(row, idx)
+                                if cell not in cell_truth:
+                                    unmatched_cells.add(cell)
+                                t = cell_truth.get(cell, {}).get(int(row[i_size])) \
+                                    if row[i_size] else None
+                            else:
+                                t = truth.get(int(row[i_size])) if row[i_size] else None
                             if t:
                                 # mismatch = the -A 1 report disagrees with the
                                 # executed algo/proto (side-kernel tripwire)
@@ -256,6 +297,11 @@ def merge_metrics(
                         row_count += 1
                     
                     total_rows += row_count
+                    
+                    if exec_from_logs and unmatched_cells:
+                        print(f"  Warning: {len(unmatched_cells)} cell folder(s) not found under "
+                              f"{metrics_path.parent / 'outputs'} - exec_* left empty for their rows: "
+                              f"{sorted(unmatched_cells)[:3]}...")
                     print(f"  Loaded {row_count} rows from {run_name}")
                     
             except Exception as e:
