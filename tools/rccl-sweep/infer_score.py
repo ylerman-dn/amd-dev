@@ -91,8 +91,9 @@ def main():
     args = ap.parse_args()
 
     arms = {}
-    for d in sorted(glob.glob(os.path.join(args.base, f"{args.prefix}_*"))):
-        name = os.path.basename(d)[len(args.prefix) + 1:]
+    pat = f"{args.prefix}_*" if args.prefix else "*"   # --prefix "" : every folder in base is an arm (infer_many.sh tree)
+    for d in sorted(glob.glob(os.path.join(args.base, pat))):
+        name = os.path.basename(d)[len(args.prefix) + 1:] if args.prefix else os.path.basename(d)
         if name.endswith("srv") or not os.path.isdir(d):
             continue
         if re.search(args.skip, os.path.basename(d)):
@@ -122,7 +123,7 @@ def main():
             rule_hits_detect=rule_hits(args.base, args.prefix, name)))
     cols = ["arm", "n", "median_toks", "median_ttft_ms", "median_tpot_ms",
             "gain_pct_vs_ref", "psup_vs_ref", "pairs", "rule_hits_detect"]
-    out = os.path.join(args.base, f"{args.prefix}_score.csv")
+    out = os.path.join(args.base, f"{args.prefix}_score.csv" if args.prefix else "score.csv")
     with open(out, "w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=cols)
         w.writeheader()
