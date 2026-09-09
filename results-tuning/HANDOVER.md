@@ -51,3 +51,11 @@ d. Housekeeping: old 8807-page edit still uncommitted on main checkout; broadcas
 - In-model (Qwen3-30B-A3B, conc 32): decode ties for every conf incl. a 1-channel dummy; prefill not measured (radix cache);
   dummy TTFT 12x on real prefill. Open: settling A/B for the 4M -73% plugin collapse; prefill-mode run; decode null vs arithmetic.
 - Parked tool items: the three REVIEW.md files + 2026-09-08-4-qwen/REVIEW.md.
+
+
+## 2026-09-09 follow-ups (see results-tuning/2026-09-09-LOG.md, DAY SUMMARY at top)
+- Yesterday's in-model tie = radix cache (no prefill after round 1) + `--disable-cuda-graph` (CPU-bound decode). With graphs on the sc2 conf is +18% over the
+  plugin-less RCCL path on Qwen and gpt-oss - but **stock SGLang's custom all-reduce bypasses RCCL entirely** (stock 7310 vs tuned 5720 tok/s; stock+plugin = 0 rule hits).
+  Single-node TP-8 stock serving: the tuner has no lever. Value can only be in multi-node, training, other collectives, or frameworks that use RCCL for all_reduce.
+- 4M -73% settled: over-request above the 112 built channels; a 112 rule is parity. Guard (never emit > node default channels) still to add.
+- In-model measurement rules now: CUDA graphs ON (infer_many.sh IM_CUDA_GRAPH=1, one server per arm), radix cache OFF, reference = STOCK SGLang.
