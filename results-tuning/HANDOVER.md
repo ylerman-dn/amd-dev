@@ -59,3 +59,10 @@ d. Housekeeping: old 8807-page edit still uncommitted on main checkout; broadcas
   Single-node TP-8 stock serving: the tuner has no lever. Value can only be in multi-node, training, other collectives, or frameworks that use RCCL for all_reduce.
 - 4M -73% settled: over-request above the 112 built channels; a 112 rule is parity. Guard (never emit > node default channels) still to add.
 - In-model measurement rules now: CUDA graphs ON (infer_many.sh IM_CUDA_GRAPH=1, one server per arm), radix cache OFF, reference = STOCK SGLang.
+
+
+## 2026-09-10 in-model campaign (results-tuning/2026-09-10-1-inmodel/, page inmodel_2026-09-10.html)
+- 2 models x 4 modes x 4 arms x 2 passes, graphs ON, radix OFF, one server per arm. Same order in all 16 tables: stock > sc2 > none >> dummy.
+- Stock SGLang stays +8..+34% over the tuned RCCL path (custom all-reduce; no rule hits). Within the RCCL path the sc2 conf is +5..+28% over plain RCCL
+  where a rule covers the mode's decode all_reduce (conc x hidden x 2 B), and 0% where none does (gpt-oss mix, 368,640 B in the 256K..512K gap).
+- Design rules for any future in-model test: graphs on, radix cache off, one server per arm, reversed second pass, stock as reference, detect server for hit-maps.
