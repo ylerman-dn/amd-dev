@@ -40,6 +40,15 @@ rm -rf "${OUT:?}/logs"/* "$OUT"/bench_rep*.log
 # TP all_reduce - stock behavior). Default: disabled, so collectives reach RCCL/the tuner.
 DISABLE_AR_FLAG="--disable-custom-all-reduce"
 [ -n "${IM_KEEP_CUSTOM_AR:-}" ] && DISABLE_AR_FLAG=""
+# IM_CUDA_GRAPH=1 (2026-09-09): keep SGLang's CUDA graphs ON (deployment default). Default off,
+# as every campaign so far: with graphs on, RCCL collectives are captured once at graph build and
+# the tuner is consulted only then, so a hot-reload swap mid-run would change nothing - hence the
+# paired driver needs graphs off. One-server-per-arm (this script) can measure graphs-on.
+CG_FLAG="--disable-cuda-graph"
+[ -n "${IM_CUDA_GRAPH:-}" ] && CG_FLAG=""
+# IM_DROP_FLOOR=1 (2026-09-09, same as infer_paired.sh): REMOVE the image's NCCL_MIN_NCHANNELS=112
+FLOORDROP=""
+if [ -n "${IM_DROP_FLOOR:-}" ]; then unset NCCL_MIN_NCHANNELS; FLOORDROP="-e NCCL_MIN_NCHANNELS"; fi
 
 TUNER_ENV=""
 if [ "$ARM" = "tun" ]; then
@@ -48,7 +57,7 @@ fi
 
 docker rm -f "$CNAME" >/dev/null 2>&1
 
-docker run -d --ipc=host --shm-size=16g --network=host --name="$CNAME" \
+docker run -d --ipc=host --shm-size=16g --network=host --name="$CNAME" $FLOORDROP \
   --privileged --ulimit memlock=-1 \
   --cap-add=CAP_SYS_ADMIN --cap-add=IPC_LOCK --cap-add=SYS_PTRACE \
   --security-opt seccomp=unconfined \
@@ -71,7 +80,7 @@ python3 -m sglang.launch_server \
   --model-path $MODEL \
   --tp 8 \
   --host 0.0.0.0 --port $PORT \
-  --disable-cuda-graph \
+  $CG_FLAG \
   $DISABLE_AR_FLAG \
   --trust-remote-code $EXTRA \
   > /workspace/out/server.log 2>&1
