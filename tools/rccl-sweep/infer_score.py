@@ -29,13 +29,13 @@ import sys
 TOKS = re.compile(r"Output token throughput \(tok/s\):\s+([0-9.]+)")
 TTFT = re.compile(r"Mean TTFT \(ms\):\s+([0-9.]+)")
 TPOT = re.compile(r"Mean TPOT \(ms\):\s+([0-9.]+)")
-ROUND = re.compile(r"bench_round(\d+)\.log$")
+ROUND = re.compile(r"bench_(?:round|rep)(\d+)\.log$")  # infer_paired (round) or infer_many (rep) logs
 
 
 def read_arm(folder):
     """{round: (tok/s, ttft_ms, tpot_ms)} for every complete bench log."""
     out = {}
-    for f in glob.glob(os.path.join(folder, "bench_round*.log")):
+    for f in glob.glob(os.path.join(folder, "bench_r*.log")):
         r = int(ROUND.search(f).group(1))
         txt = open(f, errors="ignore").read()
         m = TOKS.search(txt)
