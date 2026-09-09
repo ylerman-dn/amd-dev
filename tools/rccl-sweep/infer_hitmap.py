@@ -56,9 +56,18 @@ def main():
                     exec_ch.setdefault(k, Counter())[int(m.group(6)) - int(m.group(5)) + 1] += 1
     rows = []
     covered = set()
-    for lo, hi, algo, proto, ch in rules:
-        hits = sum(n for (b, a, p, c), n in applied.items() if lo <= b <= hi)
-        sizes = sorted(b for (b, a, p, c) in applied if lo <= b <= hi)
+    def match(rule, key):
+        lo, hi, algo, proto, ch = rule
+        b, a, p, c = key
+        # a hit is the plugin applying THIS rule: size in range and the rule's own algo/proto/channels
+        # (so servers that hosted several arms, e.g. paired detect runs, attribute hits per arm)
+        return lo <= b <= hi and a.lower() == algo.lower() and p.lower() == proto.lower() and \
+            (str(ch) == str(c) or (str(ch) == "-1" and c == "default"))
+
+    for rule in rules:
+        lo, hi, algo, proto, ch = rule
+        hits = sum(n for key, n in applied.items() if match(rule, key))
+        sizes = sorted(key[0] for key in applied if match(rule, key))
         for b in sizes:
             covered.add(b)
         ex = Counter()
@@ -71,8 +80,8 @@ def main():
     for (coll, b), cnt in sorted(calls.items(), key=lambda kv: -kv[1]):
         if coll.lower() != "allreduce":
             continue
-        if any(lo <= b <= hi for lo, hi, *_ in rules):
-            continue
+        if any(match(rule, (b, rule[2], rule[3], rule[4])) for rule in rules):
+            continue  # size covered by a rule of this conf
         rows.append(dict(kind="miss", min_bytes=b, max_bytes=b, algorithm="", protocol="", channels="",
                          hits=cnt, sizes_hit=str(b),
                          executed_channels=";".join(f"{c}x{n}" for c, n in exec_ch[(coll, b)].most_common(3))))
