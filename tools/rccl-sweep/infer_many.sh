@@ -59,7 +59,8 @@ ALLOC_ENV="-e PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True"
 [ -n "${IM_NO_EXPANDABLE:-}" ] && ALLOC_ENV=""
 TUNER_ENV=""
 if [ "$ARM" = "tun" ]; then
-  TUNER_ENV="-e NCCL_TUNER_PLUGIN=/opt/rccl/tuner/librccl-tunerv4-dn.so -e NCCL_TUNER_CONFIG_FILE=/opt/rccl/tuner/${RM_CONF:-all_reduce_1n.final.conf}"
+  # IM_PLUGIN (2026-09-10): plugin .so filename inside CONF_DIR (default the v4 build)
+  TUNER_ENV="-e NCCL_TUNER_PLUGIN=/opt/rccl/tuner/${IM_PLUGIN:-librccl-tunerv4-dn.so} -e NCCL_TUNER_CONFIG_FILE=/opt/rccl/tuner/${RM_CONF:-all_reduce_1n.final.conf}"
 fi
 
 docker rm -f "$CNAME" >/dev/null 2>&1
