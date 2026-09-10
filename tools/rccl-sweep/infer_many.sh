@@ -53,6 +53,10 @@ if [ -n "${IM_DROP_FLOOR:-}" ]; then unset NCCL_MIN_NCHANNELS; FLOORDROP="-e NCC
 # RM_MSCCL: 0/1 sets RCCL_MSCCL_ENABLE explicitly (default 0); "image" leaves the image's own default untouched (2026-09-10, for a faithful stock arm)
 MSCCL_ENV="-e RCCL_MSCCL_ENABLE=${RM_MSCCL:-0}"
 [ "${RM_MSCCL:-0}" = "image" ] && MSCCL_ENV=""
+# IM_NO_EXPANDABLE=1 (2026-09-10): do not set PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True. On the v0.5.19-rocm10 image
+# (torch 2.11) it makes AITER's custom all-reduce fail at hipIpcGetMemHandle (server aborts); the image's own default is unset.
+ALLOC_ENV="-e PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True"
+[ -n "${IM_NO_EXPANDABLE:-}" ] && ALLOC_ENV=""
 TUNER_ENV=""
 if [ "$ARM" = "tun" ]; then
   TUNER_ENV="-e NCCL_TUNER_PLUGIN=/opt/rccl/tuner/librccl-tunerv4-dn.so -e NCCL_TUNER_CONFIG_FILE=/opt/rccl/tuner/${RM_CONF:-all_reduce_1n.final.conf}"
@@ -75,7 +79,7 @@ docker run -d --ipc=host --shm-size=16g --network=host --name="$CNAME" $FLOORDRO
   -e NCCL_DEBUG_FILE=/workspace/out/logs/rccl.%h.%p.log \
   -e NCCL_IGNORE_CPU_AFFINITY=1 \
   -e HSA_NO_SCRATCH_RECLAIM=1 \
-  -e PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
+  $ALLOC_ENV \
   $TUNER_ENV \
   --entrypoint=/bin/bash \
   "$IMAGE" -c "
