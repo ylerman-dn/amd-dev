@@ -57,6 +57,9 @@ MSCCL_ENV="-e RCCL_MSCCL_ENABLE=${RM_MSCCL:-0}"
 # (torch 2.11) it makes AITER's custom all-reduce fail at hipIpcGetMemHandle (server aborts); the image's own default is unset.
 ALLOC_ENV="-e PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True"
 [ -n "${IM_NO_EXPANDABLE:-}" ] && ALLOC_ENV=""
+# IM_EXTRA_ENV (2026-09-10): extra container env, space-separated K=V list, e.g. "RCCL_DDA_ENABLE=0"
+# (RCCL 2.30.4 runs small intra-node all_reduces on its DDA path, which never consults the tuner)
+EXTRA_ENV=""; for kv in ${IM_EXTRA_ENV:-}; do EXTRA_ENV="$EXTRA_ENV -e $kv"; done
 TUNER_ENV=""
 if [ "$ARM" = "tun" ]; then
   # IM_PLUGIN (2026-09-10): plugin .so filename inside CONF_DIR (default the v4 build)
@@ -80,7 +83,7 @@ docker run -d --ipc=host --shm-size=16g --network=host --name="$CNAME" $FLOORDRO
   -e NCCL_DEBUG_FILE=/workspace/out/logs/rccl.%h.%p.log \
   -e NCCL_IGNORE_CPU_AFFINITY=1 \
   -e HSA_NO_SCRATCH_RECLAIM=1 \
-  $ALLOC_ENV \
+  $ALLOC_ENV $EXTRA_ENV \
   $TUNER_ENV \
   --entrypoint=/bin/bash \
   "$IMAGE" -c "

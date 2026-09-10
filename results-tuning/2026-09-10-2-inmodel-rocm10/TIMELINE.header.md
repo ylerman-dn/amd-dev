@@ -1,0 +1,5 @@
+- 2026-09-10 18:04  Campaign launched on 5 nodes: ses2-1 Qwen d32/p8k/d128 · node 4 Qwen mix/d256/d512 · node 7 gpt-oss d32/p8k/d128 · node 6 gpt-oss mix/d256/d512 · node 5 DeepSeek-R1 d32/d128/d512. Image v0.5.19-rocm10-mi35x.
+- 2026-09-10 18:5x  all chains stopped: stock servers abort (allocator env vs AITER on torch 2.11), plugin matches nothing on RCCL 2.30.4. Diagnostics running; relaunch to follow.
+- 2026-09-10 19:03  diagnostics read: plugin fine, RCCL 2.30.4 DDA path bypasses the tuner; stock OK without expandable_segments
+- 2026-09-10 19:07  probe with RCCL_DDA_ENABLE=0: 8/8 sc2 rules hit -> new arm set stock, none, nodda, sc2, dummy
+- 2026-09-10 19:14  attempt 2 launched on all five nodes (attempt-1 trees removed)
