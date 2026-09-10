@@ -50,6 +50,9 @@ CG_FLAG="--disable-cuda-graph"
 FLOORDROP=""
 if [ -n "${IM_DROP_FLOOR:-}" ]; then unset NCCL_MIN_NCHANNELS; FLOORDROP="-e NCCL_MIN_NCHANNELS"; fi
 
+# RM_MSCCL: 0/1 sets RCCL_MSCCL_ENABLE explicitly (default 0); "image" leaves the image's own default untouched (2026-09-10, for a faithful stock arm)
+MSCCL_ENV="-e RCCL_MSCCL_ENABLE=${RM_MSCCL:-0}"
+[ "${RM_MSCCL:-0}" = "image" ] && MSCCL_ENV=""
 TUNER_ENV=""
 if [ "$ARM" = "tun" ]; then
   TUNER_ENV="-e NCCL_TUNER_PLUGIN=/opt/rccl/tuner/librccl-tunerv4-dn.so -e NCCL_TUNER_CONFIG_FILE=/opt/rccl/tuner/${RM_CONF:-all_reduce_1n.final.conf}"
@@ -66,7 +69,7 @@ docker run -d --ipc=host --shm-size=16g --network=host --name="$CNAME" $FLOORDRO
   -v /huggingface:/huggingface:ro \
   -v "$CONF_DIR":/opt/rccl/tuner:ro \
   -v "$OUT":/workspace/out -w /workspace \
-  -e RCCL_MSCCL_ENABLE=${RM_MSCCL:-0} \
+  $MSCCL_ENV \
   -e NCCL_DEBUG=INFO \
   -e NCCL_DEBUG_SUBSYS=${RM_SUBSYS:-INIT,TUNING,ENV} \
   -e NCCL_DEBUG_FILE=/workspace/out/logs/rccl.%h.%p.log \
