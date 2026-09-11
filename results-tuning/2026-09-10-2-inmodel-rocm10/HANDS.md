@@ -39,3 +39,19 @@
   receipts now record disable_custom_all_reduce (parsed) + "[AR] Using ..." + RCCL_DDA_ENABLE env + ncclDdaIpcCommInit count. Page generator: ARM_ORDER stock,none,nodda,sc2,dummy for this run.
 - 16:14:44Z attempt 2 launched (same launch script, same jobs; attempt-1 driver logs kept as *.driver.attempt1.log; partial trees qwen/gptoss/dsr1 removed on all five nodes, probe/ kept).
   Allocations end 00:41Z (ses2-1, 4, 7) and 02:52Z (5, 6); scontrol TimeLimit extension refused (permission). ETA ~8.5 h per node -> ses2-1/4/7 are tight; watch the last mode.
+- 16:2xZ attempt 2 detect phase clean on all five nodes: PLUGIN_HITS qwen d32 68288, qwen mix 65184, gptoss d32 24528, gptoss mix 24528 (capture-time counts, deterministic per model);
+  STOCK_PLUGIN_HITS 0 everywhere (custom AR takes the all_reduce); no RECEIPT_MISMATCH. Receipt sample (qwen/d32/detect/receipts.txt on ses2-1): sc2/dummy disable_custom_all_reduce=True,
+  RCCL_DDA_ENABLE_env=0; stocksc2 False, AR_impl=AiterCustomAllreduce, NCCL_MIN_NCHANNELS_env=112. Note: ncclDdaIpcCommInit still logs with RCCL_DDA_ENABLE=0 (comm setup), the path is
+  just not taken - the hit counts are the proof.
+- Inspecting a node while its chain step runs needs `srun --overlap --jobid=...`; a plain srun blocks with "step creation temporarily disabled" (one such srun hung 2 min and was killed).
+- 19:04Z node 7 ALL_DONE -> fetch_node.sh gptoss amd-mi355x-7 21155 (tar over srun --overlap, excludes rccl logs + server.log; scores pass1/pass2 with infer_score.py --base <pass> --prefix "" --ref stock_def),
+  docker ps clean, scancel 21155. Page built once (partial).
+- 19:17Z ses2-1 ALL_DONE -> fetch_node.sh qwen amd-mi355x-ses2-1 21156, docker ps clean, scancel 21156. Page rebuilt. Remaining: 4 (qwen d512), 6 (gptoss d512), 5 (dsr1 d128 pass2 -> d512).
+- 20:08Z node 6 ALL_DONE -> fetch_node.sh gptoss amd-mi355x-6 21158 (merges into gptoss/ next to node 7's modes), docker ps clean, scancel 21158. Page rebuilt. Remaining: 4 (qwen d512 pass2), 5 (dsr1 d512 pass1).
+- 20:15Z node 4 ALL_DONE -> fetch_node.sh qwen amd-mi355x-4 21154, docker ps clean, scancel 21154. Page rebuilt. Remaining: node 5 (dsr1 d512, ETA ~21:30Z).
+- 00:17Z node 5 ALL_DONE -> fetch_node.sh dsr1 amd-mi355x-5 21157, docker ps clean. Allocation 21157 KEPT for the miss-penalty diagnostic (rocm10-missdiag.sh: nodda vs empty-conf plugin, DeepSeek d32,
+  TUNING logs, 2 reps each; out /data/ylerman/inmodel-rocm10-2026-09-10/missdiag/ on node 5). Release 21157 after it.
+- Consistency check over the fetched tree: 30 score.csv, 45 hitmap csv, 150 pass receipts (30 per arm, every arm's columns identical across all nodes: plugin arms disable_custom_all_reduce=True +
+  RCCL_DDA_ENABLE_env=0, none same with DDA unset, stock False + AiterCustomAllreduce + floor 112), stocksc2 rule hits 0 in all 15 detects, 0 "tok/s=FAIL" in the five driver logs.
+- 00:26Z missdiag done; mechanism = RCCL 2.30.4 built-in CSV tuner (rccl_tuner_gfx950.csv, 4 rules) displaced by our plugin (SUMMARY section 7). docker ps clean, scancel 21157 at 00:30Z.
+  Cluster state: none of our jobs/containers left (squeue shows only other users' jobs). Raw trees (rccl logs, server.log) stay on the nodes under /data/ylerman/inmodel-rocm10-2026-09-10/.

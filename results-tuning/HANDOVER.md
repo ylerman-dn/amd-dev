@@ -66,3 +66,20 @@ d. Housekeeping: old 8807-page edit still uncommitted on main checkout; broadcas
 - Stock SGLang stays +8..+34% over the tuned RCCL path (custom all-reduce; no rule hits). Within the RCCL path the sc2 conf is +5..+28% over plain RCCL
   where a rule covers the mode's decode all_reduce (conc x hidden x 2 B), and 0% where none does (gpt-oss mix, 368,640 B in the 256K..512K gap).
 - Design rules for any future in-model test: graphs on, radix cache off, one server per arm, reversed second pass, stock as reference, detect server for hit-maps.
+
+
+## 2026-09-10 rerun on the NEW stack (results-tuning/2026-09-10-2-inmodel-rocm10/, SUMMARY.md there, page inmodel_rocm10_2026-09-10.html)
+- Image lmsysorg/sglang:v0.5.19-rocm10-mi35x = SGLang 0.5.19, ROCm 10.0.0, RCCL 2.30.4 @6b0e43f, torch 2.11, AITER 4ad9983. 3 models (Qwen3-30B-A3B, gpt-oss-120b,
+  DeepSeek-R1-0528 MXFP4) x 6 modes (d32 p8k d128 mix d256 d512; DeepSeek d32 d128 d512) x 5 arms x 2 passes on 5 nodes; 0 failures, receipts per server.
+- **RCCL 2.30.4 facts** (verified in logs/strings, see SUMMARY section 1): no MSCCL at all; a new DDA direct all-reduce path (`RCCL_DDA_ENABLE`, `RCCL_DDA_THRESHOLD`) takes every
+  intra-node all_reduce by default and never consults the tuner (0 rule hits with RCCL as shipped, plugin mapping itself fine). AITER custom AR aborts if
+  PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True is set (our driver used to; infer_many.sh IM_NO_EXPANDABLE=1 drops it).
+- **Result**: stock (AITER custom AR) fastest in all 15 model-mode tables (30 score.csv), but only +3..+13% over RCCL as shipped (DDA) - the old stack had +14..+52%. DDA beats the tuned classic path (sc2)
+  in 14/15 tables in pass 1, 15/15 in pass 2 (+3..+28%). Within the classic path sc2 still helps where a rule covers the decode size (+6..+17%), ties where none does at 360K/2.9M/7M, and COSTS 13-15% where none
+  does at 1.47M (gpt-oss d256) and 448K/1.75M (DeepSeek d32/d128). Cause (SUMMARY section 7, reproduced with an empty conf): **RCCL 2.30.4 ships a built-in CSV tuner with an MI355X table**
+  (`share/rccl/tuner/rccl_tuner_gfx950.csv`: allreduce <16K tree/ll/1, 16K-512K ring/ll, 512K-1M ring/ll/32, 1M-2M ring/ll/56) that an external plugin REPLACES, so uncovered sizes fall to the generic
+  cost model (SIMPLE instead of LL). Any conf for RCCL >= 2.30 must carry those rules for what it does not override.
+- Consequence for GPU-107: on this stack a single-node tuner conf has no lever at all for SGLang TP-8 all_reduce (custom AR, and behind it DDA). Remaining candidates: multi-node
+  (nNodes > 1), sizes above the DDA threshold, other collectives (AllGathers DO go through the tuner: the probe applied a rule to every AllGather), other frameworks.
+- Tools: infer_many.sh knobs IM_EXTRA_ENV, IM_NO_EXPANDABLE, IM_PLUGIN, RM_MSCCL=image; fetch_node.sh in the run dir; build_inmodel_page.py reads models/modes/nodes.txt and switches
+  to the 5-arm layout (nodda base) when models.txt exists. Inspecting a node while its chain runs: `srun --overlap --jobid=...`.

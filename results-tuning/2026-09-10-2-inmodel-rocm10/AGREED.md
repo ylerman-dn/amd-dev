@@ -1,7 +1,7 @@
 # AGREED — rocm10 rerun (2026-09-10). Inherits every rule of ../2026-09-10-1-inmodel/AGREED.md; differences listed here first, then the inherited text.
 
 ## Differences for this run
-- Image lmsysorg/sglang:v0.5.19-rocm10-mi35x (RCCL 2.30.4); nodes 5 / ses2-1 (Qwen), 4 / 7 (gpt-oss); jobs 21153-21156; tree /data/ylerman/inmodel-rocm10-2026-09-10; repo dir results-tuning/2026-09-10-2-inmodel-rocm10; page inmodel_rocm10_2026-09-10.html.
+- Image lmsysorg/sglang:v0.5.19-rocm10-mi35x (RCCL 2.30.4); nodes ses2-1 + 4 (Qwen), 7 + 6 (gpt-oss), 5 (DeepSeek); jobs 21156/21154/21155/21158/21157 (superseded the first draft's 21153-21156 map); tree /data/ylerman/inmodel-rocm10-2026-09-10; repo dir results-tuning/2026-09-10-2-inmodel-rocm10; page inmodel_rocm10_2026-09-10.html.
 - FIVE arms: stock (AITER on, image env), none (AITER off, floor removed, RCCL as shipped = DDA path), nodda (none + RCCL_DDA_ENABLE=0), sc2 and dummy (= nodda + plugin).
   Revised 16:1xZ: the planned msccl arm (AITER off, RCCL_MSCCL_ENABLE=1, flag present) is void - RCCL 2.30.4 carries no MSCCL and does not recognise the env var - and the first
   attempt showed that RCCL 2.30.4's DDA path takes every decode all_reduce without consulting the tuner (0 hits), so a plugin arm needs DDA off. Every server: IM_NO_EXPANDABLE=1.

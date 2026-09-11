@@ -3,3 +3,10 @@
 - 2026-09-10 19:03  diagnostics read: plugin fine, RCCL 2.30.4 DDA path bypasses the tuner; stock OK without expandable_segments
 - 2026-09-10 19:07  probe with RCCL_DDA_ENABLE=0: 8/8 sc2 rules hit -> new arm set stock, none, nodda, sc2, dummy
 - 2026-09-10 19:14  attempt 2 launched on all five nodes (attempt-1 trees removed)
+- 2026-09-10 22:04  node 7 done: fetched, scored, allocation 21155 released (22:06)
+- 2026-09-10 22:17  ses2-1 done: fetched, scored, 21156 released (22:18)
+- 2026-09-10 23:08  node 6 done: fetched, scored, 21158 released (23:09)
+- 2026-09-10 23:14  node 4 done: fetched, scored, 21154 released (23:16)
+- 2026-09-11 03:16  node 5 done: fetched, scored; all 15 model-mode tables (30 score.csv) in, final page built
+- 2026-09-11 03:18  miss-penalty diagnostic on node 5 (nodda vs empty-conf plugin): RCCL 2.30.4 built-in gfx950 tuner table displaced by our plugin
+- 2026-09-11 03:30  21157 released; no jobs or containers of ours left
