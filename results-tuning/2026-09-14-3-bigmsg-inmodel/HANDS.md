@@ -24,3 +24,6 @@
 - 16:30Z b65536 moved to chain2 (step 21253.1 cancelled at its detect start, containers removed; the root-owned detgptoss_srv/{server.log,logs} of the cancelled server could not be removed
   (docker-created), so the new detect's rank logs share that dir with a few init-phase lines of the killed server: hit counts for b65536 detect may include them; sizes/algos unaffected).
   New step 21253.4, driver log bigmsg-inmodel-2026-09-14.gptoss65536.driver.log, no-rule arm = nomatch.conf.
+- 16:52Z gpt-oss ALL_DONE on node 6: 16:08:18Z -> 16:52:09Z = 44 min for both batch sizes (b32768 22 min: detect 2 runs, search 39 runs, stock 3 reps; b65536 22 min: same). Fetched + scored
+  (gptoss/b*/score.csv). Both PICKs NO_AB (+0.08% / +0.06%). Stock INT8 quick-reduce vs RCCL default: 138.3k vs 133.1k input tok/s (+3.9%) at 180 MiB, 141.2k vs 134.9k (+4.7%) at 360 MiB.
+  verify_arms.sh started in 21253 (step 21253.6) -> verify.driver.log; node 6 to be released after it.
