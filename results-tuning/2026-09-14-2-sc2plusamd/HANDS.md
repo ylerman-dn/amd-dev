@@ -15,3 +15,8 @@
   Rule, now in memory: never write to a script file on /opt/shared while any srun step may be executing it; stage under a NEW name and switch callers between runs.
 - 15:04Z Qwen d32 pass2 nodda: rep1 FAIL (its /health was answered by the stale container, bench ran before the real server was up), reps 2-6 = 3947, 4017, 4017, 4015, 4017 (pass1 4019): valid, rep1 is dropped by scoring anyway. pass2 sc2 = the only lost server (fix-up queued). Chain continues (none pass2, then d128).
 - 18:26Z node 8 image pull had DIED at 17:50Z: a docker pull started with setsid inside a short srun step is killed with the step's cgroup when the step ends. Restarted as its own srun step (stays alive for the pull), log /data/ylerman/pull-rocm10-2.log on node 8. C dsr1 launch waiter still armed.
+- 18:58Z node 8 UNUSABLE: the DeepSeek server died at once with "The memory capacity is unbalanced. Some GPUs may be occupied by other processes" (server.log). rocm-smi: GPU 0 has 69 GB VRAM held
+  by pid 2483436 (python3) of another user's docker container fisher_acc_dosedirprefix128_20260914T171646Z (lighteval, up 2 h, started outside Slurm while the node was draining). Not ours,
+  not killable. C's dsr1 chain step cancelled, allocation 21257 released, the moved_dsr1 marker removed BEFORE the node-2 sequencer reached `run dsr1` (it is still in gptoss), so dsr1 runs on
+  node 2 after gptoss as originally planned (then fix-up, D, release). Node-8 driver log kept as sc2plus-2026-09-14.dsr1.node8-failed.driver.log. Lesson: check rocm-smi --showpids (foreign
+  VRAM) before launching on a node that was just undrained.
