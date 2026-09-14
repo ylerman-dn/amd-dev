@@ -13,7 +13,7 @@ MP[dsr1]=/huggingface/hub/models--amd--DeepSeek-R1-0528-MXFP4/snapshots/913fc83b
 log() { echo "$(date -u +%FT%TZ) $*" >> $B.launcher.log; }
 pending() { for t in dsr1 gptoss qwen; do [ -e $B.started_$t ] || echo $t; done; }
 node_ok() {  # $1 jobid $2 node $3 tag -> 0 if image+model+disk ok
-  srun --overlap --jobid=$1 -N1 -w $2 -t 3 bash -c "docker image inspect $IMG >/dev/null 2>&1 || { echo NOIMAGE; exit 1; }; [ -f ${MP[$3]}config.json ] || { echo NOMODEL; exit 2; }; f=\$(df --output=avail -BG / | tail -1 | tr -dc 0-9); [ \$f -ge 20 ] || { echo NODISK \$f; exit 3; }; echo OK \$f" </dev/null 2>&1 | tail -1
+  srun --overlap --jobid=$1 -N1 -w $2 -t 3 bash -c "docker image inspect $IMG >/dev/null 2>&1 || { echo NOIMAGE; exit 1; }; [ -f ${MP[$3]}config.json ] || { echo NOMODEL; exit 2; }; f=\$(df --output=avail -BG / | tail -1 | tr -dc 0-9); [ \$f -ge 20 ] || { echo NODISK \$f; exit 3; }; echo OK \$f" </dev/null 2>&1 | grep -E "^(OK|NOIMAGE|NOMODEL|NODISK)" | tail -1
 }
 launch() {  # $1 jobid $2 node $3 tag
   touch $B.started_$3; echo "$3 $2 $1 $(date -u +%FT%TZ)" >> $B.nodes.txt
