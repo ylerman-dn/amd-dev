@@ -6,3 +6,10 @@
   line parsed as a dummy rule "collective_type [0-0] ... nodes=0 ranks=0" (never matches: nodes=0). Not fixing the running chain (editing a script bash is executing shifts its read offsets, see
   2026-09-10 infer_many.sh lesson); the conf per arm is proven post-hoc by the "Loaded config" rule set in each server's logs (sc2plus carries "allreduce [0-4095] tree/ll channels=1") and by the
   hit-maps. Expect one RECEIPT_MISMATCH line per plugin server in this campaign; treat "conf=none" with tuner=DN-TUNER as benign.
+- 14:56Z INCIDENT (my mistake, same class as 2026-09-10): I re-synced infer_many.sh to /opt/shared (IM_NO_PLUGIN knob for campaign D) while the Qwen d32 pass2 sc2plus server's infer_many
+  instance was running. bash reads scripts incrementally: after its rep loop the instance hit "syntax error / unexpected EOF", skipped its `docker rm -f`, and left ylerman-many-sc2plus-tun
+  holding port 8899. The next arm (pass2 sc2) started, its SGLang child died on the port, but infer_many's /health check was answered by the STALE sc2plus server -> reps 1-3 of "sc2" were
+  measured against the sc2plus server, reps 4-6 FAIL after I removed the stale container (14:59Z). sc2plus pass2 data itself is complete (6 bench logs) and valid.
+  Actions: pass2/sc2_tun renamed CORRUPT_sc2_tun_port_clash (excluded from scoring); fix-up server queued at the end of the sequencer (sc2plus-2026-09-14.fix_qwen_d32_sc2.sh, prints FIXUP
+  start/done into the qwen driver log, then FIX_DONE in seq.log); B' launcher blocked from taking node 2 via SEQ_DONE (node2_used marker) so the fix-up and campaign D can use 21247 first.
+  Rule, now in memory: never write to a script file on /opt/shared while any srun step may be executing it; stage under a NEW name and switch callers between runs.
