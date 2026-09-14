@@ -1,6 +1,7 @@
 #!/bin/bash
 # B' verification (post-hoc, TUNING logs): what does RCCL execute for the 180 MiB gpt-oss prefill all_reduce under
-#   (1) a fresh server with an EMPTY plugin conf (true "no rule"), (2) rl32 = ring/ll128/32, (3) tl112 = tree/ll128/112, (4) rs112, (5) nomatch.conf (valid file, rule never matches)?
+#   warm (rs112, absorbs the cold first batch), nomatch (valid conf, never matches = true RCCL default), rl32 = ring/ll128/32, tl112 = tree/ll128/112, rs112, nomatch again, empty file
+#   (expected: empty keeps the previous table).
 # One hot-reload server, 1 round per arm, TUNING logs; afterwards the rank logs give "AllReduce: 188743680 Bytes -> Algo X proto Y channel{Lo..Hi}" per phase.
 # Usage (inside job 21253 on node 6 after the gpt-oss chain): srun --jobid=21253 -N1 -w amd-mi355x-6 bash <this>
 set -u
@@ -11,7 +12,7 @@ M=/data/ylerman/models/gpt-oss-120b
 D=/data/ylerman/bigmsg-inmodel-2026-09-14/gptoss/verify; mkdir -p $D
 echo "=== verify start $(date -u +%FT%TZ)"
 IM_BASE=$D IM_DROP_FLOOR=1 IM_EXTRA_ENV="ROCM_QUICK_REDUCE_QUANTIZATION=NONE" RM_SUBSYS=INIT,TUNING,ENV IM_EXTRA="--chunked-prefill-size 32768 --max-prefill-tokens 32768 --attention-backend triton --disable-radix-cache" \
-  bash $P $M vgptoss 1 none:NONE rl32:big_ring_ll128_32.conf tl112:big_tree_ll128_112.conf rs112:big_ring_simple_112.conf nomatch:nomatch.conf none2:NONE
+  bash $P $M vgptoss 1 warm:big_ring_simple_112.conf nomatch:nomatch.conf rl32:big_ring_ll128_32.conf tl112:big_tree_ll128_112.conf rs112:big_ring_simple_112.conf nomatch2:nomatch.conf empty:NONE
 L=$D/vgptoss_srv/logs
 echo "=== hot-reload lines: $(cat $L/*.log 2>/dev/null | grep -c 'hot-reloaded') failed: $(cat $L/*.log 2>/dev/null | grep -c 'hot-reload of .* FAILED')"
 echo "=== executed configs for 188743680 B, in log order (rank 0):"
