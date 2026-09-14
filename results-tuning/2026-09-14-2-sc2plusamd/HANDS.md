@@ -14,3 +14,4 @@
   start/done into the qwen driver log, then FIX_DONE in seq.log); B' launcher blocked from taking node 2 via SEQ_DONE (node2_used marker) so the fix-up and campaign D can use 21247 first.
   Rule, now in memory: never write to a script file on /opt/shared while any srun step may be executing it; stage under a NEW name and switch callers between runs.
 - 15:04Z Qwen d32 pass2 nodda: rep1 FAIL (its /health was answered by the stale container, bench ran before the real server was up), reps 2-6 = 3947, 4017, 4017, 4015, 4017 (pass1 4019): valid, rep1 is dropped by scoring anyway. pass2 sc2 = the only lost server (fix-up queued). Chain continues (none pass2, then d128).
+- 18:26Z node 8 image pull had DIED at 17:50Z: a docker pull started with setsid inside a short srun step is killed with the step's cgroup when the step ends. Restarted as its own srun step (stays alive for the pull), log /data/ylerman/pull-rocm10-2.log on node 8. C dsr1 launch waiter still armed.
