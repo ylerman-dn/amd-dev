@@ -1,0 +1,1 @@
+- 2026-09-14 17:5x  B-prime prepared: chain, 12 one-rule confs (64 MiB+1..2 GiB), hot-reload driver knobs; launcher hunting nodes (one model per node)
