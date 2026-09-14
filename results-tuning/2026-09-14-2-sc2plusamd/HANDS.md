@@ -13,3 +13,4 @@
   Actions: pass2/sc2_tun renamed CORRUPT_sc2_tun_port_clash (excluded from scoring); fix-up server queued at the end of the sequencer (sc2plus-2026-09-14.fix_qwen_d32_sc2.sh, prints FIXUP
   start/done into the qwen driver log, then FIX_DONE in seq.log); B' launcher blocked from taking node 2 via SEQ_DONE (node2_used marker) so the fix-up and campaign D can use 21247 first.
   Rule, now in memory: never write to a script file on /opt/shared while any srun step may be executing it; stage under a NEW name and switch callers between runs.
+- 15:04Z Qwen d32 pass2 nodda: rep1 FAIL (its /health was answered by the stale container, bench ran before the real server was up), reps 2-6 = 3947, 4017, 4017, 4015, 4017 (pass1 4019): valid, rep1 is dropped by scoring anyway. pass2 sc2 = the only lost server (fix-up queued). Chain continues (none pass2, then d128).
