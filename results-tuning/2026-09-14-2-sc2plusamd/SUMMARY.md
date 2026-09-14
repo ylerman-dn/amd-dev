@@ -18,7 +18,7 @@ Answer: **Yes. Wherever sc2 has no rule for the decode size, sc2plus restores AM
 
 | model | mode | decode all_reduce | sc2 rule? | none (DDA) | nodda | sc2 | sc2plus | sc2 vs nodda | sc2plus vs nodda |
 |---|---|---|---|---|---|---|---|---|---|
-| Qwen | d32 | 131,072 | yes | 5004 / 5015 | 4019 / 4017 | 4246 / (lost, fix-up) | 4242 / 4248 | +5.7% | +5.6% |
+| Qwen | d32 | 131,072 | yes | 5004 / 5015 | 4019 / 4017 | 4246 / 4268 (fix-up server 22:00Z) | 4242 / 4248 | +5.7% | +5.6% |
 | Qwen | d128 | 524,288 | yes | 14572 / 14533 | 13356 / 13313 | 13423 / 13450 | 13429 / 13445 | +0.7% | +0.7% |
 | Qwen | mix | 262,144 | yes | 7203 / 7218 | 6353 / 6363 | 6471 / 6468 | 6465 / 6466 | +1.8% | +1.7% |
 | Qwen | d256 | 1,048,576 | yes | 22617 / 22594 | 20035 / 20059 | 21652 / 21671 | 21627 / 21659 | +8.1% | +8.0% |
