@@ -50,6 +50,15 @@ docker rm -f "$CNAME" >/dev/null 2>&1
 # env — `docker run -e VAR` with VAR unset on the host deletes the image-provided value.
 FLOORDROP=""
 if [ -n "${IM_DROP_FLOOR:-}" ]; then unset NCCL_MIN_NCHANNELS; FLOORDROP="-e NCCL_MIN_NCHANNELS"; fi
+# 2026-09-14 (bigmsg in-model campaign): the same knobs infer_many.sh got on 2026-09-09/10, defaults keep the old behaviour.
+#   IM_CUDA_GRAPH=1     keep CUDA graphs ON (prefill is never graph-captured, so hot-reload swaps still act on prefill collectives)
+#   IM_KEEP_CUSTOM_AR=1 keep AITER custom all-reduce (it declines > 64 MiB; with ROCM_QUICK_REDUCE_QUANTIZATION=NONE those calls reach RCCL)
+#   IM_NO_EXPANDABLE=1  do not set PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True (breaks AITER custom AR on torch 2.11 / rocm10 image)
+#   IM_EXTRA_ENV="K=V ..." extra container env, e.g. ROCM_QUICK_REDUCE_QUANTIZATION=NONE
+CG_FLAG="--disable-cuda-graph"; [ -n "${IM_CUDA_GRAPH:-}" ] && CG_FLAG=""
+DISABLE_AR_FLAG="--disable-custom-all-reduce"; [ -n "${IM_KEEP_CUSTOM_AR:-}" ] && DISABLE_AR_FLAG=""
+ALLOC_ENV="-e PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True"; [ -n "${IM_NO_EXPANDABLE:-}" ] && ALLOC_ENV=""
+EXTRA_ENV=""; for kv in ${IM_EXTRA_ENV:-}; do EXTRA_ENV="$EXTRA_ENV -e $kv"; done
 docker run -d --ipc=host --shm-size=16g --network=host --name="$CNAME" $FLOORDROP \
   --privileged --ulimit memlock=-1 \
   --cap-add=CAP_SYS_ADMIN --cap-add=IPC_LOCK --cap-add=SYS_PTRACE \
@@ -65,7 +74,7 @@ docker run -d --ipc=host --shm-size=16g --network=host --name="$CNAME" $FLOORDRO
   -e NCCL_DEBUG_FILE=/workspace/out/logs/rccl.%h.%p.log \
   -e NCCL_IGNORE_CPU_AFFINITY=1 \
   -e HSA_NO_SCRATCH_RECLAIM=1 \
-  -e PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
+  $ALLOC_ENV $EXTRA_ENV \
   -e NCCL_TUNER_PLUGIN=/opt/rccl/tuner/$PLUGIN \
   -e NCCL_TUNER_CONFIG_FILE=/opt/rccl/tuner/$LIVE \
   -e DN_TUNER_HOT_RELOAD=1 \
@@ -73,7 +82,7 @@ docker run -d --ipc=host --shm-size=16g --network=host --name="$CNAME" $FLOORDRO
   "$IMAGE" -c "
 mkdir -p /workspace/out/logs
 python3 -m sglang.launch_server --model-path $MODEL --tp 8 \
-  --host 0.0.0.0 --port $PORT --disable-cuda-graph --disable-custom-all-reduce \
+  --host 0.0.0.0 --port $PORT $CG_FLAG $DISABLE_AR_FLAG \
   --trust-remote-code ${IM_EXTRA:-} > /workspace/out/server.log 2>&1
 " > /dev/null
 
@@ -100,7 +109,9 @@ python3 -m sglang.bench_serving --backend sglang --host 127.0.0.1 --port $PORT \
   --random-range-ratio 1 --max-concurrency $CONC --num-prompts $NUM_PROMPTS \
 " > "$B/${PFX}_${name}/bench_round${r}.log" 2>&1
     tps=$(grep -oP 'Output token throughput \(tok/s\):\s+\K[0-9.]+' "$B/${PFX}_${name}/bench_round${r}.log")
-    echo "[$PFX/$name] round${r} tok/s=${tps:-FAIL}" | tee -a "$L"
+    itps=$(grep -oP 'Input token throughput \(tok/s\):\s+\K[0-9.]+' "$B/${PFX}_${name}/bench_round${r}.log")
+    ttft=$(grep -oP 'Mean TTFT \(ms\):\s+\K[0-9.]+' "$B/${PFX}_${name}/bench_round${r}.log")
+    echo "[$PFX/$name] round${r} tok/s=${tps:-FAIL} in_tok/s=${itps:-FAIL} TTFT=${ttft:-FAIL}" | tee -a "$L"
   done
 done
 
