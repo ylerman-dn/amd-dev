@@ -17,3 +17,4 @@
   Consequence: the search's PICK compares against a polluted "none"; the real default-vs-conf answer comes from the A/B / stockref phase (fresh servers, no plugin in the default arm).
   Likely reading of rl32/rl64/rl112/tl112 == rs112 (all 133k): RCCL 2.30.4 rejects a plugin LL128/TREE choice the comm has not enabled and runs its own default, which per rccl-tests is
   ring/simple/112 = the same as rs112; then the in-model default is ~133k and rs112 has NO gain. To verify: TUNING detect with rl32 and tl112 confs and a fresh-server none (queued: verify_arms.sh).
+- 16:30Z waiter armed (dev VM background): when the gptoss driver log shows 'b65536 detect', the srun step is cancelled, containers/b65536 dir cleaned, and b65536 relaunched on chain2 (nomatch no-rule arm) into gptoss65536.driver.log.
