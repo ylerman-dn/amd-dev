@@ -1,0 +1,2 @@
+- 2026-09-14 17:24  campaign A verdict: parity above 64 MiB; B skipped
+- 2026-09-14 17:27  node 2 booked 12 h (job 21247) for C and D
