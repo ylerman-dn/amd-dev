@@ -1,7 +1,16 @@
 # SUMMARY — in-model campaign on the new stack (2026-09-10-2-inmodel-rocm10)
 
-Stack: image `lmsysorg/sglang:v0.5.19-rocm10-mi35x` = SGLang 0.5.19, ROCm 10.0.0, RCCL 2.30.4 @6b0e43f, AITER 4ad9983, torch 2.11.
-Previous campaign (same design, 4 arms) on the old stack: `../2026-09-10-1-inmodel/` (SGLang 0.5.17, ROCm 7.2, RCCL 2.27.7).
+Stacks (versions and dates from `docker inspect` / file mtimes / version strings inside the images, node 4, 2026-09-14):
+
+| | previous campaign `../2026-09-10-1-inmodel/` | this campaign |
+|---|---|---|
+| image | `lmsysorg/sglang:v0.5.17-rocm720-mi35x`, built 2026-08-08 | `lmsysorg/sglang:v0.5.19-rocm10-mi35x`, built 2026-09-10 |
+| SGLang / torch | 0.5.17 / 2.9.1+rocm7.2.0 | 0.5.19 / 2.11.0+rocm10.0.0 |
+| ROCm | 7.2.0 | 10.0.0 (`10.0.0.0-9999-6b0e43f3`: build number 9999 = development build) |
+| RCCL | 2.27.7, commit 0d2c4fd of 2025-12-09, library file dated 2026-01-10 | 2.30.4, library file dated 2026-09-10 (same day as the image) |
+| AITER | d9e5ef7 | 4ad9983 |
+
+Gap: about one month of SGLang images, about nine months of RCCL code (MSCCL removed, DDA and the built-in gfx950 tuner table added in between).
 Page: `results-tuning/2026-08-23-1-pages/inmodel_rocm10_2026-09-10.html`. Timeline: `TIMELINE.md`. Hand log: `HANDS.md`. Day log: `../2026-09-10-LOG.md`.
 
 ## 1. What changed on the new stack, and why the design had to change (attempt 1 -> attempt 2)
