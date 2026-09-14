@@ -568,6 +568,8 @@ def cmd_run(args):
     # 2026-09-08: container runtime is slower per run (docker start) and the
     # A/B is 9 reps x 2 arms x every rule; 85 min timed out in planning.
     minutes = min(480, 120 + 60 * len(pairs))
+    if getattr(args, "minutes", None):
+        minutes = args.minutes
     jobid = None
     t0 = time.time()
     try:
@@ -650,6 +652,7 @@ def main():
     pr.add_argument("--min-size", default=None, help="size window start for search AND A/B, e.g. 128M (default 4K)")
     pr.add_argument("--max-size", default=None, help="size window end, e.g. 2G (default 512M)")
     pr.add_argument("--image", default=None, help="container image for search AND A/B (default: sweep_config / validator default)")
+    pr.add_argument("--minutes", type=int, default=None, help="booking length in minutes (default: 120 + 60 per collective/scale pair, max 480)")
     pr.add_argument("--nodes", default=None,
                     help="override node pick, e.g. 5,8 (still blacklisted-checked)")
     pr.add_argument("--dry-run", action="store_true",
