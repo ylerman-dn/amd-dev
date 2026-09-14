@@ -27,3 +27,13 @@
 - 16:52Z gpt-oss ALL_DONE on node 6: 16:08:18Z -> 16:52:09Z = 44 min for both batch sizes (b32768 22 min: detect 2 runs, search 39 runs, stock 3 reps; b65536 22 min: same). Fetched + scored
   (gptoss/b*/score.csv). Both PICKs NO_AB (+0.08% / +0.06%). Stock INT8 quick-reduce vs RCCL default: 138.3k vs 133.1k input tok/s (+3.9%) at 180 MiB, 141.2k vs 134.9k (+4.7%) at 360 MiB.
   verify_arms.sh started in 21253 (step 21253.6) -> verify.driver.log; node 6 to be released after it.
+- 16:57Z verify_arms done (node 6, 4 min, gptoss/verify on the node; verify.driver.log). Rank-0 TUNING log, 180 MiB all_reduce, all 7 arms: 10220 x "RING/SIMPLE channel{0..111}" and nothing
+  else. Plugin lines: 2920 x "Applied ... ring/simple/112" (warm + rs112 arms) and 1752 x "[ring][ll128] is marked as IGNORE" + 1752 x "[tree][ll128] is marked as IGNORE" (rl32, tl112 arms):
+  RCCL passes the plugin a cost table in which LL128 (and tree/ll128) are IGNORE for the SGLang communicator, and plugin.c:463 applies a rule only when its algo/proto is not IGNORE.
+  So LL128/tree cannot be selected by a tuner in the model, and RCCL's own default there is ring/simple/112 (nomatch, nomatch2, empty arms all 133k with the same executed line).
+  Corrections to earlier notes: (1) the "empty file keeps the previous table" theory is WRONG for this plugin build: the CSV header parses as a dummy rule, the reload succeeds (48 reloads, 0
+  failed), so the original chain's NONE arm from round 2 on WAS a valid no-rule measurement; the nomatch.conf change is harmless and stays. (2) the 104k first-batch values are cold start
+  (the warm arm, rs112, read 104.4k as first batch too).
+- 16:59Z node 6 released (21253) and rebooked (21255, 12 h); Qwen snapshot fast-copied node 2 -> node 6 (/data/ylerman/models/Qwen3-30B-A3B, 57 GB, 54 s over the FE link); Qwen chain2
+  launched by hand 16:58:57Z. Launcher had grabbed node 6 in between (21254) and released it: its node check read srun's trailing error line instead of the NOMODEL marker -> fixed
+  (launcher4.sh, running). Pending: dsr1 only (needs a node with the DeepSeek snapshot: node 2 after C, or a ~350 GB fast-copy to a free node).
