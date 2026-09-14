@@ -64,6 +64,8 @@ TUNER_ENV=""
 if [ "$ARM" = "tun" ]; then
   # IM_PLUGIN (2026-09-10): plugin .so filename inside CONF_DIR (default the v4 build)
   TUNER_ENV="-e NCCL_TUNER_PLUGIN=/opt/rccl/tuner/${IM_PLUGIN:-librccl-tunerv4-dn.so} -e NCCL_TUNER_CONFIG_FILE=/opt/rccl/tuner/${RM_CONF:-all_reduce_1n.final.conf}"
+  # IM_NO_PLUGIN=1 (2026-09-14, campaign D): no external plugin; the conf goes to RCCL 2.30.4's BUILT-IN CSV tuner through NCCL_TUNER_CONFIG_FILE alone
+  [ -n "${IM_NO_PLUGIN:-}" ] && TUNER_ENV="-e NCCL_TUNER_CONFIG_FILE=/opt/rccl/tuner/${RM_CONF:-all_reduce_1n.final.conf}"
 fi
 
 docker rm -f "$CNAME" >/dev/null 2>&1
