@@ -38,3 +38,10 @@
   launched by hand 16:58:57Z. Launcher had grabbed node 6 in between (21254) and released it: its node check read srun's trailing error line instead of the NOMODEL marker -> fixed
   (launcher4.sh, running). Pending: dsr1 only (needs a node with the DeepSeek snapshot: node 2 after C, or a ~350 GB fast-copy to a free node).
 - 17:45Z plan for dsr1: DeepSeek snapshot is 376 GB, node 6 has 302 GB free but 122 GB of it are our own gpt-oss/Qwen copies (no longer needed there). A detached follow-up (dev VM, /home/dn/.claude/jobs/a55495d4/tmp/after_qwen.sh, log after_qwen.log) waits for the Qwen B' ALL_DONE, fetches+scores qwen, removes those two copies, fast-copies DeepSeek from node 2 over the FE link (~6 min; node 2 is running campaign C servers, rsync is disk/CPU only), verifies 83 safetensors + config, then launches the dsr1 chain2 on node 6 (job 21255) and marks started_dsr1.
+- 17:44Z Qwen B' ALL_DONE (node 6, 16:58:57Z -> 17:43:57Z = 45 min, 2 batch sizes, ~86 bench runs). Both NO_AB (best -0.06% / +0.04% vs RCCL default). Stock INT8 vs RCCL default input tok/s:
+  109.3k vs 106.8k (+2.4%) at 128 MiB, 111.1k vs 107.7k (+3.2%) at 256 MiB (qwen/b*/score.csv).
+- 17:50Z follow-up done: node 6 copies removed (421 GB free), DeepSeek fast-copied node 2 -> node 6 in 355 s (376 GB, 1.06 GB/s over the FE link), 83 safetensors verified, dsr1 B' chain2
+  launched on node 6 (job 21255, step 21255.8) at 17:50:13Z. Node 6 now 45 GB free: enough (logs gzipped per server) but watch it.
+- 17:49Z node 8 came back from its NIC-maintenance drain and went idle; the launcher released it (NOIMAGE). Booked it by hand (21257, 12 h, 598 GB free; it holds the DeepSeek and gpt-oss hf
+  snapshots with the same hashes and Qwen in /data), rocm10 image pull started. Campaign C's dsr1 chain is MOVED there (sc2plus.moved_dsr1 marker set before the node-2 sequencer reached it;
+  a waiter launches the chain on node 8 as soon as the image is present) -> node 2's sequencer goes gptoss -> (skip dsr1) -> fix-up -> D -> release, ~1.7 h earlier.
