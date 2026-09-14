@@ -84,3 +84,17 @@ d. Housekeeping: old 8807-page edit still uncommitted on main checkout; broadcas
   (nNodes > 1), sizes above the DDA threshold, other collectives (AllGathers DO go through the tuner: the probe applied a rule to every AllGather), other frameworks.
 - Tools: infer_many.sh knobs IM_EXTRA_ENV, IM_NO_EXPANDABLE, IM_PLUGIN, RM_MSCCL=image; fetch_node.sh in the run dir; build_inmodel_page.py reads models/modes/nodes.txt and switches
   to the 5-arm layout (nodda base) when models.txt exists. Inspecting a node while its chain runs: `srun --overlap --jobid=...`.
+
+
+## 2026-09-14 night campaigns A, B', C, D — is there any place left for a 1-node RCCL tuner conf on the rocm10 stack? (page night_2026-09-14.html)
+- **A** (results-tuning/2026-09-14-1-bigmsg): rccl-tests all_reduce 1 node 128M..2G on RCCL 2.30.4: exact parity, the default (RING/SIMPLE/112) is the best cell of {ring,tree}x{LL,LL128,simple}x
+  channels. LL128 is honoured on 2.30.4 (substituted on 2.27.7) but 20% behind SIMPLE per channel; 224 requested channels run slower than 112. Tool: rccl_tune.py --combos/--min-size/--max-size/--image/--minutes.
+- **B'** (results-tuning/2026-09-14-3-bigmsg-inmodel): tune FROM THE MODEL at >= 128 MiB prefill all_reduces (custom AR declines > 64 MiB, ROCM_QUICK_REDUCE_QUANTIZATION=NONE): six model x size combos,
+  13 arms x 3 rounds on one hot-reload server each: no arm beats RCCL default (best +/-0.1%); ring/simple channels below 112 only lose (8 ch -57..-68%); LL128/tree are IGNORE in the SGLang
+  communicator (TUNING-log proof), so a tuner can steer only ring/simple channels there and the default already uses 112. Stock INT8 quick-reduce +2.4..+5.8% over any exact RCCL config.
+- **C** (results-tuning/2026-09-14-2-sc2plusamd): sc2 + AMD's built-in gfx950 rules in the gaps (sc2_plus_amd.conf) removes the plugin's miss penalty completely (gpt-oss d256 -14.3% -> -0.1%,
+  DeepSeek d32 -15.4% -> -0.1%, d128 -13.2% -> -0.1% vs AMD's table) and equals sc2 where sc2 has a rule. Rule for RCCL >= 2.30: a conf must carry the built-in rules for everything it does not override.
+- **D** (results-tuning/2026-09-14-4-csvtuner): the same conf through RCCL's built-in CSV tuner (no plugin .so) — see its SUMMARY.
+- Bottom line, 1 node, this stack: below 64 MiB AITER (SGLang) and DDA (RCCL) never consult a tuner; above 64 MiB the default is optimal in every space a tuner can reach. Remaining tuner-visible
+  domain = multi-node (training-shaped traffic). Ops lessons in the campaign HANDS.md files: never overwrite a running script; detached processes die with their srun step; check rocm-smi
+  --showpids for foreign VRAM on a freshly undrained node; fast-copy (rsync over FE) moves 376 GB in 6 min.
