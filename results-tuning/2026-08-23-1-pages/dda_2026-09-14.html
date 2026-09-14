@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DDA — RCCL's direct all-reduce (what replaced the tuner's job)</title>
+<style>
+:root{--bg:#0f1216;--panel:#161b22;--line:#2a323d;--fg:#d6dbe3;--dim:#8b95a3;--acc:#5ab0ff;--ok:#5fd38a;--bad:#ff7b72;--warn:#f2c14e;--pur:#c792ea}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 system-ui,Segoe UI,Roboto,sans-serif;padding:18px 26px 60px}
+h1{font-size:22px;margin:0 0 6px}h2{font-size:17px;margin:34px 0 8px;color:var(--acc);border-bottom:1px solid var(--line);padding-bottom:4px}h3{font-size:14px;margin:18px 0 6px;color:#cfd3d9}
+p{margin:6px 0;max-width:1100px}.note{color:var(--dim);font-size:13px}.k{color:var(--warn)}.g{color:var(--ok)}.b{color:var(--bad)}.pur{color:var(--pur)}
+code,pre{font:12.5px/1.45 ui-monospace,Menlo,Consolas,monospace}code{background:#1d242e;padding:1px 5px;border-radius:4px}pre{background:#0b0e12;border:1px solid var(--line);border-radius:6px;padding:10px 12px;overflow:auto;max-width:1100px}
+table{border-collapse:collapse;margin:8px 0;font-size:13px}th,td{border:1px solid var(--line);padding:5px 9px;text-align:left;vertical-align:top}th{background:#1b222b;color:#cfd3d9}
+.tw{overflow-x:auto;max-width:1100px}.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin:10px 0;max-width:1100px}
+.row{display:flex;gap:14px;flex-wrap:wrap}.row>.card{flex:1 1 320px}
+button{background:#1f2a38;color:var(--fg);border:1px solid #3a4a5e;border-radius:6px;padding:5px 11px;cursor:pointer;font-size:13px}button:hover{background:#28374a}button.on{background:#2b4a6d;border-color:var(--acc)}
+input[type=range]{width:420px;max-width:90%}
+.term{border-bottom:1px dotted var(--acc);cursor:help;position:relative}.term:hover::after{content:attr(data-t);position:absolute;left:0;top:1.5em;z-index:9;background:#1b222b;border:1px solid var(--acc);color:var(--fg);padding:6px 9px;border-radius:6px;width:380px;font-size:12.5px;line-height:1.4;font-weight:normal}
+svg text{font:12px system-ui}.legend span{display:inline-block;margin-right:14px}.sw{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:-2px;margin-right:4px}
+.ev{font-size:12.5px;color:var(--dim)}.ev a,a{color:var(--acc)}
+</style></head><body>
+<h1>DDA — RCCL 2.30.4's "direct" all-reduce, and why it took the tuner's job</h1>
+<p class="note">Written 2026-09-14 from the source in <code>github.com/ROCm/rocm-systems</code> (<code>projects/rccl</code>, clone <code>/home/dn/ylerman/wg/rocm-systems</code>), PR pages, Meta's <code>torchcomms</code> repo, and our rank logs. Every claim has an evidence line. Companion documents: <code>results-tuning/2026-09-10-2-inmodel-rocm10/RCCL_2.27.7_to_2.30.4.md</code>, <code>SUMMARY.md</code>. Hover the <span class="term" data-t="A tooltip. Every dotted term on this page has one.">dotted terms</span> for one-line definitions.</p>
+
+<h2>0. The six questions, answered in one line each (details below)</h2>
+<div class="tw"><table>
+<tr><th>question</th><th>answer</th><th>where</th></tr>
+<tr><td>Does DDA make the RCCL ring/tree path useless?</td><td>For single-node 8-GPU <b>all_reduce up to 64 MiB</b> (fp32/fp16/bf16, sum) on MI300X/MI355X: yes, that path is never entered unless <code>RCCL_DDA_ENABLE=0</code>. Everything else (multi-node, other collectives except RS/AG/A2A which also got DDA, other ops, &gt;64 MiB) still runs ring/tree and is tuner-visible.</td><td>§4, §6</td></tr>
+<tr><td>What is ctran/rcclx?</td><td>Meta's fork of RCCL (<code>rcclx</code>, inside <code>meta-pytorch/torchcomms</code>) and Meta's NCCL-independent transport layer (<code>ctran</code>). Meta wrote the DDA kernels there first; AMD ported them.</td><td>§2</td></tr>
+<tr><td>What is torchcomms, and does RCCL now depend on it?</td><td>Meta's experimental PyTorch communications API with its own backends (NCCLX, RCCLX, ctran ...). RCCL does <b>not</b> depend on it: the kernels were copied in (header says "Derived from Meta torchcomms ... all_reduce_dda.cuh") and the author told the reviewer they will maintain them independently.</td><td>§2</td></tr>
+<tr><td>One-shot? Two-shot? Where? How?</td><td>Both, in one PR: <code>ddaAllReduceFlatIpc</code> (one-shot, &le; 256 KB) and <code>ddaAllReduceTreeIpc</code> (two-shot = reduce-scatter + all-gather, &gt; 256 KB). One kernel launch per collective, direct peer-memory reads over XGMI, a GPU-side flag barrier. Interactive walk-through in §3.</td><td>§3, §4</td></tr>
+<tr><td>Proof of the "up to 3x"?</td><td>The PR gives only the sentence. Hard numbers exist in a later PR (#9777): DDA two-shot 264.99 GB/s vs generic ring/tree 117.76 GB/s at 4 MB on 8x MI355X = 2.25x. Our own in-model data: RCCL as shipped (DDA) vs DDA off = +3..+35% tok/s. We have no rccl-tests A/B of our own yet.</td><td>§5</td></tr>
+<tr><td>So it is not "ring, but optimized"?</td><td>Correct. No ring, no tree, no pipeline of chunks around a cycle. It is exactly the mesh pattern you remember: one-shot = every GPU reads all 7 peers (1 hop), two-shot = reduce your 1/8th slice from 7 peers, then gather 7 reduced slices (2 hops). The name "Tree" in <code>ddaAllReduceTreeIpc</code> is Meta's word for two-shot, not RCCL's tree algorithm.</td><td>§3, §6</td></tr>
+</table></div>
+
+<h2>1. Where it sits in RCCL 2.30.4 (dispatch)</h2>
+<div class="card">
+<p><code>ncclAllReduce()</code> in <code>src/collectives.cc</code> now has a gate in front of the classic enqueue path:</p>
+<pre>// src/collectives.cc (develop 2026-06-29 = what our image ships)
+RCCL_PARAM(DdaEnable, "DDA_ENABLE", 1);                       // env RCCL_DDA_ENABLE, default ON
+RCCL_PARAM(DdaThreshold, "DDA_THRESHOLD", (size_t)(67108864)); // env RCCL_DDA_THRESHOLD, default 64 MiB (gfx950)
+
+static bool rcclDdaEnabled(const ncclComm* comm, size_t totalBytes, size_t gfx942Default) {
+  if (!rcclParamDdaEnable() || ncclParamLaunchOrderImplicit() || ncclGroupDepth != 0
+      || comm->nRanks &lt; 8 || comm->symmetricSupport) return false;
+  gfx942: threshold = gfx942Default (8 MiB for all_reduce);  gfx950: threshold = RCCL_DDA_THRESHOLD;  others: false
+  return threshold &gt; 0 &amp;&amp; totalBytes &lt;= threshold;
+}
+...
+if (rcclDdaEnabled(comm, count * ncclTypeSize(datatype), 8388608) &amp;&amp;
+    ncclAllReduceDdaIpcEligible(comm, sendbuff, recvbuff, count, datatype, op)) {
+  NCCLCHECK(ncclAllReduceDdaIpc(...));   // &lt;-- returns here: no ncclEnqueueCheck, no algo/proto/channel selection, no tuner
+  return ncclSuccess;
+}
+// otherwise: the classic path (ring/tree, LL/LL128/Simple, channels, tuner plugin / built-in CSV tuner)</pre>
+<p>Eligibility (<code>src/dda_all_reduce_ipc.cu</code> 116-160): single node, <b>exactly 8 ranks</b> (<code>kDdaNranks = meta::comms::NRANKS = 8</code>), <code>ncclSum</code>, fp32/fp16/bf16, size a multiple of 16 bytes, fits the 64 MiB scratch, and for two-shot <code>count % 8 == 0</code>. A SGLang TP-8 decode all_reduce (bf16, sum, 128 KB..7 MB) passes every test.</p>
+<p class="ev">Evidence: file lines above; our rank logs print <code>ncclDdaIpcCommInit: scratch 67108864 bytes, IpcGpuBarrier nBlocks=24, peer IPC table on device</code> once per rank (16 lines = 2 communicators x 8 ranks, <code>/data/ylerman/inmodel-rocm10-2026-09-10/probe/probe_tun/logs</code> on ses2-1). The dispatch itself prints nothing at INFO level; that DDA carried the traffic is shown by the A/B: 0 tuner calls for the model's all_reduces with DDA on, 71392 with <code>RCCL_DDA_ENABLE=0</code> (SUMMARY.md §1).</p>
+</div>
+
+<h2>2. Origin: Meta's torchcomms, ctran, rcclx — and what RCCL took</h2>
+<div class="row">
+<div class="card"><h3>torchcomms</h3><p><a href="https://github.com/meta-pytorch/torchcomms">github.com/meta-pytorch/torchcomms</a>: "a new experimental communications API for PyTorch" with "both the high level collectives API as well as several out of the box backends" (README). Backends: NCCL, <b>NCCLX</b>, RCCL, <b>RCCLX</b>, XCCL, Gloo. BSD-3. Meta-maintained.</p><p>Directory <code>comms/common/algorithms/</code> holds Meta's own collective kernels: <code>all_reduce/</code>, <code>all_gather/</code>, <code>all_to_all/</code>, <code>reduce_scatter/</code>, plus <code>CollCommon.cuh</code>. The file <code>all_reduce/all_reduce_dda.cuh</code> exists there with the kernels <code>ddaAllReduceFlatIpc</code> and <code>ddaAllReduceTreeIpc</code> under "Copyright (c) Meta Platforms, Inc."</p></div>
+<div class="card"><h3>ctran</h3><p><code>comms/ctran/README.md</code>: "a solution to challenges in NCCL, providing a modular, self-contained architecture for collective communications across different GPU types (NVIDIA, AMD) and network topologies". It "explicitly prohibits dependencies on NCCL, NCCLX, RCCLX, or MCCL". In short: Meta's own transport/collective layer that can run beside or instead of NCCL's internals.</p></div>
+<div class="card"><h3>rcclx / ncclx</h3><p><code>comms/rcclx/develop/</code> is a copy of the ROCm <code>rocm-systems</code> tree (dirs <code>projects/</code>, <code>meta/</code>, <code>shared/</code>) plus Meta scripts (<code>rcclx_remerge.sh</code>, <code>apply_smart_patch.py</code>, <code>fb_upgrade_apply_internal_patches.sh</code>): Meta's fork of RCCL with internal patches, periodically re-merged with upstream. <code>ncclx</code> is the same for NCCL. Meta also keeps <code>MSCCL_STUB_APPROACH.md</code> there: "Minimize changes to existing RCCL code by providing stub implementations for all MSCCL functions ... All MSCCL checks return false immediately" — Meta had switched MSCCL off in its fork before AMD deleted it upstream (PR #4340, 2026-04-13).</p></div>
+</div>
+<div class="card"><h3>What AMD took, and whether RCCL now depends on Meta</h3>
+<p>PR <a href="https://github.com/ROCm/rocm-systems/pull/4958">#4958</a> "Direct Allreduce for scaleup" (Nusrat Islam, submitted 2026-04-13, merged 2026-05-17, commit <code>c2c4b25f6d</code>): "The work is inspired by the DDA allreduce algorithms in ctran/rcclx. The PR adds both one-shot and two-shot direct allreduce algorithms". The RCCL header <code>src/include/algorithms/all_reduce/all_reduce_dda.h</code> carries both copyrights and the line "Derived from Meta torchcomms comms/common/algorithms/all_reduce/all_reduce_dda.cuh". The kernel code is the same file, hipified.</p>
+<p><b>Dependency: none at build or run time.</b> The code is vendored (copied) into <code>librccl.so</code>. On the PR page a reviewer "questioned the maintenance strategy for code based on the rcclx fork. The author clarified they plan to maintain the code independently with planned optimizations rather than sync with rcclx." Since then AMD has indeed diverged: fabric/VMM variant for MI450 (#8155, 2026-07-14), LL and LL128 fast lanes, LL two-shot (#9748, 2026-08-21), GIN/LSA all-reduce (#10783, 2026-09-06), and a move to <code>src/algorithms/dda/</code> (#10072, 2026-08-25). Why take Meta's kernels at all: they were measured (by Meta, then by AMD on MI350) to be 2-3x faster than RCCL's generic ring/tree for small and mid sizes on a fully connected XGMI node, and they were already written and tested against ROCm inside rcclx.</p></div>
+
+<h2>3. How it works — interactive walk-through</h2>
+<div class="card">
+<p><b>Setup (once, at communicator init, <code>src/ipc_init.cu</code>):</b> each GPU allocates a 64 MiB <span class="term" data-t="Scratch buffer: a staging area in each GPU's own HBM. DDA never reads a peer's user buffer directly; the user buffer is first copied into the scratch, which is the memory exported to peers.">scratch buffer</span> (<code>hipExtMallocWithFlags(..., hipDeviceMallocUncached)</code>), exports it with <span class="term" data-t="IPC = inter-process communication. hipIpcGetMemHandle turns a device allocation into a handle another process on the same node can hipIpcOpenMemHandle, after which that process's GPU can load/store the memory directly. The 8 SGLang TP ranks are 8 processes, so IPC is how they see each other's HBM.">IPC</span> (<code>hipIpcGetMemHandle</code>), all 8 handles are exchanged with a <code>bootstrapAllGather</code>, opened (<code>hipIpcOpenMemHandle</code>), and the 8 resulting device pointers are stored in a table on the GPU (<code>ddaIpcPeerPtrsDev</code>). A second small IPC region holds the barrier mailboxes (8 ranks x 24 blocks x 8 flags).</p>
+<p><b>Per collective:</b> one kernel launch with up to 24 blocks x 512 threads (<code>DDA_IPC_MAXBLOCKS 24</code>). Every block handles a strided slice of the elements; every thread moves 16-byte vectors (<code>uint4</code> = 8 bf16 values). The steps below are the kernel bodies from <code>all_reduce_dda.h</code>.</p>
+<div style="margin:8px 0">
+<button id="modeFlat" class="on" onclick="setMode('flat')">one-shot (flat) — &le; 256 KB</button>
+<button id="modeTree" onclick="setMode('tree')">two-shot ("tree") — &gt; 256 KB</button>
+&nbsp;&nbsp; <button onclick="stepBack()">&larr; step</button> <button onclick="stepFwd()">step &rarr;</button> <button onclick="play()">play</button> <span id="stepLabel" class="k"></span>
+</div>
+<svg id="mesh" viewBox="0 0 1100 420" width="100%" style="max-width:1100px;background:#0b0e12;border:1px solid var(--line);border-radius:6px"></svg>
+<p id="stepText" style="min-height:3.2em"></p>
+<p class="legend note"><span><i class="sw" style="background:#3b82f6"></i>own data in scratch</span><span><i class="sw" style="background:#22c55e"></i>reduced result</span><span><i class="sw" style="background:#f59e0b"></i>direct read over XGMI</span><span><i class="sw" style="background:#c792ea"></i>barrier flags</span></p>
+<h3>The three building blocks, one line each</h3>
+<ul>
+<li><span class="term" data-t="XGMI = AMD's GPU-to-GPU link (Infinity Fabric). On MI300X/MI355X the 8 GPUs are fully connected: every GPU has a direct link to every other GPU, so one load instruction can fetch a peer's HBM without going through a third GPU or the CPU.">XGMI</span>: the physical all-to-all mesh between the 8 GPUs. DDA's "direct" means a plain <code>load</code> from a peer's address (<code>ipcbuffs[peer][idx]</code>) travels over XGMI; no DMA engine, no proxy thread, no network stack.</li>
+<li><span class="term" data-t="IPC handle: an opaque token from hipIpcGetMemHandle that another process can turn into a usable device pointer to the same memory. Set up once per communicator, reused for every collective.">IPC</span>: how process A's kernel gets a pointer into process B's HBM. Done once at init; per collective it is just pointer arithmetic.</li>
+<li><span class="term" data-t="GPU-side barrier: no host involvement. Each block of rank r writes a flag into the mailbox of every peer (8 atomic compare-and-swap writes, one per peer, by threads 0..7), then spins until the 8 flags addressed to itself are set. Release/acquire fences order the data writes before the flag and after the wait. Flags are reset by the consumer (waitFlag swaps 1->0), so no epoch counter is needed.">GPU barrier</span> (<code>IpcGpuBarrier::syncOnSameBlockIdx</code>): "everyone has written its part, now everyone may read" — done with atomics in IPC memory, block-to-block, no host round-trip.</li>
+</ul>
+</div>
+
+<h2>4. Which path does a given all_reduce take? (size slider)</h2>
+<div class="card">
+<p>Single node, 8 ranks, bf16 sum, RCCL 2.30.4 as shipped in <code>v0.5.19-rocm10-mi35x</code>. Drag: <input type="range" id="sz" min="10" max="28" step="1" value="17" oninput="upd()"> <span id="szLabel" class="k"></span></p>
+<p id="szText"></p>
+<div class="tw"><table><tr><th>size</th><th>path</th><th>who decides algo/proto/channels</th><th>tuner plugin sees it?</th></tr>
+<tr><td>&le; 256 KB</td><td>DDA one-shot (<code>ddaAllReduceFlatIpc</code>)</td><td>nobody: fixed kernel, grid = 24 blocks max</td><td class="b">no</td></tr>
+<tr><td>256 KB .. 64 MiB</td><td>DDA two-shot (<code>ddaAllReduceTreeIpc</code>) if count % 8 == 0, else one-shot</td><td>nobody</td><td class="b">no</td></tr>
+<tr><td>&gt; 64 MiB (<code>RCCL_DDA_THRESHOLD</code>)</td><td>classic RCCL: ring/tree x LL/LL128/Simple x channels</td><td>built-in CSV tuner (AMD's gfx950 table, only up to 2 MB, so here: cost model) or your plugin</td><td class="g">yes</td></tr>
+<tr><td>any size, <code>RCCL_DDA_ENABLE=0</code></td><td>classic RCCL</td><td>built-in CSV tuner or your plugin</td><td class="g">yes</td></tr>
+</table></div>
+<p class="ev">Our models' decode sizes: Qwen 128K/256K/512K/1M/2M, gpt-oss 180K/360K/720K/1.4M/2.9M, DeepSeek 448K/1.75M/7M: all inside DDA. gpt-oss prefill chunks of 90-94 MB are above the threshold and would be classic RCCL, but stock SGLang sends them through AITER quick-reduce, not RCCL (2026-09-10-LOG.md 13:2xZ).</p>
+</div>
+
+<h2>5. Proof for the speed-up</h2>
+<div class="card">
+<div class="tw"><table><tr><th>source</th><th>what it measured</th><th>numbers</th><th>strength</th></tr>
+<tr><td>PR #4958 body (2026-05-17)</td><td>"tested using rccl test on MI350"</td><td>"up to 3x speedup over RCCL default allreduce algorithm" — no table, no sizes</td><td class="b">claim only</td></tr>
+<tr><td>PR #6549 body (2026-06-10, RS/AG/A2A DDA)</td><td>single node</td><td>"Up to 1.9x improvement on MI300 single node", "Up to 2.5x improvement on MI350 single node"</td><td class="b">claim only</td></tr>
+<tr><td>PR #9777 body (2026-08-12, fix restoring DDA fallback on gfx950)</td><td>8x MI355X, float, single node, 4 MB all_reduce, rccl-tests busbw; rocprofv3 confirmed <code>ddaAllReduceTreeIpc</code> dispatches</td><td>DDA two-shot <b>264.99 GB/s</b> vs generic ring/tree <b>117.76 GB/s</b> (the regressed state) = <b>2.25x</b>; "up to a 55% busbw regression" in 4-32 MB without DDA</td><td class="g">numbers, by AMD, in a PR body</td></tr>
+<tr><td>Our in-model campaign (2026-09-10-2, SUMMARY.md §2)</td><td>SGLang TP-8 tok/s, RCCL as shipped (DDA) vs same server with <code>RCCL_DDA_ENABLE=0</code> (AMD's gfx950 tuner table on ring/tree)</td><td>+24% Qwen d32, +41% gpt-oss d32, +9% Qwen d128, +18% gpt-oss d128, +12% Qwen d512, +7% DeepSeek d32 (none vs nodda, pass 1)</td><td class="g">our logs, end-to-end, not busbw</td></tr>
+<tr><td>Our probe (2026-09-10 16:07Z, HANDS.md)</td><td>Qwen d32 same node, 2 reps</td><td>DDA on 4861 tok/s vs DDA off + sc2 conf 4157/4240</td><td class="g">our logs</td></tr>
+</table></div>
+<svg id="bars" viewBox="0 0 1100 230" width="100%" style="max-width:1100px;background:#0b0e12;border:1px solid var(--line);border-radius:6px"></svg>
+<p class="note">Left: the only hard busbw pair in the PR record (#9777, 4 MB, 8x MI355X). Right: our own end-to-end ratios, RCCL as shipped (DDA) over DDA-off, pass 1 (<code>results-tuning/2026-09-10-2-inmodel-rocm10/&lt;model&gt;/&lt;mode&gt;/pass1/score.csv</code>). A rccl-tests A/B of DDA on/off on our nodes has not been run; it is the obvious next measurement and needs your OK (it is a new measurement, not a re-run).</p>
+</div>
+
+<h2>6. "Not ring, not tree" — what exactly is different</h2>
+<div class="row">
+<div class="card"><h3>RCCL classic ring (what the tuner steers)</h3><p>Data is cut into chunks; each chunk travels around a logical ring of 8 GPUs, 7 hops for reduce-scatter + 7 hops for all-gather, pipelined over N channels (each channel = one ring, one block of threads, its own FIFO buffers). Protocol LL/LL128/Simple decides the flag/packet format. Latency ~ 14 hops; bandwidth ~ full link bandwidth on the ring edges. The tuner picks algo (ring/tree), protocol and channel count per size; the CSV table encodes AMD's picks.</p></div>
+<div class="card"><h3>DDA one-shot</h3><p>Every GPU reads the <b>whole</b> buffer of all 7 peers directly (7 x N bytes in, over the mesh in parallel) and reduces locally. 1 data hop, 2 barriers. Traffic per GPU = 7N read; wins while N is small (latency-bound). Threshold 256 KB.</p></div>
+<div class="card"><h3>DDA two-shot ("Tree" in the code)</h3><p>Step 1: GPU r reads slice r (N/8) from all 7 peers and reduces it (reduce-scatter). Step 2: GPU r reads the reduced slice k from GPU k for all k (all-gather). 2 data hops, 3 barriers. Traffic per GPU = 2 x 7N/8 = 1.75N, the bandwidth-optimal minimum for all-reduce, without a pipeline. This is the "mesh in 2 jumps" pattern.</p></div>
+</div>
+<div class="card"><p><b>So:</b> DDA is a different family of algorithm (direct / "mesh", Meta calls it Direct Data Access), not a tuned ring. Nothing in it can be steered by a conf: no channels (grid is fixed at up to 24 blocks), no protocol (plain 16-byte loads and a flag barrier), no chunk pipeline. The word "Tree" in <code>ddaAllReduceTreeIpc</code> is Meta's name for the two-stage variant and has nothing to do with RCCL's <code>NCCL_ALGO=Tree</code>. Newer RCCL (after our image) adds LL / LL128 <em>protocol-style</em> variants of DDA (flag-in-data, no barrier) with their own thresholds (<code>RCCL_DDA_LL_ONESHOT_THRESHOLD</code> 1 MB, <code>RCCL_DDA_LL_TWOSHOT_THRESHOLD</code> 16 MB, #9748) — still not tuner-visible.</p></div>
+
+<h2>7. Evidence index</h2>
+<div class="tw"><table>
+<tr><th>claim</th><th>evidence</th></tr>
+<tr><td>DDA added to RCCL</td><td>commit <code>c2c4b25f6d</code> 2026-05-17, PR #4958, 20 files +1360; CHANGELOG has no entry for the feature itself (only fixes at 2.30.4 lines 20, 57)</td></tr>
+<tr><td>Kernels are Meta's</td><td><code>src/include/algorithms/all_reduce/all_reduce_dda.h</code> header: "Copyright (c) Meta Platforms, Inc. ... Derived from Meta torchcomms comms/common/algorithms/all_reduce/all_reduce_dda.cuh"; the file exists in <code>meta-pytorch/torchcomms</code> with the same kernel names</td></tr>
+<tr><td>Gating / thresholds / eligibility</td><td><code>src/collectives.cc</code> 127-146, 440-442; <code>src/dda_all_reduce_ipc.cu</code> 31, 55-57, 116-160; <code>src/include/ipc_init_detail.h</code> (24 blocks, 64 MiB)</td></tr>
+<tr><td>Barrier mechanism</td><td><code>src/include/ipc_gpu_barrier.h</code>: <code>putFlag</code>/<code>waitFlag</code> via <code>__atomic_compare_exchange_n</code>, <code>DeviceMailbox</code> 8 x nBlocks flags, <code>syncOnSameBlockIdx</code> release/acquire</td></tr>
+<tr><td>IPC setup</td><td><code>src/ipc_init.cu</code> 52-163 (<code>hipExtMallocWithFlags</code> uncached, peer table), <code>src/ipc_mem_handler.cc</code> 52-59 (<code>cudaIpcGetMemHandle</code>, <code>bootstrapAllGather</code>, <code>cudaIpcOpenMemHandle</code>)</td></tr>
+<tr><td>Our image ran the IPC variant</td><td>rank logs: 16 x <code>ncclDdaIpcCommInit ...</code>, zero "taking DDA fabric (VMM) path" lines, "Symmetric memory is not supported" (probe_tun, ses2-1); fabric variant needs cuMem/VMM and was written for gfx1250 (#8155)</td></tr>
+<tr><td>Tuner bypass</td><td>A/B in SUMMARY.md §1 / HANDS.md 16:03Z-16:07Z: 0 vs 71392 applied lines</td></tr>
+<tr><td>MSCCL removed</td><td>PR #4340 commit <code>5ffe6a3dfb</code> 2026-04-13: "MSCCL has been obsoleted by MSFT ..."; Meta's fork had stubbed it earlier (<code>comms/rcclx/MSCCL_STUB_APPROACH.md</code>)</td></tr>
+</table></div>
+
+<script>
+// ---------- mesh animation ----------
+const NR=8, cx=550, cy=215, R=150;
+const pos=[...Array(NR)].map((_,i)=>{const a=-Math.PI/2+i*2*Math.PI/NR;return [cx+R*Math.cos(a), cy+R*Math.sin(a)];});
+let mode='flat', step=0, timer=null;
+const flatSteps=[
+ {t:'Step 0 — before: each GPU r holds its own vector x_r in its user buffer (sendbuff).'},
+ {t:'Step 1 — copyFromSrcToDest: each GPU copies its x_r into its own IPC scratch buffer (local HBM write, 16-byte vectors).', own:true},
+ {t:'Step 2 — barrier #1 (release+acquire): block b of every rank sets a flag in the mailbox of every peer and waits for the 8 flags addressed to it. Meaning: "all scratch buffers are filled".', own:true, bar:true},
+ {t:'Step 3 — reduceScatter(pattern=2) = one-shot reduce: each GPU reads the FULL vector from all 7 peers over XGMI (ipcbuffs[peer][idx]) and sums 8 values per element into its recvbuff. 7N bytes read per GPU, one hop.', own:true, reads:'all'},
+ {t:'Step 4 — barrier #2 (release only): "I am done reading your scratch" so nobody overwrites a scratch that is still being read by the next collective. Result complete on every GPU.', res:true, bar:true},
+];
+const treeSteps=[
+ {t:'Step 0 — before: each GPU r holds x_r. Host side first does hipMemcpyAsync(sendbuff -> own scratch) on the stream (the "tree" kernel does not copy itself).', own:true},
+ {t:'Step 1 — barrier #1 (acquire only): "all scratch buffers are filled".', own:true, bar:true},
+ {t:'Step 2 — reduceScatter(pattern=1): GPU r is responsible for slice r (1/8 of the elements). It reads slice r from all 7 peers over XGMI, sums, writes the reduced slice into ITS OWN scratch at slice r. 7N/8 bytes read per GPU.', own:true, reads:'slice'},
+ {t:'Step 3 — barrier #2 (release+acquire): "all reduced slices are in place".', own:true, bar:true, part:true},
+ {t:'Step 4 — allGather: GPU r reads reduced slice k from GPU k for every k (7 reads of N/8) straight into its recvbuff. 7N/8 bytes read per GPU. Total traffic 1.75N per GPU: bandwidth-optimal, 2 hops.', part:true, reads:'gather'},
+ {t:'Step 5 — barrier #3 (release only): done reading peers. Result complete on every GPU.', res:true, bar:true},
+];
+function setMode(m){mode=m;step=0;document.getElementById('modeFlat').classList.toggle('on',m==='flat');document.getElementById('modeTree').classList.toggle('on',m==='tree');draw();}
+function stepFwd(){const s=(mode==='flat'?flatSteps:treeSteps);step=Math.min(step+1,s.length-1);draw();}
+function stepBack(){step=Math.max(step-1,0);draw();}
+function play(){if(timer){clearInterval(timer);timer=null;return;}step=0;draw();timer=setInterval(()=>{const s=(mode==='flat'?flatSteps:treeSteps);if(step>=s.length-1){clearInterval(timer);timer=null;return;}step++;draw();},1400);}
+function draw(){
+ const svg=document.getElementById('mesh'); const S=(mode==='flat'?flatSteps:treeSteps)[step];
+ document.getElementById('stepLabel').textContent=`${mode==='flat'?'one-shot':'two-shot'}: step ${step} / ${(mode==='flat'?flatSteps:treeSteps).length-1}`;
+ document.getElementById('stepText').textContent=S.t;
+ let h='';
+ // mesh edges (XGMI)
+ for(let i=0;i<NR;i++)for(let j=i+1;j<NR;j++)h+=`<line x1="${pos[i][0]}" y1="${pos[i][1]}" x2="${pos[j][0]}" y2="${pos[j][1]}" stroke="#1f2937" stroke-width="1"/>`;
+ // reads highlighted: show for rank 0 (and faint for others)
+ if(S.reads){for(let r=0;r<NR;r++){for(let p=0;p<NR;p++){if(p===r)continue;const op=(r===0)?0.95:0.12;
+   h+=`<line x1="${pos[p][0]}" y1="${pos[p][1]}" x2="${pos[r][0]}" y2="${pos[r][1]}" stroke="#f59e0b" stroke-width="${r===0?2.5:1}" opacity="${op}" marker-end="url(#ar)"/>`;}}}
+ h=`<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#f59e0b"/></marker></defs>`+h;
+ for(let i=0;i<NR;i++){const [x,y]=pos[i];
+   h+=`<circle cx="${x}" cy="${y}" r="30" fill="#161b22" stroke="${i===0?'#5ab0ff':'#3a4a5e'}" stroke-width="${i===0?2.5:1.5}"/>`;
+   h+=`<text x="${x}" y="${y-36}" text-anchor="middle" fill="#cfd3d9">GPU ${i}</text>`;
+   // buffer strip: 8 slices
+   const bx=x-24, by=y-6, w=48, hh=12;
+   for(let k=0;k<NR;k++){let col='#2a323d';
+     if(S.res)col='#22c55e';
+     else if(S.part){col=(k===i)?'#22c55e':(S.own?'#3b82f6':'#2a323d');}
+     else if(S.own)col='#3b82f6';
+     h+=`<rect x="${bx+k*w/NR}" y="${by}" width="${w/NR-0.5}" height="${hh}" fill="${col}"/>`;}
+   if(S.bar){for(let k=0;k<NR;k++)h+=`<circle cx="${bx+k*w/NR+3}" cy="${y+16}" r="2.4" fill="#c792ea"/>`;}
+ }
+ // legend for slice highlight in tree read
+ if(S.reads==='slice')h+=`<text x="20" y="400" fill="#8b95a3">orange = GPU 0 reading slice 0 from the 7 peers (others do the same for their slice, drawn faint)</text>`;
+ if(S.reads==='gather')h+=`<text x="20" y="400" fill="#8b95a3">orange = GPU 0 collecting the 7 reduced slices (others likewise, faint)</text>`;
+ if(S.reads==='all')h+=`<text x="20" y="400" fill="#8b95a3">orange = GPU 0 reading the whole vector of each of the 7 peers (others likewise, faint)</text>`;
+ svg.innerHTML=h;
+}
+// ---------- size slider ----------
+function fmt(b){return b>=1048576?(b/1048576).toFixed(b%1048576?1:0)+' MiB':b>=1024?(b/1024).toFixed(0)+' KB':b+' B';}
+function upd(){const e=+document.getElementById('sz').value;const b=2**e;document.getElementById('szLabel').textContent=fmt(b)+' ('+b.toLocaleString()+' B; bf16 count '+(b/2).toLocaleString()+')';
+ let t;
+ if(b>67108864)t=`<span class="g">Above RCCL_DDA_THRESHOLD (64 MiB): classic RCCL path.</span> Algo/proto/channels chosen by the cost model, the built-in CSV tuner (no gfx950 rule this big) or your plugin. Tuner-visible.`;
+ else if(b>262144)t=`<span class="b">DDA two-shot</span> (<code>ddaAllReduceTreeIpc</code>): reduce-scatter + all-gather over XGMI, count % 8 == 0 holds for this power of two. Grid = min(24, needed) blocks x 512 threads. No algo, no proto, no channels, no tuner call.`;
+ else t=`<span class="b">DDA one-shot</span> (<code>ddaAllReduceFlatIpc</code>): every GPU reads all 7 peers' full vectors and reduces locally. No tuner call.`;
+ const ex={131072:'Qwen d32/p8k decode (32 x 2048 x 2 B)',262144:'Qwen mix decode',524288:'Qwen d128 decode',1048576:'Qwen d256 decode',2097152:'Qwen d512 decode',4194304:'the #9777 measurement point: DDA 264.99 vs ring/tree 117.76 GB/s',8388608:'DeepSeek d512 is 7 MB, also here',67108864:'DDA_IPC_BUFFER_SIZE: last DDA size',134217728:'gpt-oss prefill chunks (90-94 MB) live here, but stock SGLang sends them to AITER quick-reduce'};
+ if(ex[b])t+=`<br><span class="note">Example at this size: ${ex[b]}.</span>`;
+ document.getElementById('szText').innerHTML=t;}
+// ---------- bars ----------
+(function(){const svg=document.getElementById('bars');let h='';
+ const L=[['ring/tree 4 MB (#9777)',117.76,'#3a4a5e'],['DDA two-shot 4 MB (#9777)',264.99,'#22c55e']];
+ h+=`<text x="20" y="22" fill="#cfd3d9">busbw GB/s, 8x MI355X, float, 4 MB (PR #9777 body)</text>`;
+ L.forEach((d,i)=>{const w=d[1]*1.2;h+=`<rect x="220" y="${40+i*40}" width="${w}" height="26" fill="${d[2]}"/><text x="212" y="${58+i*40}" text-anchor="end" fill="#cfd3d9">${d[0]}</text><text x="${226+w}" y="${58+i*40}" fill="#cfd3d9">${d[1]} GB/s</text>`;});
+ h+=`<text x="230" y="150" fill="#f2c14e">ratio 2.25x</text>`;
+ const R=[['Qwen d32',4978/4004],['gpt-oss d32',7130/5060],['Qwen d128',14484/13274],['gpt-oss d128',18518/15685],['Qwen d256',22569/20018],['gpt-oss d256',26297/23856],['Qwen d512',28232/25370],['DeepSeek d32',2261/2107],['DeepSeek d128',5438/5248],['DeepSeek d512',11198/10416]];
+ h+=`<text x="640" y="22" fill="#cfd3d9">our in-model tok/s: RCCL as shipped (DDA) / DDA off (pass 1)</text>`;
+ R.forEach((d,i)=>{const y=34+i*18;const w=(d[1]-1)*600;h+=`<rect x="760" y="${y}" width="${w}" height="13" fill="#5ab0ff"/><text x="752" y="${y+11}" text-anchor="end" fill="#cfd3d9" font-size="11">${d[0]}</text><text x="${766+w}" y="${y+11}" fill="#cfd3d9" font-size="11">${((d[1]-1)*100).toFixed(0)}%</text>`;});
+ svg.innerHTML=h;})();
+draw();upd();
+</script>
+</body></html>

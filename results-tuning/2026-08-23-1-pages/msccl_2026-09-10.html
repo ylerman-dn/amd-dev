@@ -1,0 +1,727 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="color-scheme" content="dark"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MSCCL and the custom all-reduce</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#14161a;--ink:#e6e8e3;--ink2:#a3a8ad;--rule:#3a3f46;--car:#d8703f;--ms:#2aa397;--rc:#6a8fc4;--pl:#a874c2;--fb:#8a8f95;--hi:#fff7e0}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:"IBM Plex Sans",-apple-system,system-ui,sans-serif;font-size:16px;line-height:1.5}
+main{max-width:900px;margin:0 auto;padding:32px 20px 80px}
+h1{font-size:34px;line-height:1.15;font-weight:600;margin:0 0 6px;letter-spacing:-.01em}
+h2{font-size:22px;font-weight:600;margin:56px 0 12px;padding-top:18px;border-top:2px solid var(--ink)}
+h2 span{display:inline-block;min-width:34px;color:var(--ink2);font-weight:500}
+h3{font-size:16px;font-weight:600;margin:22px 0 6px}
+p{margin:8px 0;max-width:74ch}
+li{margin:4px 0}
+ul,ol{padding-left:22px;max-width:76ch}
+code,pre{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:13.5px}
+code{background:#22262c;padding:1px 5px;border-radius:3px}
+pre{background:#22262c;padding:12px 14px;border-radius:4px;overflow-x:auto;line-height:1.45;margin:10px 0}
+pre code{background:none;padding:0}
+table{border-collapse:collapse;margin:12px 0;font-size:14px;width:100%}
+th,td{text-align:left;padding:6px 10px;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-weight:600;border-bottom:2px solid var(--ink)}
+td.n,th.n{text-align:right;font-family:"IBM Plex Mono",monospace;font-size:13px}
+.lede{font-size:18px;color:var(--ink2);max-width:70ch;margin:0 0 28px}
+.tag{display:inline-block;font-size:11.5px;font-weight:500;padding:0 6px;border-radius:3px;vertical-align:middle;margin-left:4px;line-height:18px}
+.src{background:#24364d;color:#b9cde6}.log{background:#1f3d31;color:#9fd8bd}.inf{background:#46311c;color:#e8b98a}
+.k{font-weight:600}
+.car{color:var(--car)}.ms{color:var(--ms)}.rc{color:var(--rc)}.pl{color:var(--pl)}.fb{color:var(--fb)}
+.note{border-left:3px solid var(--ink);padding:6px 14px;margin:14px 0;background:#1d2126;max-width:76ch}
+.warn{border-left-color:var(--car)}
+figure{margin:18px 0}
+figcaption{font-size:13.5px;color:var(--ink2);margin-top:6px;max-width:76ch}
+svg{max-width:100%;height:auto;display:block}
+svg text{font-family:"IBM Plex Sans",system-ui,sans-serif}
+svg .mono{font-family:"IBM Plex Mono",monospace}
+.legend{display:flex;flex-wrap:wrap;gap:14px 22px;font-size:14px;margin:8px 0 0}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+@media(max-width:700px){.two{grid-template-columns:1fr}h1{font-size:28px}}
+.toc{columns:2;column-gap:32px;font-size:15px;margin:0 0 8px;padding-left:22px}
+@media(max-width:600px){.toc{columns:1}}
+.small{font-size:13.5px;color:var(--ink2)}
+.rd,.sk{display:inline-block;font-size:11px;font-weight:600;padding:0 6px;border-radius:3px;margin-left:8px;line-height:17px;vertical-align:middle}
+.rd{background:#d8703f;color:#14161a}.sk{background:#3a3f46;color:#c9cdc6}
+.toc li{list-style:none;margin:5px 0}.toc{padding-left:0}
+a{color:#8ab4f8}
+sup a{color:var(--ink2);text-decoration:none}
+</style></head><body><main>
+
+<h1>MSCCL and the custom all-reduce</h1>
+<p class="lede">Why stock SGLang beats the tuned RCCL path on one MI355X node: two separate mechanisms, stacked. What each is, how RCCL decides, where the tuner plugin sits, and how to prove which one ran.</p>
+
+<figure>
+<svg viewBox="0 0 880 330" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Four exits for one all_reduce">
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#a3a8ad"/></marker></defs>
+<text x="0" y="16" font-size="14" fill="#a3a8ad">SGLang TP-8 all_reduce, one call</text>
+<line x1="60" y1="24" x2="60" y2="50" stroke="#a3a8ad" stroke-width="1.5" marker-end="url(#ah)"/>
+<!-- row 1 -->
+<rect x="0" y="52" width="330" height="54" fill="#d8703f"/>
+<text x="10" y="74" font-size="15" font-weight="600" fill="#14161a">SGLang custom all-reduce</text>
+<text x="10" y="94" font-size="12.5" fill="#3a1f10">aiter kernel · on by default · one node · ≤ 64 MiB, then INT8 quick reduce</text>
+<rect x="345" y="52" width="440" height="16" fill="#d8703f"/><text x="779" y="65" font-size="13" class="mono" text-anchor="end" fill="#14161a">7306  stock</text>
+<rect x="345" y="71" width="441" height="16" fill="#d8703f"/><text x="780" y="84" font-size="13" class="mono" text-anchor="end" fill="#14161a">7316  customar</text>
+<rect x="345" y="90" width="441" height="16" fill="#d8703f"/><text x="780" y="103" font-size="13" class="mono" text-anchor="end" fill="#14161a">7313  stock + sc2 plugin</text>
+<line x1="60" y1="106" x2="60" y2="132" stroke="#a3a8ad" stroke-width="1.5" marker-end="url(#ah)"/>
+<text x="70" y="124" font-size="12" fill="#a3a8ad">declines: --disable-custom-all-reduce, or multi-node (&gt; 64 MiB goes to quick reduce, not here)</text>
+<!-- row 2 -->
+<rect x="0" y="134" width="330" height="54" fill="#2aa397"/>
+<text x="10" y="156" font-size="15" font-weight="600" fill="#14161a">MSCCL, inside RCCL</text>
+<text x="10" y="176" font-size="12.5" fill="#0f2e2a">RCCL_MSCCL_ENABLE=1 · 8-GPU full mesh · XML match · allreduce ≤ 20 MiB</text>
+<rect x="345" y="153" width="375" height="16" fill="#2aa397"/><text x="714" y="166" font-size="13" class="mono" text-anchor="end" fill="#14161a">6226  msccl</text>
+<line x1="60" y1="188" x2="60" y2="214" stroke="#a3a8ad" stroke-width="1.5" marker-end="url(#ah)"/>
+<text x="70" y="206" font-size="12" fill="#a3a8ad">declines: RCCL_MSCCL_ENABLE=0, or no XML for this size / dtype / rank count</text>
+<!-- row 3 -->
+<rect x="0" y="216" width="330" height="54" fill="#a874c2"/>
+<text x="10" y="238" font-size="15" font-weight="600" fill="#14161a">RCCL native + tuner plugin</text>
+<text x="10" y="258" font-size="12.5" fill="#2a1836">plugin rule sets algo / proto / channels per size</text>
+<rect x="345" y="235" width="345" height="16" fill="#a874c2"/><text x="684" y="248" font-size="13" class="mono" text-anchor="end" fill="#14161a">5720  sc2</text>
+<line x1="60" y1="270" x2="60" y2="296" stroke="#a3a8ad" stroke-width="1.5" marker-end="url(#ah)"/>
+<text x="70" y="288" font-size="12" fill="#a3a8ad">no plugin, or no rule for this size</text>
+<!-- row 4 -->
+<rect x="0" y="298" width="330" height="30" fill="#6a8fc4"/>
+<text x="10" y="318" font-size="15" font-weight="600" fill="#14161a">RCCL native defaults</text>
+<rect x="345" y="305" width="292" height="16" fill="#6a8fc4"/><text x="631" y="318" font-size="13" class="mono" text-anchor="end" fill="#14161a">4840  none</text>
+<text x="345" y="46" font-size="12" fill="#a3a8ad">median tok/s, gpt-oss-120b decode, bar length to scale</text>
+</svg>
+
+<figcaption>One TP-8 all_reduce from SGLang, and the four exits it can take. Numbers: gpt-oss-120b decode d32, one server per arm, median tok/s, <code>results-tuning/2026-09-09-7-gptoss-attr/SUMMARY.md</code> (sc2 and none from run 6, same node, same day). Each color is one layer and keeps its meaning on every diagram below.</figcaption>
+</figure>
+
+<div class="note"><span class="k">Reading the tags.</span> <span class="tag src">source</span> read in RCCL or SGLang/vLLM code, path and line given. <span class="tag log">log</span> observed in one of our runs, path given. <span class="tag inf">inferred</span> follows from source but was not observed running. RCCL code read: <code>/home/dn/repos/rccl-gap/rccl</code> at commit 57e58688 (2026-01-22, develop after 2.27.7). The container runs RCCL 2.27.7 for ROCm 7.2.0, tag <code>rocm-7.2.0</code>, commit 0d2c4fd, 2025-12-09 (same commit our own sweep build reports as <code>2.27.7-HEAD:0d2c4fd</code>). <code>git diff rocm-7.2.0 57e58688</code> over the MSCCL files shows only added null checks and deprecation WARNs; the selection logic, gates and XMLs are identical. Line numbers quoted are from 57e58688 and may be off by a few lines in 7.2.0. One build difference matters: at <code>rocm-7.2.0</code> the MSCCL kernel is compiled in by default (<code>ENABLE_MSCCL_KERNEL ON</code>, <code>install.sh msccl_kernel_enabled=true</code>); the checkout flips it OFF.</div>
+
+<p class="small">Focus: the hero above, then the items marked <span class="rd">read</span>. Items marked <span class="sk">skim</span> are reference detail (gates, XML, logs).</p>
+<ol class="toc">
+<li>1. <a href="#s1">What MSCCL is</a><span class="rd">read</span></li>
+<li>2. <a href="#s2">When RCCL hands a call to MSCCL</a><span class="sk">skim</span></li>
+<li>3. <a href="#s3">Why allpairs beats ring at small sizes</a><span class="rd">read</span></li>
+<li>4. <a href="#s4">SGLang's custom all-reduce</a><span class="rd">read</span></li>
+<li>5. <a href="#s5">The full precedence stack, with our arms</a><span class="rd">read</span></li>
+<li>6. <a href="#s6">The algorithm XML files</a><span class="sk">skim</span></li>
+<li>7. <a href="#s7">MSCCL vs MSCCL++</a><span class="sk">skim</span></li>
+<li>8. <a href="#s8">Multi-node</a><span class="sk">skim</span></li>
+<li>9. <a href="#s9">Verifying which path ran</a><span class="sk">skim</span></li>
+<li>10. <a href="#s10">What the tuner can still touch</a><span class="rd">read</span></li>
+<li>11. <a href="#s11">Trade-offs</a><span class="rd">read</span></li>
+</ol>
+
+<h2 id="s1"><span>1</span>What MSCCL is<span class="rd">read</span></h2>
+<p>MSCCL is Microsoft's runtime for <span class="k">custom, pre-synthesized collective algorithms</span>. Its README: "an inter-accelerator communication framework that is built on top of NCCL and uses its building blocks to execute custom-written collective communication algorithms" and "MSCCL will always automatically fall back to a NCCL's generic algorithm in case there is no custom algorithm" (<a href="https://github.com/microsoft/msccl">github.com/microsoft/msccl</a>). AMD forked that into RCCL in 2.15.5 (ROCm 5.5, "Experimental support for MSCCL", <code>CHANGELOG.md:244</code>).</p>
+<figure>
+<svg viewBox="0 0 880 150" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="MSCCL lineage">
+<defs><marker id="al" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#a3a8ad"/></marker></defs>
+<g font-size="13" fill="#e6e8e3">
+<rect x="0" y="10" width="150" height="70" fill="none" stroke="#e6e8e3" stroke-width="1.5"/>
+<text x="10" y="32" font-weight="600">SCCL  2021</text><text x="10" y="52" font-size="12" fill="#a3a8ad">SMT solver synthesizes</text><text x="10" y="68" font-size="12" fill="#a3a8ad">algorithm for a topology</text>
+<line x1="150" y1="45" x2="180" y2="45" stroke="#a3a8ad" stroke-width="1.5" marker-end="url(#al)"/>
+<rect x="182" y="10" width="150" height="70" fill="none" stroke="#e6e8e3" stroke-width="1.5"/>
+<text x="192" y="32" font-weight="600">TACCL  2023</text><text x="192" y="52" font-size="12" fill="#a3a8ad">sketch + MILP,</text><text x="192" y="68" font-size="12" fill="#a3a8ad">scales to clusters</text>
+<line x1="332" y1="45" x2="362" y2="45" stroke="#a3a8ad" stroke-width="1.5" marker-end="url(#al)"/>
+<rect x="364" y="10" width="170" height="70" fill="none" stroke="#e6e8e3" stroke-width="1.5"/>
+<text x="374" y="32" font-weight="600">MSCCLang / msccl-tools</text><text x="374" y="52" font-size="12" fill="#a3a8ad">Python DSL, chunk by chunk</text><text x="374" y="68" class="mono" font-size="12" fill="#a3a8ad">ncclize.py  →  .xml</text>
+<line x1="534" y1="45" x2="564" y2="45" stroke="#a3a8ad" stroke-width="1.5" marker-end="url(#al)"/>
+<rect x="566" y="10" width="314" height="70" fill="#2aa397"/>
+<text x="576" y="32" font-weight="600" fill="#14161a">MSCCL runtime, forked into RCCL 2.15.5</text><text x="576" y="52" font-size="12" fill="#0f2e2a">interpreter kernel walks the XML steps</text><text x="576" y="68" font-size="12" fill="#0f2e2a">using RCCL's own send / recv / reduce primitives</text>
+<text x="0" y="118" font-size="12.5" fill="#a3a8ad">Later, same group:</text>
+<rect x="120" y="98" width="330" height="30" fill="none" stroke="#a3a8ad" stroke-width="1.5" stroke-dasharray="4 3"/>
+<text x="130" y="118" font-size="12.5">MSCCL++  2024, own primitives, no NCCL inside (section 7)</text>
+</g></svg>
+
+<figcaption>Where the algorithm files come from and where they run. Three research steps, one runtime. Sources: SCCL <a href="https://arxiv.org/abs/2008.08708">arXiv 2008.08708</a>, TACCL <a href="https://arxiv.org/abs/2111.04867">arXiv 2111.04867</a>, <a href="https://github.com/microsoft/msccl-tools">msccl-tools</a>, RCCL <code>src/misc/msccl/</code>.</figcaption>
+</figure>
+<ul>
+<li><span class="k">SCCL</span> (PPoPP 2021): "synthesizes algorithms along the Pareto-frontier spanning from latency-optimal to bandwidth-optimal implementations of a collective", encoded as an SMT problem for Z3, for a given topology. Its cost model is the one that explains everything here: a message of size L on a link costs α + L·β, α the link latency, β the inverse bandwidth. Ring all-gather on 8 GPUs pays 7α; a latency-optimal algorithm pays diameter·α.</li>
+<li><span class="k">TACCL</span> (NSDI 2023): same goal at cluster scale, using human "communication sketches" plus a mixed-integer program, because SCCL "did not finish synthesis for any combination" in 24 hours at modern sizes. Quote: "the commonly used Ring algorithm for Allreduce is not efficient for small input sizes as it has a high latency".</li>
+<li><span class="k">MSCCLang / msccl-tools</span>: a Python DSL where you write the algorithm chunk by chunk; <code>ncclize.py</code> lowers it to the XML that RCCL ships ("Sends are split into send/recv operations and grouped by rank executing them. Within each rank operations are grouped under threadblock tags").</li>
+<li><span class="k">MSCCL runtime</span>: a fork of NCCL whose kernel interprets that XML at run time using NCCL's own send/recv/reduce primitives. This is what sits inside RCCL as <code>mscclRunInterpreter</code> (section 6). Because it reuses the RCCL primitives, "MSCCL performs exactly the same as NCCL/RCCL if they use the same algorithm" (MSCCL++ paper, <a href="https://arxiv.org/abs/2504.09014">arXiv 2504.09014</a>). Its whole gain is the algorithm, not the transport.</li>
+</ul>
+<p>The algorithm RCCL ships for 8-GPU all_reduce is <span class="k">allpairs</span>, written in <a href="https://github.com/microsoft/msccl-tools/blob/main/examples/mscclang/allreduce_a100_allpairs.py"><code>allreduce_a100_allpairs.py</code></a>. Its three comments are the whole algorithm: "Each rank sends the nth chunk to the nth rank into scratch space", "Each rank performs a local reduction on the nth chunk", "Each rank sends the fully reduced nth chunk to all other gpus". Two communication rounds on a fully connected topology.</p>
+<p>Status in RCCL <span class="tag src">source</span>: default-on for the MI300-class topology from 2.15.5 through 2.27.7 (our image); build-default off and "deprecated and will be removed" in 2.28.3 for ROCm 7.11 (<code>CHANGELOG.md:14-15</code>); removed entirely in the current develop docs ("MSCCL and MSCCL++ integration has been removed from RCCL", <a href="https://rocm.docs.amd.com/projects/rccl/en/latest/how-to/rccl-usage-tips.html">rccl-usage-tips, latest</a>). AMD's own SGLang and vLLM tutorials launch servers with <code>RCCL_MSCCL_ENABLE=0</code> without giving a reason, and the ROCm 7.1 system-validation page says to set it to 0 "to avoid data corruption/mismatch issue that existed in past releases". Whatever wins it brought are being handed to the frameworks' own kernels (section 4) and to MSCCL++ (section 7).</p>
+
+
+<h2 id="s2"><span>2</span>When RCCL hands a call to MSCCL<span class="sk">skim</span></h2>
+<p>Four gates, in order. All must pass or the call goes down the normal RCCL path (where the tuner lives).</p>
+<figure>
+<svg viewBox="0 0 880 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="MSCCL gate chain">
+<defs><marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#a3a8ad"/></marker></defs>
+<g font-size="13" fill="#e6e8e3">
+<rect x="0" y="20" width="190" height="96" fill="none" stroke="#2aa397" stroke-width="2"/>
+<text x="10" y="42" font-weight="600">A  compiled in</text>
+<text x="10" y="62" class="mono" font-size="12">ENABLE_MSCCL_KERNEL</text>
+<text x="10" y="80" font-size="12" fill="#a3a8ad">cmake option, OFF in develop</text>
+<text x="10" y="98" font-size="12" fill="#a3a8ad">ON at rocm-7.2.0 (our image)</text>
+<line x1="190" y1="68" x2="228" y2="68" stroke="#a3a8ad" stroke-width="1.5" marker-end="url(#ag)"/>
+<rect x="230" y="20" width="190" height="96" fill="none" stroke="#2aa397" stroke-width="2"/>
+<text x="240" y="42" font-weight="600">B  env switch</text>
+<text x="240" y="62" class="mono" font-size="12">RCCL_MSCCL_ENABLE=1</text>
+<text x="240" y="80" font-size="12" fill="#a3a8ad">runtime default 1</text>
+<text x="240" y="98" font-size="12" fill="#a3a8ad">image sets it to 1 explicitly</text>
+<line x1="420" y1="68" x2="458" y2="68" stroke="#a3a8ad" stroke-width="1.5" marker-end="url(#ag)"/>
+<rect x="460" y="20" width="190" height="96" fill="none" stroke="#2aa397" stroke-width="2"/>
+<text x="470" y="42" font-weight="600">C  topology model</text>
+<text x="470" y="62" class="mono" font-size="12">rome_model_79</text>
+<text x="470" y="80" font-size="12" fill="#a3a8ad">8 GPUs · 2 CPUs · 0 NICs · 7 links</text>
+<text x="470" y="98" font-size="12" fill="#a3a8ad">full mesh, ANDed over ranks</text>
+<line x1="650" y1="68" x2="688" y2="68" stroke="#a3a8ad" stroke-width="1.5" marker-end="url(#ag)"/>
+<rect x="690" y="20" width="190" height="96" fill="none" stroke="#2aa397" stroke-width="2"/>
+<text x="700" y="42" font-weight="600">D  per call</text>
+<text x="700" y="62" font-size="12" fill="#a3a8ad">not FP8 · bf16 ≤ 8 MiB · op &lt; avg</text>
+<text x="700" y="80" font-size="12" fill="#a3a8ad">XML: coll, nRanks, in/out place,</text>
+<text x="700" y="98" font-size="12" fill="#a3a8ad">minBytes ≤ n ≤ maxBytes, count % chunks</text>
+<!-- pass -->
+<line x1="785" y1="116" x2="785" y2="150" stroke="#2aa397" stroke-width="2" marker-end="url(#ag)"/>
+<rect x="600" y="152" width="280" height="36" fill="#2aa397"/>
+<text x="612" y="175" fill="#14161a" font-weight="600">MSCCL interpreter kernel runs the XML</text>
+<!-- fail lines -->
+<line x1="95" y1="116" x2="95" y2="214" stroke="#a3a8ad" stroke-width="1.5"/>
+<line x1="325" y1="116" x2="325" y2="214" stroke="#a3a8ad" stroke-width="1.5"/>
+<line x1="555" y1="116" x2="555" y2="214" stroke="#a3a8ad" stroke-width="1.5"/>
+<line x1="720" y1="116" x2="720" y2="214" stroke="#a3a8ad" stroke-width="1.5"/>
+<text x="102" y="140" font-size="12" fill="#a3a8ad">fail</text><text x="332" y="140" font-size="12" fill="#a3a8ad">fail</text><text x="562" y="140" font-size="12" fill="#a3a8ad">fail (or FORCE_ENABLE)</text><text x="727" y="140" font-size="12" fill="#a3a8ad">no match: fallback</text>
+<rect x="0" y="214" width="580" height="36" fill="#6a8fc4"/>
+<text x="12" y="237" fill="#14161a" font-weight="600">RCCL native path: ncclEnqueueCheck, tuner plugin consulted, algo / proto / channels chosen</text>
+</g></svg>
+
+<figcaption>Gate chain for one collective call. Source: <code>src/init.cc:1984-1989</code>, <code>src/misc/msccl/msccl_lifecycle.cc:30-47, 350-397, 590-650</code>, <code>src/collectives.cc:261-273</code>, <code>src/graph/rome_models.cc:554-561, 1916-2039</code>.</figcaption>
+</figure>
+<h3>Gate A: compiled in <span class="tag src">source</span></h3>
+<p><code>option(ENABLE_MSCCL_KERNEL ... OFF)</code> at <code>CMakeLists.txt:29</code> in the develop checkout; <code>ON</code> at tag <code>rocm-7.2.0</code>, which is what the container runs. Without it <code>mscclEnabled()</code> is hard-wired <code>return false</code> (<code>msccl_lifecycle.cc:36-47</code>) whatever the env says. This is the 2.28.3 change the CHANGELOG calls "MSCCL disabled by default" (<code>CHANGELOG.md:14</code>): a build default, not a runtime default. RCCL 2.27.7 in our container predates it, and our run logs show MSCCL running there (section 9).</p>
+<h3>Gate B: env switch <span class="tag src">source</span></h3>
+<table><tr><th>env</th><th>default</th><th>where</th><th>effect</th></tr>
+<tr><td><code>RCCL_MSCCL_ENABLE</code></td><td class="n">1</td><td><code>msccl_lifecycle.cc:30</code></td><td>master switch</td></tr>
+<tr><td><code>RCCL_MSCCL_FORCE_ENABLE</code></td><td class="n">0</td><td><code>msccl_lifecycle.cc:31</code></td><td>skip gate C (topology)</td></tr>
+<tr><td><code>RCCL_MSCCL_ENABLE_SINGLE_PROCESS</code></td><td class="n">1</td><td><code>msccl_lifecycle.cc:32, 94-100</code></td><td>allow one process driving all ranks</td></tr>
+<tr><td><code>MSCCL_ALGO_DIR</code></td><td>unset</td><td><code>msccl_lifecycle.cc:126, 155</code></td><td>override algorithm directory</td></tr>
+<tr><td><code>MSCCL_SCHEDULER</code></td><td>unset</td><td><code>msccl_lifecycle.cc:124, 231-238</code></td><td>external scheduler .so; else internal</td></tr>
+<tr><td><code>RCCL_MSCCLPP_ENABLE</code></td><td class="n">0</td><td><code>src/init.cc:136-137</code></td><td>MSCCL++ (section 7)</td></tr>
+</table>
+<h3>Gate C: topology model match <span class="tag src">source</span></h3>
+<p>There is no "is this MI300/MI355" check. <code>comm-&gt;topo-&gt;mscclEnabled</code> starts false (<code>init.cc:1375</code>) and is set only when the detected topology matches a hard-coded model whose options string carries <code>mscclEnabled=1</code>. Two models have it; the 8-GPU one is <code>rome_model_79</code>:</p>
+<pre><code>// src/graph/rome_models.cc:554-561
+.nGpus = 8, .nCpus = 2, .nNics = 0, .nLinks = 7,   // connMatrix: all-ones off-diagonal = full XGMI mesh
+.pattern = "4040",
+.options = "noCpuCheck=1,mscclEnabled=1,tuning=5,disableNumaMatching=1"</code></pre>
+<p>The match (<code>parseA2a8P</code>, <code>rome_models.cc:1935-2039</code>) requires exactly 8 GPUs, 2 CPUs, <span class="k">0 NICs</span>, 7 links each, all-to-all connectivity. Then the flag is ANDed across all ranks (<code>init.cc:1705</code>). The docs phrase this as "enabled by default on MI300X" because MI300X is that shape.</p>
+<h3>Gate D: per-call filters <span class="tag src">source</span></h3>
+<ul>
+<li>All collectives enter via <code>if (mscclAvailable(comm) &amp;&amp; !mscclIsCaller()) return mscclEnqueueCheck(...)</code> (<code>collectives.cc:113, 165, 213, 261, 312, 341, 369, 394, 415</code>).</li>
+<li>AllReduce only: not FP8; bf16 only up to 8 MiB (<code>collectives.cc:261-269</code>).</li>
+<li>No pre/post op: <code>if (param-&gt;op &gt;= ncclAvg) return</code> (<code>msccl_lifecycle.cc:355-357</code>).</li>
+<li>An algorithm file must match: same collective, <code>nRanks</code>, in-place vs out-of-place, <code>minBytes &lt;= nBytes &lt;= maxBytes</code>, and <code>count % nchunksperloop == 0</code> (<code>msccl_lifecycle.cc:373-393</code>). First match in sorted filename order wins.</li>
+<li>No match: <code>mscclFallBackSavedParams</code> re-calls the public <code>ncclAllReduce</code> with a caller flag set, so the second entry skips MSCCL and goes to <code>ncclEnqueueCheck</code> (<code>msccl_lifecycle.cc:509-556</code>).</li>
+</ul>
+<p>For 8-GPU AllReduce the shipped files cover 0 to 20 MiB (LL to 64 KiB, LL to 512 KiB, Simple to 20 MiB). Above 20971520 bytes MSCCL declines and RCCL's own algorithms run.</p>
+
+<h2 id="s3"><span>3</span>Why allpairs beats ring at small sizes<span class="rd">read</span></h2>
+<p>Ring all-reduce on 8 GPUs is a reduce-scatter followed by an all-gather, each 7 sequential steps: 14 link latencies in series per call. On MI355X every GPU has a direct XGMI link to all 7 peers, so nothing forces a chain. The MSCCL <code>allreduce_pairs</code> schedule uses that: the same two phases, but each phase talks to all 7 peers at once.</p>
+<figure>
+<svg viewBox="0 0 880 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ring versus allpairs">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#6a8fc4"/></marker></defs>
+<line x1="164.8" y1="61.1" x2="202.4" y2="76.7" stroke="#6a8fc4" stroke-width="2" marker-end="url(#ar)"/>
+<line x1="223.3" y1="97.6" x2="238.9" y2="135.2" stroke="#6a8fc4" stroke-width="2" marker-end="url(#ar)"/>
+<line x1="238.9" y1="164.8" x2="223.3" y2="202.4" stroke="#6a8fc4" stroke-width="2" marker-end="url(#ar)"/>
+<line x1="202.4" y1="223.3" x2="164.8" y2="238.9" stroke="#6a8fc4" stroke-width="2" marker-end="url(#ar)"/>
+<line x1="135.2" y1="238.9" x2="97.6" y2="223.3" stroke="#6a8fc4" stroke-width="2" marker-end="url(#ar)"/>
+<line x1="76.7" y1="202.4" x2="61.1" y2="164.8" stroke="#6a8fc4" stroke-width="2" marker-end="url(#ar)"/>
+<line x1="61.1" y1="135.2" x2="76.7" y2="97.6" stroke="#6a8fc4" stroke-width="2" marker-end="url(#ar)"/>
+<line x1="97.6" y1="76.7" x2="135.2" y2="61.1" stroke="#6a8fc4" stroke-width="2" marker-end="url(#ar)"/>
+<circle cx="150.0" cy="55.0" r="14" fill="#14161a" stroke="#6a8fc4" stroke-width="2"/><text x="150.0" y="59.5" font-size="12" text-anchor="middle" fill="#e6e8e3">0</text>
+<circle cx="217.2" cy="82.8" r="14" fill="#14161a" stroke="#6a8fc4" stroke-width="2"/><text x="217.2" y="87.3" font-size="12" text-anchor="middle" fill="#e6e8e3">1</text>
+<circle cx="245.0" cy="150.0" r="14" fill="#14161a" stroke="#6a8fc4" stroke-width="2"/><text x="245.0" y="154.5" font-size="12" text-anchor="middle" fill="#e6e8e3">2</text>
+<circle cx="217.2" cy="217.2" r="14" fill="#14161a" stroke="#6a8fc4" stroke-width="2"/><text x="217.2" y="221.7" font-size="12" text-anchor="middle" fill="#e6e8e3">3</text>
+<circle cx="150.0" cy="245.0" r="14" fill="#14161a" stroke="#6a8fc4" stroke-width="2"/><text x="150.0" y="249.5" font-size="12" text-anchor="middle" fill="#e6e8e3">4</text>
+<circle cx="82.8" cy="217.2" r="14" fill="#14161a" stroke="#6a8fc4" stroke-width="2"/><text x="82.8" y="221.7" font-size="12" text-anchor="middle" fill="#e6e8e3">5</text>
+<circle cx="55.0" cy="150.0" r="14" fill="#14161a" stroke="#6a8fc4" stroke-width="2"/><text x="55.0" y="154.5" font-size="12" text-anchor="middle" fill="#e6e8e3">6</text>
+<circle cx="82.8" cy="82.8" r="14" fill="#14161a" stroke="#6a8fc4" stroke-width="2"/><text x="82.8" y="87.3" font-size="12" text-anchor="middle" fill="#e6e8e3">7</text>
+<text x="150" y="20" font-size="14" font-weight="600" text-anchor="middle" fill="#6a8fc4">RCCL ring</text>
+<text x="150" y="282" font-size="13" text-anchor="middle" fill="#e6e8e3">7 + 7 = 14 dependent hops</text>
+<line x1="430.0" y1="55.0" x2="497.2" y2="82.8" stroke="#2aa397" stroke-width="2"/>
+<line x1="430.0" y1="55.0" x2="525.0" y2="150.0" stroke="#2aa397" stroke-width="2"/>
+<line x1="430.0" y1="55.0" x2="497.2" y2="217.2" stroke="#2aa397" stroke-width="2"/>
+<line x1="430.0" y1="55.0" x2="430.0" y2="245.0" stroke="#2aa397" stroke-width="2"/>
+<line x1="430.0" y1="55.0" x2="362.8" y2="217.2" stroke="#2aa397" stroke-width="2"/>
+<line x1="430.0" y1="55.0" x2="335.0" y2="150.0" stroke="#2aa397" stroke-width="2"/>
+<line x1="430.0" y1="55.0" x2="362.8" y2="82.8" stroke="#2aa397" stroke-width="2"/>
+<line x1="497.2" y1="82.8" x2="525.0" y2="150.0" stroke="#3a3f46" stroke-width="1"/>
+<line x1="497.2" y1="82.8" x2="497.2" y2="217.2" stroke="#3a3f46" stroke-width="1"/>
+<line x1="497.2" y1="82.8" x2="430.0" y2="245.0" stroke="#3a3f46" stroke-width="1"/>
+<line x1="497.2" y1="82.8" x2="362.8" y2="217.2" stroke="#3a3f46" stroke-width="1"/>
+<line x1="497.2" y1="82.8" x2="335.0" y2="150.0" stroke="#3a3f46" stroke-width="1"/>
+<line x1="497.2" y1="82.8" x2="362.8" y2="82.8" stroke="#3a3f46" stroke-width="1"/>
+<line x1="525.0" y1="150.0" x2="497.2" y2="217.2" stroke="#3a3f46" stroke-width="1"/>
+<line x1="525.0" y1="150.0" x2="430.0" y2="245.0" stroke="#3a3f46" stroke-width="1"/>
+<line x1="525.0" y1="150.0" x2="362.8" y2="217.2" stroke="#3a3f46" stroke-width="1"/>
+<line x1="525.0" y1="150.0" x2="335.0" y2="150.0" stroke="#3a3f46" stroke-width="1"/>
+<line x1="525.0" y1="150.0" x2="362.8" y2="82.8" stroke="#3a3f46" stroke-width="1"/>
+<line x1="497.2" y1="217.2" x2="430.0" y2="245.0" stroke="#3a3f46" stroke-width="1"/>
+<line x1="497.2" y1="217.2" x2="362.8" y2="217.2" stroke="#3a3f46" stroke-width="1"/>
+<line x1="497.2" y1="217.2" x2="335.0" y2="150.0" stroke="#3a3f46" stroke-width="1"/>
+<line x1="497.2" y1="217.2" x2="362.8" y2="82.8" stroke="#3a3f46" stroke-width="1"/>
+<line x1="430.0" y1="245.0" x2="362.8" y2="217.2" stroke="#3a3f46" stroke-width="1"/>
+<line x1="430.0" y1="245.0" x2="335.0" y2="150.0" stroke="#3a3f46" stroke-width="1"/>
+<line x1="430.0" y1="245.0" x2="362.8" y2="82.8" stroke="#3a3f46" stroke-width="1"/>
+<line x1="362.8" y1="217.2" x2="335.0" y2="150.0" stroke="#3a3f46" stroke-width="1"/>
+<line x1="362.8" y1="217.2" x2="362.8" y2="82.8" stroke="#3a3f46" stroke-width="1"/>
+<line x1="335.0" y1="150.0" x2="362.8" y2="82.8" stroke="#3a3f46" stroke-width="1"/>
+<circle cx="430.0" cy="55.0" r="14" fill="#14161a" stroke="#2aa397" stroke-width="2"/><text x="430.0" y="59.5" font-size="12" text-anchor="middle" fill="#e6e8e3">0</text>
+<circle cx="497.2" cy="82.8" r="14" fill="#14161a" stroke="#2aa397" stroke-width="2"/><text x="497.2" y="87.3" font-size="12" text-anchor="middle" fill="#e6e8e3">1</text>
+<circle cx="525.0" cy="150.0" r="14" fill="#14161a" stroke="#2aa397" stroke-width="2"/><text x="525.0" y="154.5" font-size="12" text-anchor="middle" fill="#e6e8e3">2</text>
+<circle cx="497.2" cy="217.2" r="14" fill="#14161a" stroke="#2aa397" stroke-width="2"/><text x="497.2" y="221.7" font-size="12" text-anchor="middle" fill="#e6e8e3">3</text>
+<circle cx="430.0" cy="245.0" r="14" fill="#14161a" stroke="#2aa397" stroke-width="2"/><text x="430.0" y="249.5" font-size="12" text-anchor="middle" fill="#e6e8e3">4</text>
+<circle cx="362.8" cy="217.2" r="14" fill="#14161a" stroke="#2aa397" stroke-width="2"/><text x="362.8" y="221.7" font-size="12" text-anchor="middle" fill="#e6e8e3">5</text>
+<circle cx="335.0" cy="150.0" r="14" fill="#14161a" stroke="#2aa397" stroke-width="2"/><text x="335.0" y="154.5" font-size="12" text-anchor="middle" fill="#e6e8e3">6</text>
+<circle cx="362.8" cy="82.8" r="14" fill="#14161a" stroke="#2aa397" stroke-width="2"/><text x="362.8" y="87.3" font-size="12" text-anchor="middle" fill="#e6e8e3">7</text>
+<text x="430" y="20" font-size="14" font-weight="600" text-anchor="middle" fill="#2aa397">MSCCL allpairs on the XGMI full mesh</text>
+<text x="430" y="282" font-size="13" text-anchor="middle" fill="#e6e8e3">2 rounds, each 7-way parallel (GPU 0 highlighted; all 8 do this at once)</text>
+<text x="600" y="20" font-size="14" font-weight="600" fill="#e6e8e3">Time per call, α = one hop latency</text>
+<rect x="600" y="60" width="16" height="22" fill="#6a8fc4"/>
+<rect x="618" y="60" width="16" height="22" fill="#6a8fc4"/>
+<rect x="636" y="60" width="16" height="22" fill="#6a8fc4"/>
+<rect x="654" y="60" width="16" height="22" fill="#6a8fc4"/>
+<rect x="672" y="60" width="16" height="22" fill="#6a8fc4"/>
+<rect x="690" y="60" width="16" height="22" fill="#6a8fc4"/>
+<rect x="708" y="60" width="16" height="22" fill="#6a8fc4"/>
+<rect x="726" y="60" width="16" height="22" fill="#6a8fc4"/>
+<rect x="744" y="60" width="16" height="22" fill="#6a8fc4"/>
+<rect x="762" y="60" width="16" height="22" fill="#6a8fc4"/>
+<rect x="780" y="60" width="16" height="22" fill="#6a8fc4"/>
+<rect x="798" y="60" width="16" height="22" fill="#6a8fc4"/>
+<rect x="816" y="60" width="16" height="22" fill="#6a8fc4"/>
+<rect x="834" y="60" width="16" height="22" fill="#6a8fc4"/>
+<text x="600" y="52" font-size="12.5" fill="#6a8fc4">ring: 14 α + 2·(7/8)·L·β</text>
+<rect x="600" y="120" width="16" height="22" fill="#2aa397"/>
+<rect x="618" y="120" width="16" height="22" fill="#2aa397"/>
+<text x="600" y="112" font-size="12.5" fill="#2aa397">allpairs: 2 α + 2·(7/8)·L·β</text>
+<rect x="600" y="180" width="16" height="22" fill="#d8703f"/>
+<text x="600" y="172" font-size="12.5" fill="#d8703f">custom AR one-shot (&lt; 80 KiB): 1 α + 7·L·β</text>
+<text x="600" y="236" font-size="12" fill="#a3a8ad">Same bytes on the wire for ring and allpairs.</text>
+<text x="600" y="254" font-size="12" fill="#a3a8ad">At decode sizes (tens to hundreds of KB) the α terms</text>
+<text x="600" y="272" font-size="12" fill="#a3a8ad">dominate; the L·β term is what makes ring win at large L.</text>
+</svg>
+<figcaption>Same bytes per GPU in both (2 × 7/8 of the buffer). Ring pays 14 dependent hops; allpairs pays 2. At a few hundred KB per call, per-hop latency dominates, so depth is what you feel. Step structure read from <code>tools/msccl-algorithms/allreduce-allpairs-8n-simple.xml</code> (GPU 0, tb 8: send slice to peer, recv into scratch, 7 reduces, send reduced slice, recv peer's slice).</figcaption>
+</figure>
+<h3>Step it yourself, 4 or 8 GPUs<span class="rd">read</span></h3>
+<p>Press Next. Both sides run the same reduce-scatter then all-gather; the only difference is who can talk to whom in one step.</p>
+<figure id="anim">
+<div class="ctl">
+<button id="anStep">Next step</button><button id="anPlay">Play</button><button id="anReset">Reset</button>
+<label>GPUs <select id="anN"><option value="4" selected>4</option><option value="8">8</option></select></label>
+<span id="anStatus" class="mono"></span>
+</div>
+<div class="two">
+<div><div class="ptitle rc">Ring: reduce-scatter then all-gather, one neighbour per step</div><svg id="anRing" viewBox="0 0 420 330"></svg></div>
+<div><div class="ptitle ms">Allpairs: same two phases, every peer at once</div><svg id="anPairs" viewBox="0 0 420 330"></svg></div>
+</div>
+<figcaption>Each GPU owns one buffer of n chunks (row of cells under the GPU, chunk colour = chunk index). GPU 0 starts with 1 in every chunk, GPU 1 with 2, GPU 2 with 3, and so on; a cell shows the running sum, so the final reduced value is 1+2+3+4 = 10 (with 8 GPUs, 36) and a solid cell has reached it. Each press of Next is one communication step: every packet in a step travels in parallel, and the next step cannot start until they land. Ring needs 2(n−1) steps, allpairs 2. Same total bytes per GPU. The schedule is exactly the shipped <code>allreduce_pairs</code> XML: send my copy of chunk j to GPU j, reduce, send the reduced chunk j to everyone.</figcaption>
+</figure>
+<style>
+.ctl{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0 10px;font-size:14px}
+.ctl button{background:#22262c;color:var(--ink);border:1px solid var(--rule);border-radius:4px;padding:5px 12px;font:inherit;font-size:14px;cursor:pointer}
+.ctl button:hover{border-color:var(--ink)}
+.ctl select{background:#22262c;color:var(--ink);border:1px solid var(--rule);border-radius:4px;padding:3px 6px;font:inherit}
+.ptitle{font-size:13.5px;font-weight:600;margin:0 0 4px}
+#anStatus{font-size:13px;color:var(--ink2)}
+</style>
+<script>
+(function(){
+const CH=['#d8703f','#2aa397','#6a8fc4','#a874c2','#e0c05a','#c95c7a','#5fb36b','#8a8f95'];
+function initState(n){return Array.from({length:n},(_,g)=>Array.from({length:n},()=>new Set([g])));}
+function full(s,n){return s.size===n;}
+function ringStep(state,n,s){const moves=[];for(let g=0;g<n;g++){const cc=s<n-1?(((g-s)%n+n)%n):(((g+1-(s-(n-1)))%n+n)%n);moves.push({from:g,to:(g+1)%n,chunk:cc,set:new Set(state[g][cc])});}
+ return {moves,apply(){for(const m of moves){const t=state[m.to][m.chunk];for(const x of m.set)t.add(x);}}};}
+function pairsStep(state,n,s){const moves=[];
+ if(s===0){for(let i=0;i<n;i++)for(let j=0;j<n;j++)if(i!==j)moves.push({from:i,to:j,chunk:j,set:new Set(state[i][j])});}
+ else if(s===1){for(let j=0;j<n;j++)for(let i=0;i<n;i++)if(i!==j)moves.push({from:j,to:i,chunk:j,set:new Set(state[j][j])});}
+ return {moves,apply(){for(const m of moves){const t=state[m.to][m.chunk];for(const x of m.set)t.add(x);}}};}
+const NS='http://www.w3.org/2000/svg';
+function el(t,a,txt){const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;return e;}
+function pos(n,g){const a=-Math.PI/2+g*2*Math.PI/n;return [210+118*Math.cos(a),150+112*Math.sin(a)];}
+function val(s){let v=0;for(const x of s)v+=x+1;return v;}
+function draw(svg,state,n,mode,done){
+ while(svg.firstChild)svg.removeChild(svg.firstChild);
+ const P=[];for(let g=0;g<n;g++)P.push(pos(n,g));
+ // links
+ if(mode==='ring'){for(let g=0;g<n;g++){const [x1,y1]=P[g],[x2,y2]=P[(g+1)%n];svg.appendChild(el('line',{x1,y1,x2,y2,stroke:'#6a8fc4','stroke-width':1.5,opacity:.6}));}}
+ else{for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const [x1,y1]=P[i],[x2,y2]=P[j];svg.appendChild(el('line',{x1,y1,x2,y2,stroke:'#2aa397','stroke-width':1,opacity:.35}));}}
+ const cw=n===4?22:11,ch=14;
+ for(let g=0;g<n;g++){const [x,y]=P[g];
+  svg.appendChild(el('rect',{x:x-24,y:y-13,width:48,height:26,rx:3,fill:'#14161a',stroke:mode==='ring'?'#6a8fc4':'#2aa397','stroke-width':2}));
+  svg.appendChild(el('text',{x,y:y+4.5,'text-anchor':'middle','font-size':12,fill:'#e6e8e3'},'GPU '+g));
+  // cells: row centred under the node
+  const oy=y+24,x0=x-(n*cw)/2;
+  for(let c=0;c<n;c++){const s=state[g][c],f=full(s,n);
+   svg.appendChild(el('rect',{x:x0+c*cw,y:oy-ch/2,width:cw-1,height:ch,fill:CH[c],opacity:f?1:0.25+0.5*(s.size-1)/(n-1),stroke:CH[c],'stroke-width':1}));
+   svg.appendChild(el('text',{x:x0+c*cw+(cw-1)/2,y:oy+4,'text-anchor':'middle','font-size':n===4?10:8,fill:f?'#14161a':'#e6e8e3','font-weight':f?'600':'400'},String(val(s))));}
+ }
+ if(done)svg.appendChild(el('text',{x:210,y:318,'text-anchor':'middle','font-size':13,fill:mode==='ring'?'#6a8fc4':'#2aa397','font-weight':600},'done'));
+ return P;
+}
+let n=4,step=0,st={ring:initState(4),pairs:initState(4)},anim=null,playing=false,gen=0;
+const R=document.getElementById('anRing'),Q=document.getElementById('anPairs'),ST=document.getElementById('anStatus');
+function total(){return 2*(n-1);}
+function status(){const rs=Math.min(step,total()),ps=Math.min(step,2);
+ ST.textContent=`step ${step}   ring ${rs}/${total()} ${step>=total()?'done':''}   allpairs ${ps}/2 ${step>=2?'done':''}`;}
+function render(){draw(R,st.ring,n,'ring',step>=total());draw(Q,st.pairs,n,'pairs',step>=2);status();}
+function animate(svg,P,moves,ms,cb){const pk=moves.map(m=>{const r=el('rect',{width:9,height:9,rx:1.5,fill:CH[m.chunk],stroke:'#14161a','stroke-width':.8});svg.appendChild(r);return {m,r};});
+ const t0=performance.now(),g0=gen;
+ function f(t){if(g0!==gen){pk.forEach(p=>p.r.remove());return;}const u=Math.min(1,(t-t0)/ms),e=u<.5?2*u*u:1-Math.pow(-2*u+2,2)/2;
+  for(const {m,r} of pk){const [x1,y1]=P[m.from],[x2,y2]=P[m.to];r.setAttribute('x',x1+(x2-x1)*e-4.5);r.setAttribute('y',y1+(y2-y1)*e-4.5);}
+  if(u<1)anim=requestAnimationFrame(f);else{pk.forEach(p=>p.r.remove());cb();}}
+ anim=requestAnimationFrame(f);}
+function next(cb){if(step>=total()){if(cb)cb();return;}
+ const pend=[];const ms=700;
+ const rp=draw(R,st.ring,n,'ring',false),qp=draw(Q,st.pairs,n,'pairs',false);
+ const rs=ringStep(st.ring,n,step);let k=0;const fin=()=>{if(++k===pend.length){step++;render();if(cb)cb();}};
+ pend.push(1);animate(R,rp,rs.moves,ms,()=>{rs.apply();fin();});
+ if(step<2){const ps=pairsStep(st.pairs,n,step);pend.push(1);animate(Q,qp,ps.moves,ms,()=>{ps.apply();fin();});}
+ ST.textContent=`step ${step+1} in flight…`;}
+function reset(){gen++;if(anim)cancelAnimationFrame(anim);playing=false;document.getElementById('anPlay').textContent='Play';step=0;st={ring:initState(n),pairs:initState(n)};render();}
+document.getElementById('anStep').onclick=()=>{if(!playing)next();};
+document.getElementById('anReset').onclick=reset;
+document.getElementById('anN').onchange=e=>{n=+e.target.value;reset();};
+document.getElementById('anPlay').onclick=function(){if(playing){playing=false;this.textContent='Play';return;}
+ if(step>=total())reset();playing=true;this.textContent='Pause';
+ const loop=()=>{if(!playing)return;if(step>=total()){playing=false;this.textContent='Play';return;}next(()=>setTimeout(loop,350));};loop();};
+render();
+})();
+</script>
+
+<p>What the XML actually schedules per GPU <span class="tag src">source</span>: 8 reducer thread blocks (one per channel) plus 56 send/recv thread blocks, one per (peer, channel) pair. Each send/recv block does: send my 8 chunks of the slice that peer owns; receive that peer's 8 chunks of my slice into scratch; 7 reduces of scratch into my slice; send my reduced slice; receive the peer's reduced slice. Two communication rounds, 7-way parallel. Counts on GPU 0: 112 sends, 112 receives, 448 reduces.</p>
+<p>Where this stops paying <span class="tag inf">inferred</span>: at large sizes the bottleneck is link bandwidth, not hops, and ring's steady streaming with many channels wins. That matches the shipped <code>maxBytes</code> of 20 MiB and the fallback above it.</p>
+
+<h2 id="s4"><span>4</span>SGLang's custom all-reduce<span class="rd">read</span></h2>
+<p>SGLang does not hand its tensor-parallel all_reduce to RCCL at all when it can avoid it. It carries its own all-reduce kernel, adapted from vLLM's <code>custom_all_reduce</code> (vLLM PR #2192, merged 2024-01-27). On ROCm the class that actually runs is AMD's copy in <span class="k">aiter</span>, selected by default <span class="tag src">source</span>: <code>custom_all_reduce.py:392</code> <code>if get_bool_env_var("SGLANG_USE_AITER_AR", default="true")</code> imports <code>aiter.dist.device_communicators.custom_all_reduce.CustomAllreduce</code> and logs <code>[AR] Using AiterCustomAllreduce (AMD default)</code>. All paths below are SGLang tag v0.5.17 and aiter commit d9e5ef7. Verified inside the actual container on amd-mi355x-5 (<code>results-tuning/2026-09-10-2-aiterchk/</code>): aiter at that commit, cap 64 MiB, and the stock servers logged <code>[AR] Using AiterCustomAllreduce (AMD default)</code> on all 8 ranks (<code>at_stock_def/server.log</code> on ses2-1) <span class="tag log">log</span>.</p>
+<h3>Mechanism <span class="tag src">source</span><span class="rd">read</span></h3>
+<figure>
+<svg viewBox="0 0 880 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Custom all-reduce one-shot and two-shot">
+<defs><marker id="ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#d8703f"/></marker></defs>
+<g font-size="12.5" fill="#e6e8e3">
+<!-- panel 1: one-shot -->
+<text x="0" y="18" font-size="14" font-weight="600" fill="#d8703f">One-shot, &lt; 80 KiB at TP-8</text>
+<text x="0" y="36" fill="#a3a8ad">GPU 0 reads the full vector from all 7 peers, sums locally</text>
+<g id="p1">
+<rect x="0" y="60" width="90" height="40" fill="#d8703f"/><text x="45" y="85" text-anchor="middle" fill="#14161a" font-weight="600">GPU 0</text>
+</g>
+<rect x="150" y="50" width="34" height="18" fill="none" stroke="#d8703f"/><text x="167" y="63" text-anchor="middle" font-size="10">1</text>
+<rect x="150" y="72" width="34" height="18" fill="none" stroke="#d8703f"/><text x="167" y="85" text-anchor="middle" font-size="10">2</text>
+<rect x="150" y="94" width="34" height="18" fill="none" stroke="#d8703f"/><text x="167" y="107" text-anchor="middle" font-size="10">3</text>
+<rect x="150" y="116" width="34" height="18" fill="none" stroke="#d8703f"/><text x="167" y="129" text-anchor="middle" font-size="10">…7</text>
+<line x1="150" y1="59" x2="92" y2="72" stroke="#d8703f" stroke-width="1.5" marker-end="url(#ac)"/>
+<line x1="150" y1="81" x2="92" y2="79" stroke="#d8703f" stroke-width="1.5" marker-end="url(#ac)"/>
+<line x1="150" y1="103" x2="92" y2="86" stroke="#d8703f" stroke-width="1.5" marker-end="url(#ac)"/>
+<line x1="150" y1="125" x2="92" y2="93" stroke="#d8703f" stroke-width="1.5" marker-end="url(#ac)"/>
+<text x="0" y="160" fill="#a3a8ad">1 round · 7 L in · every GPU does the</text>
+<text x="0" y="176" fill="#a3a8ad">same, so the reduce is redundant 8x</text>
+<text x="0" y="192" fill="#a3a8ad">but there is nothing to wait for.</text>
+<!-- panel 2: two-shot -->
+<text x="300" y="18" font-size="14" font-weight="600" fill="#d8703f">Two-shot, 80 KiB to 64 MiB at TP-8</text>
+<text x="300" y="36" fill="#a3a8ad">Stage 1: GPU 0 pulls its 1/8 slice from every peer, sums into own scratch</text>
+<rect x="300" y="60" width="90" height="40" fill="#d8703f"/><text x="345" y="85" text-anchor="middle" fill="#14161a" font-weight="600">GPU 0</text>
+<g stroke="#d8703f" stroke-width="1.5">
+<line x1="450" y1="59" x2="392" y2="72" marker-end="url(#ac)"/><line x1="450" y1="81" x2="392" y2="79" marker-end="url(#ac)"/><line x1="450" y1="103" x2="392" y2="86" marker-end="url(#ac)"/><line x1="450" y1="125" x2="392" y2="93" marker-end="url(#ac)"/>
+</g>
+<g fill="none" stroke="#d8703f"><rect x="450" y="50" width="34" height="18"/><rect x="450" y="72" width="34" height="18"/><rect x="450" y="94" width="34" height="18"/><rect x="450" y="116" width="34" height="18"/></g>
+<rect x="450" y="50" width="5" height="18" fill="#d8703f"/><rect x="450" y="72" width="5" height="18" fill="#d8703f"/><rect x="450" y="94" width="5" height="18" fill="#d8703f"/><rect x="450" y="116" width="5" height="18" fill="#d8703f"/>
+<text x="300" y="160" fill="#a3a8ad">end_sync: release / acquire, one flag write per peer</text>
+<text x="300" y="186" fill="#a3a8ad">Stage 2: GPU 0 pulls each peer's reduced slice from that peer's scratch</text>
+<rect x="300" y="200" width="90" height="40" fill="#d8703f"/><text x="345" y="225" text-anchor="middle" fill="#14161a" font-weight="600">GPU 0</text>
+<g stroke="#d8703f" stroke-width="1.5">
+<line x1="450" y1="205" x2="392" y2="215" marker-end="url(#ac)"/><line x1="450" y1="219" x2="392" y2="219" marker-end="url(#ac)"/><line x1="450" y1="233" x2="392" y2="223" marker-end="url(#ac)"/><line x1="450" y1="247" x2="392" y2="228" marker-end="url(#ac)"/>
+</g>
+<g fill="#d8703f"><rect x="450" y="200" width="5" height="10"/><rect x="450" y="214" width="5" height="10"/><rect x="450" y="228" width="5" height="10"/><rect x="450" y="242" width="5" height="10"/></g>
+<text x="470" y="230" fill="#a3a8ad">2 rounds · 2 × 7/8 L · same shape as MSCCL allpairs</text>
+<!-- panel 3: what is shared -->
+<text x="640" y="18" font-size="14" font-weight="600" fill="#e6e8e3">Common to both</text>
+<text x="640" y="44" fill="#a3a8ad">• buffers IPC-mapped once at startup</text>
+<text x="640" y="64" fill="#a3a8ad">  (hipIpcGetMemHandle / OpenMemHandle)</text>
+<text x="640" y="84" fill="#a3a8ad">• barrier = 1 remote store per peer,</text>
+<text x="640" y="104" fill="#a3a8ad">  then spin on own flags</text>
+<text x="640" y="124" fill="#a3a8ad">• exactly one kernel per all_reduce</text>
+<text x="640" y="144" fill="#a3a8ad">• no proxy thread, no channels, no FIFO</text>
+<text x="640" y="164" fill="#a3a8ad">• graph-capturable, pointers registered</text>
+<text x="640" y="184" fill="#a3a8ad">  after capture, no host node in graph</text>
+<text x="640" y="204" fill="#a3a8ad">• RCCL never called</text>
+<text x="640" y="230" fill="#a3a8ad">Fixed accumulation order: results</text>
+<text x="640" y="248" fill="#a3a8ad">bitwise identical on all ranks.</text>
+</g></svg>
+
+<figcaption>One-shot and two-shot, as coded in aiter <code>csrc/include/custom_all_reduce.cuh</code> (<code>cross_device_reduce_1stage</code> lines 377-482, <code>_2stage</code> 484-566). One kernel launch either way; peers' buffers are read directly through IPC-mapped pointers.</figcaption>
+</figure>
+<ul>
+<li><span class="k">Setup once.</span> Each rank allocates an input staging buffer and a meta buffer (sync flags plus scratch) in uncached device memory, exports them with <code>hipIpcGetMemHandle</code>, exchanges handles over the torch TCP store, and maps every peer's buffers with <code>hipIpcOpenMemHandle</code> (aiter cuh 3410-3457; py 541-563, 929-931). After that every GPU can load from all 7 peers' memory with an ordinary pointer.</li>
+<li><span class="k">Barrier = one write.</span> <code>start_sync</code> has each of the first 8 threads store a flag directly into the corresponding slot on every peer, then spin on its own slots. Comment in code: "simultaneously write to the corresponding flag of all ranks. Latency = 1 p2p write" (cuh 161-200). No atomics on peers, no host proxy thread.</li>
+<li><span class="k">One-shot</span> (TP-8, under 80 KiB): each block's threads are split into 8 groups; group <code>g</code> loads chunk <code>idx</code> straight from peer <code>g</code>'s input buffer, group 0 sums the 8 values in fp32 in fixed rank order and writes the result locally. Every GPU reads the whole vector from everyone and reduces it itself. One communication round. Bitwise identical across ranks by construction (cuh 393-394).</li>
+<li><span class="k">Two-shot</span> (TP-8, 80 KiB and up): rank owns slice <code>[rank*size/8, ...)</code>. Stage 1 reads its slice from all 8 inputs, sums, writes into its own scratch. <code>end_sync</code> with release/acquire. Stage 2 reads each peer's reduced slice from that peer's scratch into the local result. Two rounds, 7/8 of the bytes in each direction, same as MSCCL allpairs, without any RCCL machinery around it.</li>
+<li><span class="k">Split point</span> (aiter cuh 3767-3778, the <code>use_new</code> path SGLang calls): TP-2 always one-shot; otherwise one-shot when <code>ws &lt;= 4 &amp;&amp; bytes &lt; 160 KiB</code> or <code>ws &lt;= 8 &amp;&amp; bytes &lt; 80 KiB</code>, else two-shot. At most 80 blocks. A "write mode" two-shot exists for 8 ranks above 4 MiB but only on gfx942; not on our gfx950.</li>
+<li><span class="k">Launches per call:</span> one kernel, plus one device-to-device copy into the registered staging buffer when the input tensor is not itself registered (<code>csrc/kernels/custom_all_reduce.cu:434</code>). Under graph capture, input pointers are recorded and registered after capture (<code>get_buffer_RD</code>, cuh 3521-3545; <code>register_graph_buffers</code>), so the replayed graph has no copy and no host work.</li>
+</ul>
+<h3>When it takes the call <span class="tag src">source</span> (aiter <code>custom_all_reduce.py</code>)<span class="sk">skim</span></h3>
+<table>
+<tr><th>condition</th><th>value</th><th>where</th></tr>
+<tr><td>world size</td><td><code>[2, 4, 6, 8]</code></td><td>l.646</td></tr>
+<tr><td>placement</td><td>all ranks on one node, else "spans across nodes", disabled</td><td>l.733-740</td></tr>
+<tr><td>peer connectivity</td><td>no probe: <code>fully_connected = True</code>, comment "On AMD GPU, p2p is always enabled between XGMI connected GPUs"</td><td>l.787-806</td></tr>
+<tr><td>max bytes</td><td><code>8192 * 8192</code> = 64 MiB, env <code>AITER_CUSTOM_AR_MAX_SIZE</code> (0 disables)</td><td>l.68-82, 1033-1058</td></tr>
+<tr><td>min bytes</td><td>0, env <code>AITER_CUSTOM_AR_MIN_SIZE</code></td><td>l.78-82</td></tr>
+<tr><td>tensor</td><td>byte size multiple of 16, weakly contiguous</td><td>l.1033-1060</td></tr>
+<tr><td>buffers</td><td>1 GiB staging + 2 GiB meta/scratch per rank per group, about 3 GB</td><td>l.702, 958-969</td></tr>
+</table>
+<p>Above 64 MiB the next candidate is <span class="k">quick reduce</span>, and in this image it is armed: the container env sets <code>ROCM_QUICK_REDUCE_QUANTIZATION=INT8</code> (SGLang's own default is NONE, off) <span class="tag log">log</span> <code>2026-09-10-2-aiterchk/aiterchk3.log</code>. Quick reduce is a quantised two-shot all-reduce on static IPC buffers; with the default bf16-to-fp16 cast and TP-8, INT8 applies from 4 MB up to 2 GB (<code>quick_all_reduce.py:61, 199-209</code>). Only what neither takes falls to RCCL through <code>pynccl</code> (<code>librccl.so.1</code>, <code>parallel_state.py:961-972</code>). On one node that is nothing the model does.</p>
+<div class="note"><span class="k">Ties to our data: sizes we reached and where each one went in stock.</span>
+<table><tr><th>all_reduce</th><th>bytes</th><th>path in stock</th><th>why</th></tr>
+<tr><td>gpt-oss decode (all modes)</td><td class="n">184 KB</td><td class="car">custom AR two-shot</td><td>above 80 KiB, below 64 MiB</td></tr>
+<tr><td>Qwen decode</td><td class="n">128 KB</td><td class="car">custom AR two-shot</td><td>same</td></tr>
+<tr><td>gpt-oss prefill d32</td><td class="n">2.9 MB</td><td class="car">custom AR two-shot</td><td>same</td></tr>
+<tr><td>gpt-oss prefill p8k</td><td class="n">47 MB</td><td class="car">custom AR two-shot</td><td>same</td></tr>
+<tr><td>Qwen prefill p8k</td><td class="n">64.9 MB (61.9 MiB)</td><td class="car">custom AR two-shot</td><td>just under the 64 MiB cap</td></tr>
+<tr><td>gpt-oss prefill d32 and p8k</td><td class="n">91 to 94 MB</td><td><span class="k">quick reduce, INT8</span></td><td>above the cap; image env <code>ROCM_QUICK_REDUCE_QUANTIZATION=INT8</code>, above the 4 MB INT8 floor</td></tr>
+<tr><td>anything</td><td class="n">&gt; 2 GB</td><td class="rc">RCCL</td><td>quick reduce max; never reached</td></tr></table>
+Sizes from the detect runs (<code>2026-09-09-LOG.md</code>, <code>2026-09-10-1-inmodel/*/detect/hitmap_sc2.csv</code>). Path assignment is by source <span class="tag inf">inferred</span>; the one direct observation is RCCL seeing a single 4-byte call in the whole stocksc2 run <span class="tag log">log</span>, which fits this table and fits nothing else. Consequence: stock SGLang never hands a model all_reduce to RCCL on one node, and its largest prefill chunks are INT8-quantised.</div>
+<h3>Controls <span class="tag src">source</span><span class="sk">skim</span></h3>
+<table>
+<tr><th>knob</th><th>default</th><th>effect</th><th>where</th></tr>
+<tr><td><code>--disable-custom-all-reduce</code></td><td>off (kernel on)</td><td>"Disable the custom all-reduce kernel and fall back to NCCL"; log line <code>[AR] All-reduce call path: NCCL (custom AR disabled)</code></td><td><code>server_args.py:1938-1944</code>, <code>bootstrap.py:164</code>, <code>parallel_state.py:473</code></td></tr>
+<tr><td><code>SGLANG_USE_AITER_AR</code></td><td>true</td><td>aiter class; false or ImportError = SGLang's own copy (one-shot under 256 KiB at TP-8, cap 16 MiB on HIP)</td><td><code>custom_all_reduce.py:42-45, 392</code></td></tr>
+<tr><td><code>SGLANG_USE_1STAGE_ALLREDUCE</code> / <code>--enable-deterministic-inference</code></td><td>auto</td><td>deterministic one-stage kernel from sgl_kernel, no size cap</td><td><code>environ.py:872-877</code>, <code>custom_all_reduce.py:276-301</code></td></tr>
+<tr><td><code>ROCM_QUICK_REDUCE_QUANTIZATION</code></td><td>NONE in SGLang; <span class="k">INT8 in this image</span></td><td>quantised two-shot "quick reduce" (FP, INT8, INT6, INT4) for 2/4/8 ranks on gfx94x/gfx95x; INT8 floor 4 MB at TP-8 fp16; takes what custom AR declines</td><td><code>quick_all_reduce.py:34-65, 176-192</code></td></tr>
+<tr><td><code>--enable-mscclpp</code></td><td>off</td><td>Microsoft MSCCL++ communicator for small messages, world sizes 8/16/32, needs the <code>mscclpp</code> module</td><td><code>server_args.py:1946-1949</code>, <code>pymscclpp.py:23</code></td></tr>
+<tr><td><code>AITER_CUSTOM_AR_MAX_SIZE</code>, <code>_MIN_SIZE</code></td><td>64 MiB, 0</td><td>size window</td><td>aiter py l.68-82</td></tr>
+</table>
+<h3>Dispatch order inside SGLang <span class="tag src">source</span><span class="sk">skim</span></h3>
+<pre><code># python/sglang/srt/distributed/parallel_state.py, GroupCoordinator, l.879-914 (v0.5.17)
+ca_comm   enabled and ca_comm.should_custom_ar(input)          -> "ca"         # aiter custom all-reduce
+qr_comm   enabled and qr_comm.should_quick_allreduce(input)    -> "qr"         # quick reduce, INT8 in this image, >= 4 MB
+pymscclpp enabled and should_mscclpp_allreduce(input)          -> "pymscclpp"  # off by default
+torch_symm_mem ...                                             -> CUDA only
+else                                                           -> pynccl (RCCL) in place, l.961-972</code></pre>
+<h3>Why it is faster than any RCCL path<span class="rd">read</span></h3>
+<ul>
+<li>Single kernel with direct peer loads. No proxy thread, no channel FIFOs, no per-step handshakes; the barrier is one remote store per peer.</li>
+<li>Same two-round shape as MSCCL allpairs, but MSCCL still runs inside RCCL's interpreter over RCCL channels and primitives, with a work FIFO and a launch per call through <code>hipExtLaunchKernel</code> (section 6).</li>
+<li>Graph-native: pointers registered once, no host nodes in the graph. vLLM's PR text on why NCCL costs more under graphs: "NCCL requires inserting more nodes per invocation. For example, NCCL requires a few host nodes to ensure proper operations."</li>
+<li>Published upstream numbers (vLLM PR #2192, A100): Llama-70B TP-4 latency 16.37 s to 14.57 s, throughput 1761 to 1853 tok/s; "Latency improvement is more significant at smaller batch sizes, when allreduce is more latency bound." No AMD-published number was found for aiter's kernel vs RCCL.</li>
+<li>Our number <span class="tag log">log</span>: gpt-oss d32 decode TPOT 4.14 ms with the kernel vs 4.90 ms with MSCCL vs 5.35 ms with the tuned conf, same node, same day (<code>2026-09-09-7-gptoss-attr/SUMMARY.md</code>).</li>
+</ul>
+
+
+<h2 id="s5"><span>5</span>The full precedence stack, with our arms<span class="rd">read</span></h2>
+<p>Read top to bottom. The first layer that accepts the call executes it; nothing below is consulted.</p>
+<figure>
+<svg viewBox="0 0 880 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Code path of one all_reduce">
+<defs><marker id="as" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#a3a8ad"/></marker></defs>
+<g font-size="12.5" fill="#e6e8e3">
+<!-- column titles -->
+<text x="0" y="16" font-size="13" font-weight="600" fill="#a3a8ad">SGLang (python)</text>
+<text x="0" y="176" font-size="13" font-weight="600" fill="#a3a8ad">librccl.so</text>
+<!-- SGLang -->
+<rect x="0" y="26" width="420" height="34" fill="none" stroke="#e6e8e3" stroke-width="1.5"/>
+<text x="10" y="48" class="mono" font-size="12.5">GroupCoordinator.all_reduce(input)        parallel_state.py:622</text>
+<line x1="60" y1="60" x2="60" y2="80" stroke="#a3a8ad" stroke-width="1.5" marker-end="url(#as)"/>
+<rect x="0" y="82" width="420" height="34" fill="none" stroke="#e6e8e3" stroke-width="1.5"/>
+<text x="10" y="104" class="mono" font-size="12.5">_resolve_outplace_all_reduce_method       parallel_state.py:879</text>
+<!-- branch to custom AR -->
+<line x1="420" y1="99" x2="470" y2="99" stroke="#d8703f" stroke-width="2" marker-end="url(#as)"/>
+<text x="424" y="92" font-size="11" fill="#d8703f">ca_comm.should_custom_ar: TP∈{2,4,6,8}, one node, ≤64 MiB</text>
+<rect x="472" y="82" width="408" height="60" fill="#d8703f"/>
+<text x="482" y="104" fill="#14161a" font-weight="600">aiter CustomAllreduce.custom_all_reduce</text>
+<text x="482" y="124" class="mono" font-size="12" fill="#3a1f10">cross_device_reduce_1stage / _2stage   one kernel, done</text>
+<text x="482" y="138" font-size="11" fill="#3a1f10">stock · customar · stocksc2 arms exit here</text>
+<!-- fallthrough -->
+<line x1="60" y1="116" x2="60" y2="136" stroke="#a3a8ad" stroke-width="1.5" marker-end="url(#as)"/>
+<text x="70" y="132" font-size="11.5" fill="#a3a8ad">None: --disable-custom-all-reduce, or &gt; 64 MiB, or multi-node</text>
+<rect x="0" y="138" width="420" height="34" fill="none" stroke="#e6e8e3" stroke-width="1.5"/>
+<text x="10" y="160" class="mono" font-size="12.5">pynccl_comm.all_reduce  →  ncclAllReduce()   librccl.so.1</text>
+<line x1="60" y1="172" x2="60" y2="192" stroke="#a3a8ad" stroke-width="1.5" marker-end="url(#as)"/>
+<!-- RCCL -->
+<rect x="0" y="194" width="420" height="34" fill="none" stroke="#e6e8e3" stroke-width="1.5"/>
+<text x="10" y="216" class="mono" font-size="12.5">ncclAllReduce_impl                        collectives.cc:246</text>
+<line x1="60" y1="228" x2="60" y2="248" stroke="#a3a8ad" stroke-width="1.5" marker-end="url(#as)"/>
+<rect x="0" y="250" width="420" height="34" fill="none" stroke="#2aa397" stroke-width="2"/>
+<text x="10" y="272" class="mono" font-size="12.5">if (mscclAvailable(comm) &amp;&amp; !mscclIsCaller())   :261</text>
+<line x1="420" y1="267" x2="470" y2="267" stroke="#2aa397" stroke-width="2" marker-end="url(#as)"/>
+<text x="424" y="260" font-size="11" fill="#2aa397">not FP8, bf16 ≤ 8 MiB</text>
+<rect x="472" y="250" width="408" height="34" fill="none" stroke="#2aa397" stroke-width="2"/>
+<text x="482" y="272" class="mono" font-size="12.5">mscclEnqueueCheck → mscclSchedulerSelectAlgo   :590,:399</text>
+<line x1="676" y1="284" x2="676" y2="304" stroke="#2aa397" stroke-width="2" marker-end="url(#as)"/>
+<text x="686" y="300" font-size="11" fill="#2aa397">XML matches (coll, nRanks, place, size, chunks)</text>
+<rect x="472" y="306" width="408" height="48" fill="#2aa397"/>
+<text x="482" y="326" fill="#14161a" font-weight="600">mscclRunSavedParams → mscclSetupKernel → interpreter kernel</text>
+<text x="482" y="344" font-size="11" fill="#0f2e2a">log: mscclFuncAllReduce: opCount …   ·   msccl arm exits here</text>
+<!-- fallback -->
+<line x1="472" y1="330" x2="440" y2="330" stroke="#a3a8ad" stroke-width="1.5" stroke-dasharray="4 3"/>
+<line x1="440" y1="330" x2="440" y2="372" stroke="#a3a8ad" stroke-width="1.5" stroke-dasharray="4 3"/>
+<line x1="440" y1="372" x2="424" y2="372" stroke="#a3a8ad" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#as)"/>
+<text x="300" y="366" font-size="11" fill="#a3a8ad">no XML: mscclFallBackSavedParams</text>
+<text x="300" y="380" font-size="11" fill="#a3a8ad">re-enters with caller flag set</text>
+<line x1="60" y1="284" x2="60" y2="392" stroke="#a3a8ad" stroke-width="1.5" marker-end="url(#as)"/>
+<text x="70" y="300" font-size="11.5" fill="#a3a8ad">RCCL_MSCCL_ENABLE=0, or topology gate failed,</text>
+<text x="70" y="314" font-size="11.5" fill="#a3a8ad">or &gt; 20 MiB, or FP8, or other collective</text>
+<rect x="0" y="394" width="420" height="34" fill="none" stroke="#e6e8e3" stroke-width="1.5"/>
+<text x="10" y="416" class="mono" font-size="12.5">ncclEnqueueCheck → taskAppend → scheduleCollTasksToPlan</text>
+<line x1="60" y1="428" x2="60" y2="448" stroke="#a3a8ad" stroke-width="1.5" marker-end="url(#as)"/>
+<rect x="0" y="450" width="420" height="34" fill="none" stroke="#a874c2" stroke-width="2"/>
+<text x="10" y="472" class="mono" font-size="12.5">getAlgoInfo                                  enqueue.cc:2277</text>
+<line x1="420" y1="467" x2="470" y2="467" stroke="#a874c2" stroke-width="2" marker-end="url(#as)"/>
+<text x="424" y="460" font-size="11" fill="#a874c2">comm-&gt;tuner != NULL</text>
+<rect x="472" y="450" width="408" height="34" fill="#a874c2"/>
+<text x="482" y="472" class="mono" font-size="12.5" fill="#14161a">tuner-&gt;getCollInfo(nBytes, costTable, &amp;nMaxChannels)  :2295</text>
+<line x1="676" y1="484" x2="676" y2="504" stroke="#a3a8ad" stroke-width="1.5" marker-end="url(#as)"/>
+<text x="686" y="500" font-size="11" fill="#a3a8ad">plugin edits cost table; sc2 arm</text>
+<line x1="60" y1="484" x2="60" y2="504" stroke="#a3a8ad" stroke-width="1.5" marker-end="url(#as)"/>
+<text x="70" y="500" font-size="11.5" fill="#a3a8ad">no plugin: none arm</text>
+<rect x="0" y="506" width="880" height="34" fill="#6a8fc4"/>
+<text x="10" y="528" class="mono" font-size="12.5" fill="#14161a">topoGetAlgoInfo → algorithm, protocol, nchannels → ncclKernel launch          log: Applied config / -A 1 row</text>
+</g></svg>
+
+<figcaption>Each arm of the 2026-09-09 attribution run, placed at the layer that actually executed its decode all_reduce. Evidence per arm in the table.</figcaption>
+</figure>
+<table>
+<tr><th>arm</th><th>custom AR</th><th>MSCCL</th><th>flag 112</th><th>plugin</th><th class="n">tok/s</th><th class="n">TPOT ms</th><th>which layer ran the all_reduce</th></tr>
+<tr><td>stock</td><td>on</td><td>on</td><td>yes</td><td>none</td><td class="n">7306</td><td class="n">4.14</td><td class="car">custom AR</td></tr>
+<tr><td>customar</td><td>on</td><td>off</td><td>no</td><td>none</td><td class="n">7316</td><td class="n">4.14</td><td class="car">custom AR</td></tr>
+<tr><td>stocksc2</td><td>on</td><td>on</td><td>yes</td><td>sc2</td><td class="n">7313</td><td class="n">4.14</td><td class="car">custom AR</td> </tr>
+<tr><td>msccl</td><td>off</td><td>on</td><td>yes</td><td>none</td><td class="n">6226</td><td class="n">4.90</td><td class="ms">MSCCL</td></tr>
+<tr><td>sc2 (run 6)</td><td>off</td><td>off</td><td>no</td><td>sc2</td><td class="n">5720</td><td class="n">5.35</td><td class="pl">RCCL + plugin rules</td></tr>
+<tr><td>none (run 6)</td><td>off</td><td>off</td><td>no</td><td>none</td><td class="n">4840</td><td class="n">6.37</td><td class="rc">RCCL defaults</td></tr>
+</table>
+<ul>
+<li><span class="tag log">log</span> stocksc2 loaded the plugin (184 DN-TUNER init lines) and applied zero rules; its RCCL logs hold exactly one <code>AllReduce: 4 Bytes</code> line for the whole run. Node ses2-1 <code>at_stocksc2_tun/logs/</code>, summarised in <code>2026-09-09-7-gptoss-attr/SUMMARY.md</code>. That is the proof the custom kernel took every model all_reduce, including the 2.9 MB prefill chunks.</li>
+<li><span class="tag log">log</span> customar equals stock (7316 vs 7306): MSCCL and the channel flag add nothing once the custom kernel is on.</li>
+<li><span class="tag log">log</span> msccl arm over sc2: 6226 vs 5720, +8.8%. This is the only place "MSCCL beats the tuned plugin" is true, and it is inside the RCCL path only.</li>
+<li><span class="tag log">log</span> MSCCL taking the model's calls was seen directly on 2026-08-30: 133315 <code>mscclFuncAllReduce</code> lines after warmup, 0 tuner hits; with <code>RCCL_MSCCL_ENABLE=0</code> the same workload produced 1,082,120 <code>Applied config</code> hits (<code>results-tuning/2026-08-30-1-value/inference/SUMMARY.md</code>, <code>RUNLOG.md</code> row 2026-08-30T14:33Z; raw logs on node <code>/data/ylerman/infer-2026-08-30/ab_*</code>).</li>
+</ul>
+<p>How each layer is switched in our driver <code>tools/rccl-sweep/infer_many.sh</code>: custom AR off by default via <code>--disable-custom-all-reduce</code>, kept on with <code>IM_KEEP_CUSTOM_AR=1</code> (lines 41-42); MSCCL via <code>RM_MSCCL</code> into <code>RCCL_MSCCL_ENABLE</code>, default 0 (line 69); the image itself ships <code>RCCL_MSCCL_ENABLE=1</code> and <code>NCCL_MIN_NCHANNELS=112</code> (env receipts in <code>2026-09-09-7-gptoss-attr/env_receipts.txt</code>).</p>
+
+<h2 id="s6"><span>6</span>The algorithm XML files<span class="sk">skim</span></h2>
+<p>RCCL ships 15 files in <code>tools/msccl-algorithms/</code>, installed to <code>share/rccl/msccl-algorithms</code> next to <code>librccl.so</code> (<code>CMakeLists.txt:1449-1453</code>). At init the loader reads every regular file there, keeps those whose <code>ngpus</code> equals the communicator size, and logs <code>Using MSCCL files from &lt;dir&gt;</code> (<code>msccl_lifecycle.cc:155-197</code>). No per-architecture filter exists <span class="tag src">source</span>.</p>
+<pre><code>&lt;algo name="allreduce_pairs" proto="Simple" nchannels="8" nchunksperloop="512" ngpus="8"
+      coll="allreduce" inplace="1" outofplace="0" minBytes="524288" maxBytes="20971520"&gt;
+  &lt;gpu id="0" i_chunks="512" o_chunks="0" s_chunks="448"&gt;          &lt;!-- input 512 chunks, scratch 7x64 --&gt;
+    &lt;tb id="8" send="1" recv="1" chan="0"&gt;                            &lt;!-- one block per (peer, channel) --&gt;
+      &lt;step s="0"  type="s"  srcbuf="i" srcoff="8"  cnt="8" .../&gt;     &lt;!-- send peer 1 its slice --&gt;
+      &lt;step s="1"  type="r"  dstbuf="s" ...         cnt="8" .../&gt;     &lt;!-- recv peer 1's part of my slice --&gt;
+      &lt;step s="2"  type="re" ... /&gt;   ... x7                           &lt;!-- reduce scratch into my slice --&gt;
+      &lt;step s="20" type="s"  srcbuf="i" srcoff="0"  cnt="8" .../&gt;     &lt;!-- send my reduced slice --&gt;
+      &lt;step s="21" type="r"  dstbuf="i" dstoff="8"  cnt="8" .../&gt;     &lt;!-- recv peer 1's reduced slice --&gt;</code></pre>
+<p>Header attributes map one-to-one onto the selection rule in section 2: <code>coll</code>, <code>ngpus</code>, <code>inplace</code>/<code>outofplace</code>, <code>minBytes</code>/<code>maxBytes</code>, <code>nchunksperloop</code>. Step types: <code>s</code> send, <code>r</code> receive, <code>re</code> reduce, <code>cpy</code> copy, <code>nop</code> wait on another block (<code>depid</code>/<code>deps</code>). The <code>-op</code> suffix means the out-of-place variant, not an operator.</p>
+<table>
+<tr><th>file</th><th>coll</th><th class="n">ngpus</th><th>proto</th><th class="n">nchannels</th><th>bytes</th><th class="n">TB / GPU</th></tr>
+<tr><td>allreduce-allpairs-8n-ll-32tb[-op]</td><td>allreduce</td><td class="n">8</td><td>LL</td><td class="n">4</td><td>0 to 64 KiB</td><td class="n">32</td></tr>
+<tr><td>allreduce-allpairs-8n-ll-64tb[-op]</td><td>allreduce</td><td class="n">8</td><td>LL</td><td class="n">8</td><td>64 KiB to 512 KiB</td><td class="n">64</td></tr>
+<tr><td>allreduce-allpairs-8n-simple[-op]</td><td>allreduce</td><td class="n">8</td><td>Simple</td><td class="n">8</td><td>512 KiB to 20 MiB</td><td class="n">64</td></tr>
+<tr><td>alltoall-8n-0-9kb</td><td>alltoall</td><td class="n">8</td><td>LL</td><td class="n">1</td><td>0 to 9 KiB</td><td class="n">15</td></tr>
+<tr><td>alltoall-8n-9kb-190kb</td><td>alltoall</td><td class="n">8</td><td>LL</td><td class="n">2</td><td>9 to 190 KiB</td><td class="n">30</td></tr>
+<tr><td>alltoall-8n-190kb-512kb</td><td>alltoall</td><td class="n">8</td><td>LL</td><td class="n">4</td><td>190 to 512 KiB</td><td class="n">60</td></tr>
+<tr><td>alltoall-8n-512kb-7mb</td><td>alltoall</td><td class="n">8</td><td>Simple</td><td class="n">32</td><td>512 KiB to 7 MiB</td><td class="n">60</td></tr>
+<tr><td>alltoall-8n-7mb-43mb</td><td>alltoall</td><td class="n">8</td><td>Simple</td><td class="n">8</td><td>7 to 43 MiB</td><td class="n">64</td></tr>
+<tr><td>allgather_16n_direct_0_3m_ll128[_op]</td><td>allgather</td><td class="n">16</td><td>LL128</td><td class="n">2</td><td>0 to 3 MiB total</td><td class="n">30</td></tr>
+<tr><td>allgather_32n_direct_0_6m_ll128[_op]</td><td>allgather</td><td class="n">32</td><td>LL128</td><td class="n">2</td><td>0 to 6 MiB total</td><td class="n">62</td></tr>
+</table>
+<p>So on 8 GPUs MSCCL covers only AllReduce and AllToAll. ReduceScatter, Broadcast, Reduce and 8-rank AllGather always go to RCCL's own algorithms and therefore to the tuner.</p>
+<p>How a file becomes a kernel <span class="tag src">source</span>: one interpreter kernel per (op, dtype, protocol), <code>mscclRunInterpreter</code> in <code>src/device/msccl_kernel_impl.h:94-353</code>. Each thread block copies its schedule to shared memory, sets up one send peer and one receive peer, then walks its steps, waiting on cross-block flags for dependencies. Launched once per collective call with <code>grid = nBlocks</code>, 256 threads (<code>msccl_setup.cc:419-523</code>). Not persistent. Protocols LL, LL128, Simple are the same RCCL primitives; the XML <code>proto</code> picks the entry.</p>
+<p>Writing your own: the files are generated with Microsoft's <code>msccl-tools</code> (MSCCLang Python DSL) and dropped into <code>MSCCL_ALGO_DIR</code>. RCCL rejects files that use fused ops (<code>RECV_REDUCE_SEND</code> etc.) because all its kernels are built with <code>fullOps=false</code> (<code>msccl_setup.cc:425-435</code>, <code>generate.py:605</code>), and files needing more channels than <code>NCCL_MAX_NCHANNELS</code> are dropped with a WARN (<code>msccl_lifecycle.cc:204-209</code>).</p>
+
+<h2 id="s7"><span>7</span>MSCCL vs MSCCL++<span class="sk">skim</span></h2>
+<p>Same authors, different layer. MSCCL executes an algorithm <em>inside</em> NCCL/RCCL, with NCCL's blocking send/recv primitives. MSCCL++ throws those primitives away.</p>
+<table>
+<tr><th></th><th class="ms">MSCCL</th><th>MSCCL++</th></tr>
+<tr><td>what it is</td><td>fork of NCCL; interpreter kernel runs XML schedules over NCCL channels and transports</td><td>separate "GPU-driven communication stack": one-sided <code>put / get / signal / wait / flush</code> on IPC-mapped memory, no proxy in the data path for intra-node</td></tr>
+<tr><td>how you write an algorithm</td><td>MSCCLang Python DSL, lowered to XML</td><td>same DSL family ("MSCCL++ DSL is an extension of the MSCCLang") plus a C++ primitive API for hand-written kernels</td></tr>
+<tr><td>how an app uses it</td><td>transparently, through RCCL, when the gates in section 2 pass</td><td>either a drop-in <code>libmscclpp_nccl.so</code> that reimplements the NCCL API, or a Python module (SGLang's <code>--enable-mscclpp</code>), or embedded in RCCL behind <code>RCCL_MSCCLPP_ENABLE=1</code></td></tr>
+<tr><td>why faster</td><td>only the algorithm: fewer dependent hops. Transport cost identical to RCCL</td><td>algorithm plus transport: GPU threads write straight into peers' memory and signal with one flag, the same trick SGLang's custom kernel uses</td></tr>
+<tr><td>published numbers</td><td>msccl README: "up-to 2-3x faster on 8xA100" for allpairs at small sizes</td><td>paper: 1 KB all-reduce on A100 9.5 to 5.0 µs; MI300X single node vs RCCL 2.20.5 "up to 3.8x and 1.9x [vs RCCL and MSCCL] for small messages, and by up to 2.2x and 1.6x for large messages"</td></tr>
+<tr><td>AMD status</td><td>deprecated 2.28.3, removed in develop</td><td>MI300X supported (gfx942, ROCm 6.0+), RCCL and SGLang listed as users; default-off in RCCL since 2.22.3 / 2.27.7</td></tr>
+</table>
+<p class="small">Sources: <a href="https://github.com/microsoft/mscclpp">github.com/microsoft/mscclpp</a> (docs/overview.md, quickstart.md), <a href="https://arxiv.org/abs/2504.09014">MSCCL++: Rethinking GPU Communication Abstractions for AI Inference</a> (ASPLOS 2026), <a href="https://rocm.docs.amd.com/projects/rccl/en/docs-7.0.1/how-to/rccl-usage-tips.html">RCCL usage tips 7.0.1</a>. The MI300X absolute latencies are in a figure only; the paper text gives ratios.</p>
+
+<h3>Inside RCCL <span class="tag src">source</span></h3>
+<ul>
+<li>MSCCL: RCCL's own interpreter kernel running XML schedules over RCCL's channels and transports. Compile option <code>ENABLE_MSCCL_KERNEL</code>, runtime <code>RCCL_MSCCL_ENABLE</code>, all collectives with a matching XML.</li>
+<li>MSCCL++: Microsoft's separate library built as an external project (<code>ext-src/mscclpp</code>, 12 local patches, <code>cmake/MSCCLPP.cmake</code>), its <code>nccl*</code> symbols renamed to <code>mscclpp_nccl*</code>. Compile option <code>ENABLE_MSCCLPP</code> (OFF, only gfx942/gfx950, ROCm 6.2+), runtime <code>RCCL_MSCCLPP_ENABLE</code> default 0 since 2.27.7 (<code>CHANGELOG.md:50</code>). AllReduce and AllGather only, up to <code>RCCL_MSCCLPP_THRESHOLD</code> (16 MiB in code, <code>init.cc:133</code>; the docs say 1 MB), only under graph capture or with registered buffers unless forced (<code>msccl_lifecycle.cc:607-641</code>). It needs MSCCL's own gate to pass first (<code>init.cc:2299-2301</code>).</li>
+<li>Order inside <code>mscclEnqueueCheck</code>: MSCCL++ is tried before MSCCL.</li>
+</ul>
+<p>In our container nothing indicates MSCCL++ was active: the env receipts carry only <code>RCCL_MSCCL_ENABLE</code>, and an active MSCCL++ prints <code>MSCCL++: Enabled! Msg size threshold=...</code> at init (<code>init.cc:2316</code>). We did not grep for that line; the default-off plus no env var makes it very likely off <span class="tag inf">inferred</span>.</p>
+
+<h2 id="s8"><span>8</span>Multi-node<span class="sk">skim</span></h2>
+<p>No line in the MSCCL code says "single node only". The restriction falls out of gate C <span class="tag src">source</span>:</p>
+<ul>
+<li><code>rome_model_79</code> requires <code>nNics = 0</code>. NET nodes are removed from the topology only when <code>system-&gt;nodes[GPU].count == comm-&gt;nRanks</code> (<code>src/graph/paths.cc:926-929</code>), i.e. when the communicator is exactly this node's GPUs. A 16- or 40-rank communicator keeps its NICs, the model does not match, <code>topo-&gt;mscclEnabled</code> stays false <span class="tag inf">inferred</span> from that chain.</li>
+<li>Escape hatch: <code>RCCL_MSCCL_FORCE_ENABLE=1</code> bypasses gate C. Then an XML with the right <code>ngpus</code> must exist; shipped ones are 8, 16 and 32, and only AllGather for 16/32. CHANGELOG 2.26.6: "Added MSCCL support for AllGather multinode gfx942/gfx950 (i.e., 16 and 32 GPUs). To enable, set RCCL_MSCCL_FORCE_ENABLE=1" (<code>CHANGELOG.md:78</code>).</li>
+</ul>
+<p>Consequence for our 2n to 5n sweeps: MSCCL was off there by construction (topology gate, and we also exported <code>RCCL_MSCCL_ENABLE=0</code>). The custom all-reduce is likewise intra-node only (section 4). Multi-node TP serving is the one deployment shape where every model all_reduce reaches RCCL and the tuner has a lever. Not measured.</p>
+
+<h2 id="s9"><span>9</span>Verifying which path ran<span class="sk">skim</span></h2>
+<p>Requested is not selected. These are the lines that prove it <span class="tag src">source</span>, all in <code>src/misc/msccl/</code> unless noted:</p>
+<table>
+<tr><th>line (format string)</th><th>subsystem</th><th>meaning</th><th>where</th></tr>
+<tr><td><code>MSCCL is deprecated, please be careful with this feature!</code></td><td>WARN</td><td>gates A+B+C passed for this comm; <code>mscclInit</code> runs. Best single marker in develop; <span class="k">absent in 7.2.0</span> (added after the tag). In 7.2.0 use the INIT lines below.</td><td><code>src/init.cc:1985</code></td></tr>
+<tr><td><code>Using MSCCL files from %s</code></td><td>INIT</td><td>algorithm dir found</td><td><code>msccl_lifecycle.cc:188</code></td></tr>
+<tr><td><code>MSCCL: No external scheduler found, using internal implementation</code></td><td>INIT</td><td>internal scheduler</td><td><code>msccl_lifecycle.cc:238</code></td></tr>
+<tr><td><code>MSCCL: Initialization finished, localSize %ld</code></td><td>INIT</td><td>init done</td><td><code>msccl_lifecycle.cc:337</code></td></tr>
+<tr><td><code>mscclFuncAllReduce: opCount %lx sendbuff %p ... count %zi ...</code></td><td>COLL</td><td><span class="k">this call ran on MSCCL</span></td><td><code>msccl_lifecycle.cc:485</code></td></tr>
+<tr><td><code>MSCCL: typeMask %x fnIndex %d Setup Kernel finished</code></td><td>COLL</td><td>one MSCCL kernel launch; <code>fnIndex % 3</code> = protocol</td><td><code>msccl_setup.cc:479</code></td></tr>
+<tr><td><code>NCCL_MAX_NCHANNELS:%d is lesser than number of channels required by MSCCL:%d, so disabling MSCCL for %s ...</code></td><td>WARN</td><td>an XML was dropped</td><td><code>msccl_lifecycle.cc:206</code></td></tr>
+</table>
+<p>Because MSCCL returns before <code>ncclEnqueueCheck</code>, a call it takes produces no normal <code>AllReduce: opCount ...</code> line, no tuner <code>Applied config</code> line, and no <code>-A 1</code> algo/proto row <span class="tag inf">inferred</span> from the call order in <code>collectives.cc:261-273</code>. Per-call lines need <code>NCCL_DEBUG_SUBSYS</code> to include <code>COLL</code>; the default mask is INIT, BOOTSTRAP, ENV (<code>src/debug.cc:43</code>).</p>
+<p>Our own observation <span class="tag log">log</span>: 133315 <code>mscclFuncAllReduce</code> after warmup with MSCCL on, 0 with it off (<code>results-tuning/2026-08-30-1-value/inference/SUMMARY.md</code>). The custom all-reduce leaves a different signature: RCCL sees almost nothing at all (one 4-byte AllReduce in the whole stocksc2 run).</p>
+<h3>Measuring MSCCL against RCCL's own algorithms in rccl-tests</h3>
+<p>Not run yet; proposal only. Same binary, same node, same logging, one env var flipped:</p>
+<pre><code>NCCL_DEBUG=INFO NCCL_DEBUG_SUBSYS=INIT,COLL,TUNING NCCL_DEBUG_FILE=&lt;out&gt;/msccl1_%p.log \
+RCCL_MSCCL_ENABLE=1 $MY_PATH/all_reduce_perf -b 4K -e 32M -f 2 -g 8 -Z csv -X &lt;out&gt;/msccl1.csv
+# and the same with RCCL_MSCCL_ENABLE=0
+grep -c mscclFuncAllReduce &lt;out&gt;/msccl1_*.log      # must be &gt; 0 for sizes &lt;= 20 MiB, 0 above</code></pre>
+<p>Caveat: rccl-tests uses out-of-place buffers by default, so the <code>-op</code> XMLs are the ones that fire; <code>count % 512 == 0</code> must hold for the 8-channel files, which power-of-two sizes satisfy.</p>
+
+<h2 id="s10"><span>10</span>What the tuner can still touch<span class="rd">read</span></h2>
+<p>The plugin is consulted in <code>getAlgoInfo</code> (<code>src/enqueue.cc:2295-2305</code>), reached only through <code>ncclEnqueueCheck</code>. Anything that leaves earlier never asks it. On one MI355X node running stock SGLang TP-8:</p>
+<ul>
+<li><span class="car k">Custom all-reduce on</span>: every model all_reduce up to 64 MiB is taken by SGLang's kernel, and the 91 to 94 MB prefill chunks by INT8 quick reduce (image env). RCCL sees one 4-byte call. Tuner lever: none. <span class="tag log">log</span></li>
+<li><span class="ms k">Custom all-reduce off, MSCCL on</span>: all_reduce up to 20 MiB, alltoall up to 43 MiB go to MSCCL. Tuner lever: all_reduce above 20 MiB, FP8 all_reduce, bf16 above 8 MiB, and every other collective (reduce_scatter, broadcast, reduce, all_gather). <span class="tag src">source</span></li>
+<li><span class="pl k">Both off</span>: the tuner sees everything. This is the only configuration our confs were ever measured in, and it is 34% below stock. <span class="tag log">log</span></li>
+</ul>
+<p>Other collectives barely exist in these models. One rank's RCCL log per detect run (custom AR off, so RCCL saw everything; <code>/data/ylerman/inmodel-2026-09-10/&lt;model&gt;/&lt;mode&gt;/detect/sc2_tun/logs/rccl.*.248.log</code> on the nodes that ran them) <span class="tag log">log</span>:</p>
+<table><tr><th>model / mode</th><th class="n">AllReduce</th><th class="n">AllGather</th><th class="n">AllToAll</th><th class="n">ReduceScatter, Broadcast, Reduce</th></tr>
+<tr><td>gpt-oss d32 / p8k / d128 / mix</td><td class="n">12119 / 15258 / 12630 / 13506</td><td class="n">142 / 138 / 150 / 138</td><td class="n">6 (init)</td><td class="n">0</td></tr>
+<tr><td>Qwen d32 / p8k / d128 / mix</td><td class="n">16103 / 20274 / 17073 / 18043</td><td class="n">139 / 135 / 145 / 135</td><td class="n">6 (init)</td><td class="n">0</td></tr></table>
+<p>About 99% of calls are all_reduce. The fast paths cover other collectives unevenly: aiter ships custom all-gather and reduce-scatter kernels (<code>all_gather_reg</code>, <code>custom_reduce_scatter</code>, aiter py l.1202-1333) but SGLang uses them only on the data-parallel attention path behind <code>SGLANG_DP_USE_REDUCE_SCATTER</code>, not in plain TP serving (<code>parallel_state.py:1036-1080</code>, <code>2026-09-10-2-aiterchk/agchk.log</code>); quick reduce is all_reduce only; MSCCL on 8 GPUs is all_reduce and alltoall only. So every non-all_reduce collective reaches RCCL and the tuner, and there is almost nothing there to tune.</p>
+<p>MSCCL itself has no tuning surface from the plugin: no channel count, protocol or algorithm knob passes through <code>getCollInfo</code> to it. Its only knobs are the XML files (section 6) and <code>NCCL_MAX_NCHANNELS</code>, which can only drop files. Tuning MSCCL means writing a different XML.</p>
+<p>Where a conf could still matter, all unmeasured: multi-node TP or PP serving (both fast paths are intra-node); models or sizes where SGLang falls back to RCCL for large all_reduce; collectives other than all_reduce; training.</p>
+
+<h2 id="s11"><span>11</span>Trade-offs<span class="rd">read</span></h2>
+<p>Both fast paths buy decode latency with generality. What they give up, from the same sources as above.</p>
+<div class="two">
+<div>
+<h3 class="car">Custom all-reduce (aiter)</h3>
+<ul>
+<li><span class="k">Memory.</span> About 3 GB per rank per group reserved up front: 1 GiB staging plus 2 GiB flags and scratch (aiter py l.702, 958-969). That is KV-cache capacity gone. <span class="tag src">source</span></li>
+<li><span class="k">Bandwidth-wasteful by design.</span> One-shot moves 7×L into every GPU and reduces the same data 8 times; two-shot runs on at most 80 blocks. Built for latency, weak at bandwidth, yet it takes every call up to 64 MiB with no size-adaptive switch to a streaming algorithm. Our prefill numbers agree: stock ahead of plain RCCL by 1 to 3% on TTFT against 19 to 28% on decode (<code>2026-09-10-1-inmodel/REVIEW.md</code> item 4). <span class="tag log">log</span></li>
+<li><span class="k">Narrow scope.</span> all_reduce only; TP 2, 4, 6, 8; one node; full XGMI mesh assumed without probing; 16-byte aligned, contiguous tensors. Multi-node, other collectives, other shapes all fall to RCCL (aiter py l.646, 733-806, 1033-1060). <span class="tag src">source</span></li>
+<li><span class="k">Extra copy in eager mode.</span> Unregistered inputs cost a device-to-device copy into the staging buffer per call (<code>custom_all_reduce.cu:434</code>). CUDA graphs avoid it, which is one reason graphs-off runs hid everything. <span class="tag src">source</span></li>
+<li><span class="k">Fragile primitives.</span> Cross-GPU spin-waits on flags in uncached memory, relaxed/acquire/release ordering by hand, three diverging forks (vLLM, SGLang, aiter) with different thresholds and caps. A separate deterministic kernel had to be added for bitwise-stable serving. <span class="tag src">source</span></li>
+<li><span class="k">Above the cap, precision.</span> In this image everything the custom kernel declines (over 64 MiB, in practice the 91 to 94 MB gpt-oss prefill chunks) goes to quick reduce with INT8 quantisation, because the image ships <code>ROCM_QUICK_REDUCE_QUANTIZATION=INT8</code>. Exact bf16 all_reduce for those chunks exists only on the RCCL path. Effect on output quality not measured. <span class="tag inf">inferred</span></li>
+<li><span class="k">Opaque.</span> Invisible to <code>NCCL_DEBUG</code>, <code>-A 1</code>, the tuner and rccl-tests. Every verification method this project built sees nothing. Only signal is RCCL's silence (one 4-byte call per run). <span class="tag log">log</span></li>
+</ul>
+</div>
+<div>
+<h3 class="ms">MSCCL</h3>
+<ul>
+<li><span class="k">Algorithm only.</span> Transport is RCCL's: proxy, channels, FIFO, launch per call. "MSCCL performs exactly the same as NCCL/RCCL if they use the same algorithm" (MSCCL++ paper). Hence half the custom kernel's gain: 6226 vs 7316 tok/s. <span class="tag log">log</span></li>
+<li><span class="k">Static windows.</span> 8-GPU allreduce up to 20 MiB, alltoall up to 43 MiB, nothing else; no FP8; bf16 only to 8 MiB; <code>count % nchunksperloop == 0</code> or silent fallback. Adapting means writing a new XML with msccl-tools. <span class="tag src">source</span></li>
+<li><span class="k">Side effect on the whole communicator.</span> The channel floor is raised to what the XMLs need (<code>connect.cc:895-901</code>), so other collectives run with more channels than RCCL would choose. <span class="tag src">source</span></li>
+<li><span class="k">Bypasses the tuner.</span> The plugin is never asked for a call MSCCL takes. Anything you tune for those sizes is dead code while MSCCL is on. <span class="tag log">log</span></li>
+<li><span class="k">Being retired.</span> Deprecated and build-default off in RCCL 2.28.3 for ROCm 7.11, removed in the develop docs. Known bugs: ncclCommSplit segfault (ROCm 6.4.1 notes), "data corruption/mismatch issue that existed in past releases" (ROCm 7.1 validation page). AMD's own SGLang and vLLM tutorials launch with <code>RCCL_MSCCL_ENABLE=0</code>. <span class="tag src">source</span></li>
+<li><span class="k">Single node.</span> Topology gate needs 0 NICs in the communicator; multi-node only by force-enable, and only 16/32-rank allgather is shipped. <span class="tag src">source</span></li>
+</ul>
+</div>
+</div>
+<h3>Shared</h3>
+<ul>
+<li>Both depend on one node with a full XGMI mesh. Both are latency-optimal, not bandwidth-optimal. Both help decode, barely touch prefill.</li>
+<li>Neither exists multi-node. There RCCL runs every all_reduce and the tuner keeps its lever. Not measured.</li>
+<li>The MSCCL+flag arm was not split: part of its +8.8% over sc2 could be <code>NCCL_MIN_NCHANNELS=112</code> rather than MSCCL. Open.</li>
+</ul>
+
+<p class="small" style="margin-top:56px;border-top:1px solid var(--rule);padding-top:10px">Built 2026-09-10. RCCL source: <code>/home/dn/repos/rccl-gap/rccl</code> @ 57e58688. Run evidence: <code>results-tuning/2026-09-09-7-gptoss-attr/</code>, <code>results-tuning/2026-09-10-2-aiterchk/</code>, <code>results-tuning/2026-09-09-6-gptoss-stock/</code>, <code>results-tuning/2026-08-30-1-value/inference/SUMMARY.md</code>. External sources listed inline in sections 1, 4 and 7.</p>
+</main></body></html>

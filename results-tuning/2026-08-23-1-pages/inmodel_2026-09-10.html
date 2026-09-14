@@ -1,0 +1,331 @@
+<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><title>in-model 2026-09-10-1-inmodel</title><style>body{font-family:-apple-system,system-ui,sans-serif;margin:12px;max-width:1280px;
+background:#14161a;color:#d8dbe0}
+.tw{overflow-x:auto;margin:10px 0}
+table{border-collapse:collapse;font-size:13px;width:100%}
+th{border:1px solid #34383f;padding:4px 8px;text-align:center}
+td{border:1px solid #34383f;padding:4px 8px;text-align:right;white-space:nowrap}
+td:first-child{text-align:left}
+table.fit{width:auto}
+table.fit td{text-align:left;white-space:normal}
+td.runs{font-family:ui-monospace,monospace;font-size:11.5px;max-width:430px}
+td.wrap{white-space:normal;min-width:160px;max-width:260px;text-align:left;font-size:12px}
+h1{font-size:20px;color:#f0f2f5}h2{font-size:16px;color:#e6e9ee;margin-top:26px}
+h3{font-size:14px;color:#e6e9ee}
+.g{color:#4ec96a;font-weight:600}.b{color:#ff6b6b}.n{color:#8a8f98}
+.v{background:#173321}.x{background:#331a1a}.warn{color:#e0c05a}
+.note{color:#9aa0a8;font-size:13px}
+a{color:#6ea8ff;text-decoration:none}
+pre{background:#1b1e24;padding:8px;font-size:12px;overflow-x:auto;border-radius:6px;line-height:1.5}
+pre .keep{color:#4ec96a}pre .drop{color:#ff6b6b;text-decoration:line-through}
+pre .why{color:#8a8f98;text-decoration:none;font-style:italic}
+details{margin:8px 0}summary{cursor:pointer;color:#6ea8ff;font-size:13px} h4{font-size:13px;color:#cfd3d9;margin:14px 0 4px}</style><p><a href='index.html'>&larr; index</a> · <a href='sanity_2026-09-08.html'>sanity checks + first in-model results</a></p><h1>Tuner conf in live serving &mdash; Qwen3-30B-A3B and gpt-oss-120b, 4 traffic modes, 4 arms (2026-09-10-1-inmodel)</h1>
+<p class=note><b>Stack:</b> image lmsysorg/sglang:v0.5.17-rocm720-mi35x (SGLang 0.5.17, ROCm 7.2.0, RCCL 2.27.7 @0d2c4fd 2025-12-09)</p>
+<p class=note>Measured the deployment way: SGLang with CUDA graphs ON, radix cache OFF, one server per arm, 6 benchmark reps per server (rep 1 = cold start, dropped), every model/mode run twice with the arm order reversed (pass 2) as a drift check. Reference arm = stock SGLang. Data: <code>results-tuning/2026-09-10-1-inmodel/&lt;model&gt;/&lt;mode&gt;/{pass1,pass2}/score.csv</code>; timeline in <code>TIMELINE.md</code> there.</p>
+<h2>0. Overview: median tok/s per arm, pass 1 / pass 2 (every table below in one line each)</h2>
+<div class=tw><table><tr><th>model</th><th>mode</th><th>decode all_reduce</th><th>sc2 rule covering it</th><th>stock</th><th>sc2</th><th>none</th><th>dummy</th><th>sc2 vs none</th><th>stock vs sc2</th></tr>
+<tr><td>qwen</td><td>d32</td><td>128K</td><td class=n>128K..256K tree/ll/64</td><td>5169 / 5165</td><td>4168 / 4179</td><td>3514 / 3530</td><td>1883 / 1882</td><td class=g>+18.6% / +18.4%</td><td class=g>+24.0% / +23.6%</td></tr>
+<tr><td>qwen</td><td>p8k</td><td>128K</td><td class=n>128K..256K tree/ll/64</td><td>1589 / 1588</td><td>1451 / 1450</td><td>1366 / 1365</td><td>117 / 117</td><td class=g>+6.2% / +6.2%</td><td class=g>+9.5% / +9.5%</td></tr>
+<tr><td>qwen</td><td>d128</td><td>512K</td><td class=n>512K..1M ring/ll/64</td><td>16336 / 16387</td><td>13239 / 13252</td><td>10950 / 10946</td><td>3021 / 3023</td><td class=g>+20.9% / +21.1%</td><td class=g>+23.4% / +23.7%</td></tr>
+<tr><td>qwen</td><td>mix</td><td>256K</td><td class=n>128K..256K tree/ll/64</td><td>7793 / 7795</td><td>6393 / 6376</td><td>5732 / 5727</td><td>1275 / 1275</td><td class=g>+11.5% / +11.3%</td><td class=g>+21.9% / +22.2%</td></tr>
+<tr><td>gptoss</td><td>d32</td><td>180K</td><td class=n>128K..256K tree/ll/64</td><td>7251 / 7291</td><td>5713 / 5679</td><td>4832 / 4820</td><td>2116 / 2119</td><td class=g>+18.2% / +17.8%</td><td class=g>+26.9% / +28.4%</td></tr>
+<tr><td>gptoss</td><td>p8k</td><td>180K</td><td class=n>128K..256K tree/ll/64</td><td>1778 / 1777</td><td>1641 / 1639</td><td>1557 / 1559</td><td>112 / 112</td><td class=g>+5.4% / +5.2%</td><td class=g>+8.3% / +8.4%</td></tr>
+<tr><td>gptoss</td><td>d128</td><td>720K</td><td class=n>512K..1M ring/ll/64</td><td>19936 / 19492</td><td>16761 / 16775</td><td>13140 / 13141</td><td>3029 / 3031</td><td class=g>+27.6% / +27.7%</td><td class=g>+18.9% / +16.2%</td></tr>
+<tr><td>gptoss</td><td>mix</td><td>360K</td><td class=b>NO RULE (gap 256K..512K)</td><td>10033 / 10032</td><td>7518 / 7515</td><td>7518 / 7520</td><td>1272 / 1272</td><td class=n>+0.0% / -0.1%</td><td class=g>+33.5% / +33.5%</td></tr>
+</table></div>
+<p class=note>Order in all 16 tables: stock &gt; sc2 &gt; none &gt;&gt; dummy. Stock SGLang (custom all-reduce) stays 8-34% ahead of the tuned RCCL path; within the RCCL path the conf is worth +5..+28% where its rules cover the mode's decode all_reduce size, and 0% where they do not (gpt-oss mix).</p>
+<h2>1. The conf under test: sc2 (sanity-check-2 final config) and how it was made</h2>
+<pre class=keep>collective_type,min_bytes,max_bytes,algorithm,protocol,channels,nNodes,nRanks,numPipeOps,regBuff
+allreduce,4096,4096,tree,ll,2,1,8,-1,-1
+allreduce,8192,8192,tree,ll,48,1,8,-1,-1
+allreduce,16384,16384,tree,ll,16,1,8,-1,-1
+allreduce,32768,32768,tree,ll,48,1,8,-1,-1
+allreduce,65536,65536,tree,ll,32,1,8,-1,-1
+allreduce,131072,262144,tree,ll,64,1,8,-1,-1
+allreduce,524288,1048576,ring,ll,64,1,8,-1,-1
+allreduce,2097152,2097152,ring,ll,72,1,8,-1,-1</pre>
+<p class=note>Format: collective, min_bytes, max_bytes, algorithm, protocol, channels, nNodes, nRanks, numPipeOps, regBuff. Every rule says: for an all_reduce of this size on 1 node / 8 ranks, use this algo/proto and at most this many channels.</p>
+<h3>How it was derived (2026-09-08-2-sanity-check-2, one command: <code>rccl_tune.py run --collectives all_reduce --scales 1 --grid 1..112</code>)</h3>
+<ol class=note><li><b>Search</b> (rccl-tests <code>all_reduce_perf</code>, stock RCCL inside the SGLang image, one MI355X node, 8 GPUs): racing search over {RING,TREE} x {LL,SIMPLE} x channels 1..112 (18 values), 18 message sizes 4K..512M, 3 repeats per point, 120 runs (26% fewer than the full grid), plus 3 runs of RCCL default. Winner per size = highest busbw within 0.5%, fewest channels among ties.</li><li><b>Conf</b>: one rule per size from the winners (18 rules).</li><li><b>A/B through the tuner plugin</b>: each rule vs RCCL default, 9 repeats per arm interleaved, both arms with the image's NCCL_MIN_NCHANNELS removed. Kept only rules with P(sup) &ge; 0.95, gain &gt; 2%, no size regressing &gt; 2%: 10 of 18 sizes (4K..2M, +12..+74% busbw); the 8 sizes &ge; 4M were dropped (8M..512M parity, 4M a real -1.1% loss).</li><li><b>Final</b>: adjacent identical rules merged &rarr; the 8 rules above. Full detail: <a href='sanity_2026-09-08.html'>sanity_2026-09-08.html</a>.</li></ol>
+<p class=note>Note the channel numbers are requests: RCCL trims per call (e.g. 48 requested at 8K runs 4). What matters is the executed behaviour, which the A/B measured (column 'ours executed' on the sanity page).</p>
+<h2>2. Results per model, mode and pass</h2>
+<div class=tw><table class=fit><tr><th>arm</th><th>meaning</th></tr><tr><td>stock</td><td>STOCK SGLang: AITER custom all-reduce ON, image env untouched (NCCL_MIN_NCHANNELS=112), no plugin</td></tr><tr><td>none</td><td>RCCL as shipped: custom all-reduce off, NCCL_MIN_NCHANNELS removed, no plugin</td></tr><tr><td>sc2</td><td>plain RCCL + tuner plugin + sc2 conf</td></tr><tr><td>dummy</td><td>plain RCCL + tuner plugin + dummy conf (ring,simple,1 channel for all sizes)</td></tr></table></div>
+<h2>Qwen3-30B-A3B (TP-8, hidden 2048: decode all_reduce = conc x 4096 B)</h2>
+<h3>mode d32 &mdash; decode-heavy: ISL 512 / OSL 512 / concurrency 32 / 128 prompts</h3>
+<h4>qwen · d32 · pass1 · arm order stock, none, sc2, dummy · graphs ON, radix OFF · node amd-mi355x-8 · 5 scored reps per arm · <code>qwen/d32/pass1/score.csv</code></h4>
+<div class=tw><table><tr><th>arm</th><th>server</th><th>median tok/s</th><th>vs stock</th><th>P(sup) vs stock</th><th>TTFT ms (median of per-rep mean)</th><th>TPOT ms</th><th>verdict</th></tr>
+<tr><td>stock</td><td class=wrap>STOCK SGLang: AITER custom all-reduce ON, image env untouched (NCCL_MIN_NCHANNELS=112), no plugin</td><td>5169.02</td><td class=n>+0.0%</td><td>0.50</td><td>136.1</td><td>5.93</td><td class=wrap>reference (n=5)</td></tr>
+<tr class=x><td>none</td><td class=wrap>RCCL as shipped: custom all-reduce off, NCCL_MIN_NCHANNELS removed, no plugin</td><td>3513.59</td><td class=b>-32.0%</td><td>0.00</td><td>142.7</td><td>8.84</td><td class=wrap>worse than stock (n=5)</td></tr>
+<tr class=x><td>sc2</td><td class=wrap>plain RCCL + tuner plugin + sc2 conf</td><td>4168.08</td><td class=b>-19.4%</td><td>0.00</td><td>141.5</td><td>7.41</td><td class=wrap>worse than stock (n=5)</td></tr>
+<tr class=x><td>dummy</td><td class=wrap>plain RCCL + tuner plugin + dummy conf (ring,simple,1 channel for all sizes)</td><td>1882.52</td><td class=b>-63.6%</td><td>0.00</td><td>2008.2</td><td>13.09</td><td class=wrap>worse than stock (n=5)</td></tr>
+</table></div>
+<p class=note>sc2 vs none (the tuner's own effect, same RCCL path): +18.6% tok/s, TPOT 7.41 vs 8.84 ms.</p>
+<h4>qwen · d32 · pass2 · arm order dummy, sc2, none, stock · graphs ON, radix OFF · node amd-mi355x-8 · 5 scored reps per arm · <code>qwen/d32/pass2/score.csv</code></h4>
+<div class=tw><table><tr><th>arm</th><th>server</th><th>median tok/s</th><th>vs stock</th><th>P(sup) vs stock</th><th>TTFT ms (median of per-rep mean)</th><th>TPOT ms</th><th>verdict</th></tr>
+<tr><td>stock</td><td class=wrap>STOCK SGLang: AITER custom all-reduce ON, image env untouched (NCCL_MIN_NCHANNELS=112), no plugin</td><td>5164.97</td><td class=n>+0.0%</td><td>0.50</td><td>136.9</td><td>5.93</td><td class=wrap>reference (n=5)</td></tr>
+<tr class=x><td>none</td><td class=wrap>RCCL as shipped: custom all-reduce off, NCCL_MIN_NCHANNELS removed, no plugin</td><td>3529.52</td><td class=b>-31.7%</td><td>0.00</td><td>142.3</td><td>8.8</td><td class=wrap>worse than stock (n=5)</td></tr>
+<tr class=x><td>sc2</td><td class=wrap>plain RCCL + tuner plugin + sc2 conf</td><td>4179.19</td><td class=b>-19.1%</td><td>0.00</td><td>142.1</td><td>7.38</td><td class=wrap>worse than stock (n=5)</td></tr>
+<tr class=x><td>dummy</td><td class=wrap>plain RCCL + tuner plugin + dummy conf (ring,simple,1 channel for all sizes)</td><td>1882.17</td><td class=b>-63.6%</td><td>0.00</td><td>2008.1</td><td>13.08</td><td class=wrap>worse than stock (n=5)</td></tr>
+</table></div>
+<p class=note>sc2 vs none (the tuner's own effect, same RCCL path): +18.4% tok/s, TPOT 7.38 vs 8.8 ms.</p>
+<h3>mode p8k &mdash; prefill-heavy: ISL 8192 / OSL 128 / concurrency 32 / 96 prompts</h3>
+<h4>qwen · p8k · pass1 · arm order stock, none, sc2, dummy · graphs ON, radix OFF · node amd-mi355x-8 · 5 scored reps per arm · <code>qwen/p8k/pass1/score.csv</code></h4>
+<div class=tw><table><tr><th>arm</th><th>server</th><th>median tok/s</th><th>vs stock</th><th>P(sup) vs stock</th><th>TTFT ms (median of per-rep mean)</th><th>TPOT ms</th><th>verdict</th></tr>
+<tr><td>stock</td><td class=wrap>STOCK SGLang: AITER custom all-reduce ON, image env untouched (NCCL_MIN_NCHANNELS=112), no plugin</td><td>1588.83</td><td class=n>+0.0%</td><td>0.50</td><td>950.3</td><td>12.76</td><td class=wrap>reference (n=5)</td></tr>
+<tr class=x><td>none</td><td class=wrap>RCCL as shipped: custom all-reduce off, NCCL_MIN_NCHANNELS removed, no plugin</td><td>1366.45</td><td class=b>-14.0%</td><td>0.00</td><td>978.3</td><td>15.84</td><td class=wrap>worse than stock (n=5)</td></tr>
+<tr class=x><td>sc2</td><td class=wrap>plain RCCL + tuner plugin + sc2 conf</td><td>1450.91</td><td class=b>-8.7%</td><td>0.00</td><td>976.8</td><td>14.47</td><td class=wrap>worse than stock (n=5)</td></tr>
+<tr class=x><td>dummy</td><td class=wrap>plain RCCL + tuner plugin + dummy conf (ring,simple,1 channel for all sizes)</td><td>117.31</td><td class=b>-92.6%</td><td>0.00</td><td>17666.6</td><td>135.79</td><td class=wrap>worse than stock (n=5)</td></tr>
+</table></div>
+<p class=note>sc2 vs none (the tuner's own effect, same RCCL path): +6.2% tok/s, TPOT 14.47 vs 15.84 ms.</p>
+<h4>qwen · p8k · pass2 · arm order dummy, sc2, none, stock · graphs ON, radix OFF · node amd-mi355x-8 · 5 scored reps per arm · <code>qwen/p8k/pass2/score.csv</code></h4>
+<div class=tw><table><tr><th>arm</th><th>server</th><th>median tok/s</th><th>vs stock</th><th>P(sup) vs stock</th><th>TTFT ms (median of per-rep mean)</th><th>TPOT ms</th><th>verdict</th></tr>
+<tr><td>stock</td><td class=wrap>STOCK SGLang: AITER custom all-reduce ON, image env untouched (NCCL_MIN_NCHANNELS=112), no plugin</td><td>1587.88</td><td class=n>+0.0%</td><td>0.50</td><td>949.8</td><td>12.77</td><td class=wrap>reference (n=5)</td></tr>
+<tr class=x><td>none</td><td class=wrap>RCCL as shipped: custom all-reduce off, NCCL_MIN_NCHANNELS removed, no plugin</td><td>1365.49</td><td class=b>-14.0%</td><td>0.00</td><td>980.2</td><td>15.84</td><td class=wrap>worse than stock (n=5)</td></tr>
+<tr class=x><td>sc2</td><td class=wrap>plain RCCL + tuner plugin + sc2 conf</td><td>1450.43</td><td class=b>-8.7%</td><td>0.00</td><td>984.0</td><td>14.44</td><td class=wrap>worse than stock (n=5)</td></tr>
+<tr class=x><td>dummy</td><td class=wrap>plain RCCL + tuner plugin + dummy conf (ring,simple,1 channel for all sizes)</td><td>117.23</td><td class=b>-92.6%</td><td>0.00</td><td>17673.7</td><td>135.88</td><td class=wrap>worse than stock (n=5)</td></tr>
+</table></div>
+<p class=note>sc2 vs none (the tuner's own effect, same RCCL path): +6.2% tok/s, TPOT 14.44 vs 15.84 ms.</p>
+<h3>mode d128 &mdash; decode-heavy, big batch: ISL 512 / OSL 512 / concurrency 128 / 384 prompts</h3>
+<h4>qwen · d128 · pass1 · arm order stock, none, sc2, dummy · graphs ON, radix OFF · node amd-mi355x-9 · 5 scored reps per arm · <code>qwen/d128/pass1/score.csv</code></h4>
+<div class=tw><table><tr><th>arm</th><th>server</th><th>median tok/s</th><th>vs stock</th><th>P(sup) vs stock</th><th>TTFT ms (median of per-rep mean)</th><th>TPOT ms</th><th>verdict</th></tr>
+<tr><td>stock</td><td class=wrap>STOCK SGLang: AITER custom all-reduce ON, image env untouched (NCCL_MIN_NCHANNELS=112), no plugin</td><td>16335.88</td><td class=n>+0.0%</td><td>0.50</td><td>303.0</td><td>7.22</td><td class=wrap>reference (n=5)</td></tr>
+<tr class=x><td>none</td><td class=wrap>RCCL as shipped: custom all-reduce off, NCCL_MIN_NCHANNELS removed, no plugin</td><td>10950.16</td><td class=b>-33.0%</td><td>0.00</td><td>317.7</td><td>11.06</td><td class=wrap>worse than stock (n=5)</td></tr>
+<tr class=x><td>sc2</td><td class=wrap>plain RCCL + tuner plugin + sc2 conf</td><td>13238.9</td><td class=b>-19.0%</td><td>0.00</td><td>320.6</td><td>9.02</td><td class=wrap>worse than stock (n=5)</td></tr>
+<tr class=x><td>dummy</td><td class=wrap>plain RCCL + tuner plugin + dummy conf (ring,simple,1 channel for all sizes)</td><td>3021.2</td><td class=b>-81.5%</td><td>0.00</td><td>5178.2</td><td>32.28</td><td class=wrap>worse than stock (n=5)</td></tr>
+</table></div>
+<p class=note>sc2 vs none (the tuner's own effect, same RCCL path): +20.9% tok/s, TPOT 9.02 vs 11.06 ms.</p>
+<h4>qwen · d128 · pass2 · arm order dummy, sc2, none, stock · graphs ON, radix OFF · node amd-mi355x-9 · 5 scored reps per arm · <code>qwen/d128/pass2/score.csv</code></h4>
+<div class=tw><table><tr><th>arm</th><th>server</th><th>median tok/s</th><th>vs stock</th><th>P(sup) vs stock</th><th>TTFT ms (median of per-rep mean)</th><th>TPOT ms</th><th>verdict</th></tr>
+<tr><td>stock</td><td class=wrap>STOCK SGLang: AITER custom all-reduce ON, image env untouched (NCCL_MIN_NCHANNELS=112), no plugin</td><td>16387.03</td><td class=n>+0.0%</td><td>0.50</td><td>306.2</td><td>7.19</td><td class=wrap>reference (n=5)</td></tr>
+<tr class=x><td>none</td><td class=wrap>RCCL as shipped: custom all-reduce off, NCCL_MIN_NCHANNELS removed, no plugin</td><td>10945.58</td><td class=b>-33.2%</td><td>0.00</td><td>318.0</td><td>11.06</td><td class=wrap>worse than stock (n=5)</td></tr>
+<tr class=x><td>sc2</td><td class=wrap>plain RCCL + tuner plugin + sc2 conf</td><td>13251.65</td><td class=b>-19.1%</td><td>0.00</td><td>323.8</td><td>9.01</td><td class=wrap>worse than stock (n=5)</td></tr>
+<tr class=x><td>dummy</td><td class=wrap>plain RCCL + tuner plugin + dummy conf (ring,simple,1 channel for all sizes)</td><td>3023.33</td><td class=b>-81.5%</td><td>0.00</td><td>5173.4</td><td>32.27</td><td class=wrap>worse than stock (n=5)</td></tr>
+</table></div>
+<p class=note>sc2 vs none (the tuner's own effect, same RCCL path): +21.1% tok/s, TPOT 9.01 vs 11.06 ms.</p>
+<h3>mode mix &mdash; mixed: ISL 2048 / OSL 512 / concurrency 64 / 192 prompts</h3>
+<h4>qwen · mix · pass1 · arm order stock, none, sc2, dummy · graphs ON, radix OFF · node amd-mi355x-9 · 5 scored reps per arm · <code>qwen/mix/pass1/score.csv</code></h4>
+<div class=tw><table><tr><th>arm</th><th>server</th><th>median tok/s</th><th>vs stock</th><th>P(sup) vs stock</th><th>TTFT ms (median of per-rep mean)</th><th>TPOT ms</th><th>verdict</th></tr>
+<tr><td>stock</td><td class=wrap>STOCK SGLang: AITER custom all-reduce ON, image env untouched (NCCL_MIN_NCHANNELS=112), no plugin</td><td>7792.6</td><td class=n>+0.0%</td><td>0.50</td><td>495.2</td><td>7.25</td><td class=wrap>reference (n=5)</td></tr>
+<tr class=x><td>none</td><td class=wrap>RCCL as shipped: custom all-reduce off, NCCL_MIN_NCHANNELS removed, no plugin</td><td>5732.25</td><td class=b>-26.4%</td><td>0.00</td><td>517.9</td><td>10.15</td><td class=wrap>worse than stock (n=5)</td></tr>
+<tr class=x><td>sc2</td><td class=wrap>plain RCCL + tuner plugin + sc2 conf</td><td>6393.19</td><td class=b>-18.0%</td><td>0.00</td><td>512.3</td><td>9.01</td><td class=wrap>worse than stock (n=5)</td></tr>
+<tr class=x><td>dummy</td><td class=wrap>plain RCCL + tuner plugin + dummy conf (ring,simple,1 channel for all sizes)</td><td>1275.21</td><td class=b>-83.6%</td><td>0.00</td><td>9324.0</td><td>32.02</td><td class=wrap>worse than stock (n=5)</td></tr>
+</table></div>
+<p class=note>sc2 vs none (the tuner's own effect, same RCCL path): +11.5% tok/s, TPOT 9.01 vs 10.15 ms.</p>
+<h4>qwen · mix · pass2 · arm order dummy, sc2, none, stock · graphs ON, radix OFF · node amd-mi355x-9 · 5 scored reps per arm · <code>qwen/mix/pass2/score.csv</code></h4>
+<div class=tw><table><tr><th>arm</th><th>server</th><th>median tok/s</th><th>vs stock</th><th>P(sup) vs stock</th><th>TTFT ms (median of per-rep mean)</th><th>TPOT ms</th><th>verdict</th></tr>
+<tr><td>stock</td><td class=wrap>STOCK SGLang: AITER custom all-reduce ON, image env untouched (NCCL_MIN_NCHANNELS=112), no plugin</td><td>7794.57</td><td class=n>+0.0%</td><td>0.50</td><td>495.7</td><td>7.24</td><td class=wrap>reference (n=5)</td></tr>
+<tr class=x><td>none</td><td class=wrap>RCCL as shipped: custom all-reduce off, NCCL_MIN_NCHANNELS removed, no plugin</td><td>5727.22</td><td class=b>-26.5%</td><td>0.00</td><td>513.5</td><td>10.17</td><td class=wrap>worse than stock (n=5)</td></tr>
+<tr class=x><td>sc2</td><td class=wrap>plain RCCL + tuner plugin + sc2 conf</td><td>6376.08</td><td class=b>-18.2%</td><td>0.00</td><td>517.5</td><td>9.03</td><td class=wrap>worse than stock (n=5)</td></tr>
+<tr class=x><td>dummy</td><td class=wrap>plain RCCL + tuner plugin + dummy conf (ring,simple,1 channel for all sizes)</td><td>1275.0</td><td class=b>-83.6%</td><td>0.00</td><td>9324.5</td><td>32.02</td><td class=wrap>worse than stock (n=5)</td></tr>
+</table></div>
+<p class=note>sc2 vs none (the tuner's own effect, same RCCL path): +11.3% tok/s, TPOT 9.03 vs 10.17 ms.</p>
+<h2>gpt-oss-120b (TP-8, hidden 2880: decode all_reduce = conc x 5760 B; --attention-backend triton)</h2>
+<h3>mode d32 &mdash; decode-heavy: ISL 512 / OSL 512 / concurrency 32 / 128 prompts</h3>
+<h4>gptoss · d32 · pass1 · arm order stock, none, sc2, dummy · graphs ON, radix OFF · node amd-mi355x-des2-2 · 5 scored reps per arm · <code>gptoss/d32/pass1/score.csv</code></h4>
+<div class=tw><table><tr><th>arm</th><th>server</th><th>median tok/s</th><th>vs stock</th><th>P(sup) vs stock</th><th>TTFT ms (median of per-rep mean)</th><th>TPOT ms</th><th>verdict</th></tr>
+<tr><td>stock</td><td class=wrap>STOCK SGLang: AITER custom all-reduce ON, image env untouched (NCCL_MIN_NCHANNELS=112), no plugin</td><td>7251.08</td><td class=n>+0.0%</td><td>0.50</td><td>122.6</td><td>4.17</td><td class=wrap>reference (n=5)</td></tr>
+<tr class=x><td>none</td><td class=wrap>RCCL as shipped: custom all-reduce off, NCCL_MIN_NCHANNELS removed, no plugin</td><td>4831.55</td><td class=b>-33.4%</td><td>0.00</td><td>125.6</td><td>6.38</td><td class=wrap>worse than stock (n=5)</td></tr>
+<tr class=x><td>sc2</td><td class=wrap>plain RCCL + tuner plugin + sc2 conf</td><td>5712.76</td><td class=b>-21.2%</td><td>0.00</td><td>126.2</td><td>5.36</td><td class=wrap>worse than stock (n=5)</td></tr>
+<tr class=x><td>dummy</td><td class=wrap>plain RCCL + tuner plugin + dummy conf (ring,simple,1 channel for all sizes)</td><td>2116.37</td><td class=b>-70.8%</td><td>0.00</td><td>2114.5</td><td>10.99</td><td class=wrap>worse than stock (n=5)</td></tr>
+</table></div>
+<p class=note>sc2 vs none (the tuner's own effect, same RCCL path): +18.2% tok/s, TPOT 5.36 vs 6.38 ms.</p>
+<h4>gptoss · d32 · pass2 · arm order dummy, sc2, none, stock · graphs ON, radix OFF · node amd-mi355x-des2-2 · 5 scored reps per arm · <code>gptoss/d32/pass2/score.csv</code></h4>
+<div class=tw><table><tr><th>arm</th><th>server</th><th>median tok/s</th><th>vs stock</th><th>P(sup) vs stock</th><th>TTFT ms (median of per-rep mean)</th><th>TPOT ms</th><th>verdict</th></tr>
+<tr><td>stock</td><td class=wrap>STOCK SGLang: AITER custom all-reduce ON, image env untouched (NCCL_MIN_NCHANNELS=112), no plugin</td><td>7290.55</td><td class=n>+0.0%</td><td>0.50</td><td>121.9</td><td>4.15</td><td class=wrap>reference (n=5)</td></tr>
+<tr class=x><td>none</td><td class=wrap>RCCL as shipped: custom all-reduce off, NCCL_MIN_NCHANNELS removed, no plugin</td><td>4820.45</td><td class=b>-33.9%</td><td>0.00</td><td>127.4</td><td>6.39</td><td class=wrap>worse than stock (n=5)</td></tr>
+<tr class=x><td>sc2</td><td class=wrap>plain RCCL + tuner plugin + sc2 conf</td><td>5679.19</td><td class=b>-22.1%</td><td>0.00</td><td>125.3</td><td>5.39</td><td class=wrap>worse than stock (n=5)</td></tr>
+<tr class=x><td>dummy</td><td class=wrap>plain RCCL + tuner plugin + dummy conf (ring,simple,1 channel for all sizes)</td><td>2119.44</td><td class=b>-70.9%</td><td>0.00</td><td>2114.0</td><td>10.98</td><td class=wrap>worse than stock (n=5)</td></tr>
+</table></div>
+<p class=note>sc2 vs none (the tuner's own effect, same RCCL path): +17.8% tok/s, TPOT 5.39 vs 6.39 ms.</p>
+<h3>mode p8k &mdash; prefill-heavy: ISL 8192 / OSL 128 / concurrency 32 / 96 prompts</h3>
+<h4>gptoss · p8k · pass1 · arm order stock, none, sc2, dummy · graphs ON, radix OFF · node amd-mi355x-des2-2 · 5 scored reps per arm · <code>gptoss/p8k/pass1/score.csv</code></h4>
+<div class=tw><table><tr><th>arm</th><th>server</th><th>median tok/s</th><th>vs stock</th><th>P(sup) vs stock</th><th>TTFT ms (median of per-rep mean)</th><th>TPOT ms</th><th>verdict</th></tr>
+<tr><td>stock</td><td class=wrap>STOCK SGLang: AITER custom all-reduce ON, image env untouched (NCCL_MIN_NCHANNELS=112), no plugin</td><td>1778.21</td><td class=n>+0.0%</td><td>0.50</td><td>1032.5</td><td>9.95</td><td class=wrap>reference (n=5)</td></tr>
+<tr class=x><td>none</td><td class=wrap>RCCL as shipped: custom all-reduce off, NCCL_MIN_NCHANNELS removed, no plugin</td><td>1557.27</td><td class=b>-12.4%</td><td>0.00</td><td>1055.2</td><td>12.4</td><td class=wrap>worse than stock (n=5)</td></tr>
+<tr class=x><td>sc2</td><td class=wrap>plain RCCL + tuner plugin + sc2 conf</td><td>1641.28</td><td class=b>-7.7%</td><td>0.00</td><td>1043.0</td><td>11.44</td><td class=wrap>worse than stock (n=5)</td></tr>
+<tr class=x><td>dummy</td><td class=wrap>plain RCCL + tuner plugin + dummy conf (ring,simple,1 channel for all sizes)</td><td>112.15</td><td class=b>-93.7%</td><td>0.00</td><td>20964.7</td><td>122.46</td><td class=wrap>worse than stock (n=5)</td></tr>
+</table></div>
+<p class=note>sc2 vs none (the tuner's own effect, same RCCL path): +5.4% tok/s, TPOT 11.44 vs 12.4 ms.</p>
+<h4>gptoss · p8k · pass2 · arm order dummy, sc2, none, stock · graphs ON, radix OFF · node amd-mi355x-des2-2 · 5 scored reps per arm · <code>gptoss/p8k/pass2/score.csv</code></h4>
+<div class=tw><table><tr><th>arm</th><th>server</th><th>median tok/s</th><th>vs stock</th><th>P(sup) vs stock</th><th>TTFT ms (median of per-rep mean)</th><th>TPOT ms</th><th>verdict</th></tr>
+<tr><td>stock</td><td class=wrap>STOCK SGLang: AITER custom all-reduce ON, image env untouched (NCCL_MIN_NCHANNELS=112), no plugin</td><td>1776.63</td><td class=n>+0.0%</td><td>0.50</td><td>1027.5</td><td>10.09</td><td class=wrap>reference (n=5)</td></tr>
+<tr class=x><td>none</td><td class=wrap>RCCL as shipped: custom all-reduce off, NCCL_MIN_NCHANNELS removed, no plugin</td><td>1558.57</td><td class=b>-12.3%</td><td>0.00</td><td>1044.3</td><td>12.41</td><td class=wrap>worse than stock (n=5)</td></tr>
+<tr class=x><td>sc2</td><td class=wrap>plain RCCL + tuner plugin + sc2 conf</td><td>1639.06</td><td class=b>-7.7%</td><td>0.00</td><td>1038.7</td><td>11.46</td><td class=wrap>worse than stock (n=5)</td></tr>
+<tr class=x><td>dummy</td><td class=wrap>plain RCCL + tuner plugin + dummy conf (ring,simple,1 channel for all sizes)</td><td>112.19</td><td class=b>-93.7%</td><td>0.00</td><td>20805.5</td><td>123.58</td><td class=wrap>worse than stock (n=5)</td></tr>
+</table></div>
+<p class=note>sc2 vs none (the tuner's own effect, same RCCL path): +5.2% tok/s, TPOT 11.46 vs 12.41 ms.</p>
+<h3>mode d128 &mdash; decode-heavy, big batch: ISL 512 / OSL 512 / concurrency 128 / 384 prompts</h3>
+<h4>gptoss · d128 · pass1 · arm order stock, none, sc2, dummy · graphs ON, radix OFF · node amd-mi355x-ses2-1 · 5 scored reps per arm · <code>gptoss/d128/pass1/score.csv</code></h4>
+<div class=tw><table><tr><th>arm</th><th>server</th><th>median tok/s</th><th>vs stock</th><th>P(sup) vs stock</th><th>TTFT ms (median of per-rep mean)</th><th>TPOT ms</th><th>verdict</th></tr>
+<tr><td>stock</td><td class=wrap>STOCK SGLang: AITER custom all-reduce ON, image env untouched (NCCL_MIN_NCHANNELS=112), no plugin</td><td>19936.19</td><td class=n>+0.0%</td><td>0.50</td><td>266.3</td><td>5.86</td><td class=wrap>reference (n=5)</td></tr>
+<tr class=x><td>none</td><td class=wrap>RCCL as shipped: custom all-reduce off, NCCL_MIN_NCHANNELS removed, no plugin</td><td>13139.61</td><td class=b>-34.1%</td><td>0.00</td><td>274.9</td><td>9.18</td><td class=wrap>worse than stock (n=5)</td></tr>
+<tr class=x><td>sc2</td><td class=wrap>plain RCCL + tuner plugin + sc2 conf</td><td>16760.89</td><td class=b>-15.9%</td><td>0.00</td><td>275.9</td><td>7.08</td><td class=wrap>worse than stock (n=5)</td></tr>
+<tr class=x><td>dummy</td><td class=wrap>plain RCCL + tuner plugin + dummy conf (ring,simple,1 channel for all sizes)</td><td>3028.75</td><td class=b>-84.8%</td><td>0.00</td><td>5536.8</td><td>31.47</td><td class=wrap>worse than stock (n=5)</td></tr>
+</table></div>
+<p class=note>sc2 vs none (the tuner's own effect, same RCCL path): +27.6% tok/s, TPOT 7.08 vs 9.18 ms.</p>
+<h4>gptoss · d128 · pass2 · arm order dummy, sc2, none, stock · graphs ON, radix OFF · node amd-mi355x-ses2-1 · 5 scored reps per arm · <code>gptoss/d128/pass2/score.csv</code></h4>
+<div class=tw><table><tr><th>arm</th><th>server</th><th>median tok/s</th><th>vs stock</th><th>P(sup) vs stock</th><th>TTFT ms (median of per-rep mean)</th><th>TPOT ms</th><th>verdict</th></tr>
+<tr><td>stock</td><td class=wrap>STOCK SGLang: AITER custom all-reduce ON, image env untouched (NCCL_MIN_NCHANNELS=112), no plugin</td><td>19491.58</td><td class=n>+0.0%</td><td>0.50</td><td>265.6</td><td>5.87</td><td class=wrap>reference (n=5)</td></tr>
+<tr class=x><td>none</td><td class=wrap>RCCL as shipped: custom all-reduce off, NCCL_MIN_NCHANNELS removed, no plugin</td><td>13141.45</td><td class=b>-32.6%</td><td>0.00</td><td>275.6</td><td>9.17</td><td class=wrap>worse than stock (n=5)</td></tr>
+<tr class=x><td>sc2</td><td class=wrap>plain RCCL + tuner plugin + sc2 conf</td><td>16775.49</td><td class=b>-13.9%</td><td>0.00</td><td>273.9</td><td>7.08</td><td class=wrap>worse than stock (n=5)</td></tr>
+<tr class=x><td>dummy</td><td class=wrap>plain RCCL + tuner plugin + dummy conf (ring,simple,1 channel for all sizes)</td><td>3031.38</td><td class=b>-84.5%</td><td>0.00</td><td>5540.3</td><td>31.44</td><td class=wrap>worse than stock (n=5)</td></tr>
+</table></div>
+<p class=note>sc2 vs none (the tuner's own effect, same RCCL path): +27.7% tok/s, TPOT 7.08 vs 9.17 ms.</p>
+<h3>mode mix &mdash; mixed: ISL 2048 / OSL 512 / concurrency 64 / 192 prompts</h3>
+<h4>gptoss · mix · pass1 · arm order stock, none, sc2, dummy · graphs ON, radix OFF · node amd-mi355x-ses2-1 · 5 scored reps per arm · <code>gptoss/mix/pass1/score.csv</code></h4>
+<div class=tw><table><tr><th>arm</th><th>server</th><th>median tok/s</th><th>vs stock</th><th>P(sup) vs stock</th><th>TTFT ms (median of per-rep mean)</th><th>TPOT ms</th><th>verdict</th></tr>
+<tr><td>stock</td><td class=wrap>STOCK SGLang: AITER custom all-reduce ON, image env untouched (NCCL_MIN_NCHANNELS=112), no plugin</td><td>10032.76</td><td class=n>+0.0%</td><td>0.50</td><td>446.0</td><td>5.5</td><td class=wrap>reference (n=5)</td></tr>
+<tr class=x><td>none</td><td class=wrap>RCCL as shipped: custom all-reduce off, NCCL_MIN_NCHANNELS removed, no plugin</td><td>7517.66</td><td class=b>-25.1%</td><td>0.00</td><td>461.5</td><td>7.61</td><td class=wrap>worse than stock (n=5)</td></tr>
+<tr class=x><td>sc2</td><td class=wrap>plain RCCL + tuner plugin + sc2 conf</td><td>7517.73</td><td class=b>-25.1%</td><td>0.00</td><td>462.8</td><td>7.6</td><td class=wrap>worse than stock (n=5)</td></tr>
+<tr class=x><td>dummy</td><td class=wrap>plain RCCL + tuner plugin + dummy conf (ring,simple,1 channel for all sizes)</td><td>1271.96</td><td class=b>-87.3%</td><td>0.00</td><td>10163.0</td><td>30.45</td><td class=wrap>worse than stock (n=5)</td></tr>
+</table></div>
+<p class=note>sc2 vs none (the tuner's own effect, same RCCL path): +0.0% tok/s, TPOT 7.6 vs 7.61 ms.</p>
+<h4>gptoss · mix · pass2 · arm order dummy, sc2, none, stock · graphs ON, radix OFF · node amd-mi355x-ses2-1 · 5 scored reps per arm · <code>gptoss/mix/pass2/score.csv</code></h4>
+<div class=tw><table><tr><th>arm</th><th>server</th><th>median tok/s</th><th>vs stock</th><th>P(sup) vs stock</th><th>TTFT ms (median of per-rep mean)</th><th>TPOT ms</th><th>verdict</th></tr>
+<tr><td>stock</td><td class=wrap>STOCK SGLang: AITER custom all-reduce ON, image env untouched (NCCL_MIN_NCHANNELS=112), no plugin</td><td>10031.86</td><td class=n>+0.0%</td><td>0.50</td><td>447.2</td><td>5.5</td><td class=wrap>reference (n=5)</td></tr>
+<tr class=x><td>none</td><td class=wrap>RCCL as shipped: custom all-reduce off, NCCL_MIN_NCHANNELS removed, no plugin</td><td>7519.93</td><td class=b>-25.0%</td><td>0.00</td><td>461.9</td><td>7.59</td><td class=wrap>worse than stock (n=5)</td></tr>
+<tr class=x><td>sc2</td><td class=wrap>plain RCCL + tuner plugin + sc2 conf</td><td>7515.45</td><td class=b>-25.1%</td><td>0.00</td><td>466.3</td><td>7.6</td><td class=wrap>worse than stock (n=5)</td></tr>
+<tr class=x><td>dummy</td><td class=wrap>plain RCCL + tuner plugin + dummy conf (ring,simple,1 channel for all sizes)</td><td>1271.89</td><td class=b>-87.3%</td><td>0.00</td><td>10106.9</td><td>30.55</td><td class=wrap>worse than stock (n=5)</td></tr>
+</table></div>
+<p class=note>sc2 vs none (the tuner's own effect, same RCCL path): -0.1% tok/s, TPOT 7.6 vs 7.59 ms.</p>
+<h2>3. Which sc2 rules the models hit</h2>
+<p class=note>Two views. <b>Decode</b>: with CUDA graphs the decode all_reduce is captured once per batch size and replayed, so its size is fixed by the mode (concurrency x hidden x 2 bytes; hidden 2048 for Qwen3-30B-A3B, 2880 for gpt-oss-120b, corroborated by every logged all_reduce size being a multiple of 4096 / 5760 B) and the rule it lands on is computed below. <b>Detect-server hit counts</b> (TUNING logs, 1 rep) count graph capture (every batch size once) plus prefill calls.</p>
+<div class=tw><table class=fit><tr><th>model</th><th>mode</th><th>decode all_reduce bytes</th><th>sc2 rule that covers it</th><th>measured sc2 vs none (pass1 / pass2)</th></tr>
+<tr class=v><td>qwen</td><td>d32 (conc 32)</td><td>131,072 (128K)</td><td>128K..256K tree/ll/64</td><td>+18.6% / +18.4%</td></tr>
+<tr class=v><td>qwen</td><td>p8k (conc 32)</td><td>131,072 (128K)</td><td>128K..256K tree/ll/64</td><td>+6.2% / +6.2%</td></tr>
+<tr class=v><td>qwen</td><td>d128 (conc 128)</td><td>524,288 (512K)</td><td>512K..1M ring/ll/64</td><td>+20.9% / +21.1%</td></tr>
+<tr class=v><td>qwen</td><td>mix (conc 64)</td><td>262,144 (256K)</td><td>128K..256K tree/ll/64</td><td>+11.5% / +11.3%</td></tr>
+<tr class=v><td>gptoss</td><td>d32 (conc 32)</td><td>184,320 (180K)</td><td>128K..256K tree/ll/64</td><td>+18.2% / +17.8%</td></tr>
+<tr class=v><td>gptoss</td><td>p8k (conc 32)</td><td>184,320 (180K)</td><td>128K..256K tree/ll/64</td><td>+5.4% / +5.2%</td></tr>
+<tr class=v><td>gptoss</td><td>d128 (conc 128)</td><td>737,280 (720K)</td><td>512K..1M ring/ll/64</td><td>+27.6% / +27.7%</td></tr>
+<tr class=x><td>gptoss</td><td>mix (conc 64)</td><td>368,640 (360K)</td><td>NO RULE (gap 256K..512K) - RCCL default runs</td><td>+0.0% / -0.1%</td></tr>
+</table></div>
+<p class=note><b>Stock check:</b> a stock server (custom all-reduce on) with the sc2 plugin loaded and TUNING logs, at p8k and mix for both models (<code>&lt;model&gt;/&lt;mode&gt;/stockdetect/hitmap_stocksc2.csv</code>): 0 rule hits, one 4-byte all_reduce seen by RCCL per server. In stock SGLang no model all_reduce reaches RCCL, prefill chunks included.</p>
+<p class=note>'share' = share of this conf's rule hits (misses excluded). Counts differ per mode through the prefill chunks; decode capture counts are the same for a model.</p>
+<h3>qwen · d32 · arm sc2 · node amd-mi355x-8 · <code>qwen/d32/detect/hitmap_sc2.csv</code></h3>
+<div class=tw><table class=fit><tr><th>rule</th><th>hits</th><th>share</th></tr>
+<tr class=v><td>512K..1M ring/ll/64</td><td>39,576</td><td>58%</td></tr>
+<tr class=v><td>128K..256K tree/ll/64</td><td>11,640</td><td>17%</td></tr>
+<tr class=v><td>2M ring/ll/72</td><td>5,432</td><td>8%</td></tr>
+<tr class=v><td>4K tree/ll/2</td><td>2,328</td><td>3%</td></tr>
+<tr class=v><td>8K tree/ll/48</td><td>2,328</td><td>3%</td></tr>
+<tr class=v><td>16K tree/ll/16</td><td>2,328</td><td>3%</td></tr>
+<tr class=v><td>32K tree/ll/48</td><td>2,328</td><td>3%</td></tr>
+<tr class=v><td>64K tree/ll/32</td><td>2,328</td><td>3%</td></tr>
+</table></div>
+<p class=note>all_reduce sizes with no rule (RCCL default used): 31 sizes, 7,567 calls; largest: 61.9M, 61.9M, 61.7M, 61.6M, 1.9M</p>
+<h3>qwen · d32 · arm dummy · <code>qwen/d32/detect/hitmap_dummy.csv</code></h3>
+<div class=tw><table class=fit><tr><th>rule</th><th>hits</th><th>share</th></tr>
+<tr class=v><td>0B..4096.0M ring/simple/1</td><td>128,824</td><td>100%</td></tr>
+</table></div>
+<h3>qwen · p8k · arm sc2 · node amd-mi355x-8 · <code>qwen/p8k/detect/hitmap_sc2.csv</code></h3>
+<div class=tw><table class=fit><tr><th>rule</th><th>hits</th><th>share</th></tr>
+<tr class=v><td>512K..1M ring/ll/64</td><td>39,576</td><td>61%</td></tr>
+<tr class=v><td>128K..256K tree/ll/64</td><td>11,640</td><td>18%</td></tr>
+<tr class=v><td>4K tree/ll/2</td><td>2,328</td><td>4%</td></tr>
+<tr class=v><td>8K tree/ll/48</td><td>2,328</td><td>4%</td></tr>
+<tr class=v><td>16K tree/ll/16</td><td>2,328</td><td>4%</td></tr>
+<tr class=v><td>32K tree/ll/48</td><td>2,328</td><td>4%</td></tr>
+<tr class=v><td>64K tree/ll/32</td><td>2,328</td><td>4%</td></tr>
+<tr class=v><td>2M ring/ll/72</td><td>2,328</td><td>4%</td></tr>
+</table></div>
+<p class=note>all_reduce sizes with no rule (RCCL default used): 32 sizes, 12,126 calls; largest: 64M, 32M, 30.4M, 29.6M, 29.6M</p>
+<h3>qwen · p8k · arm dummy · <code>qwen/p8k/detect/hitmap_dummy.csv</code></h3>
+<div class=tw><table class=fit><tr><th>rule</th><th>hits</th><th>share</th></tr>
+<tr class=v><td>0B..4096.0M ring/simple/1</td><td>162,192</td><td>100%</td></tr>
+</table></div>
+<h3>qwen · d128 · arm sc2 · node amd-mi355x-9 · <code>qwen/d128/detect/hitmap_sc2.csv</code></h3>
+<div class=tw><table class=fit><tr><th>rule</th><th>hits</th><th>share</th></tr>
+<tr class=v><td>512K..1M ring/ll/64</td><td>39,576</td><td>59%</td></tr>
+<tr class=v><td>128K..256K tree/ll/64</td><td>11,640</td><td>17%</td></tr>
+<tr class=v><td>2M ring/ll/72</td><td>4,656</td><td>7%</td></tr>
+<tr class=v><td>4K tree/ll/2</td><td>2,328</td><td>3%</td></tr>
+<tr class=v><td>8K tree/ll/48</td><td>2,328</td><td>3%</td></tr>
+<tr class=v><td>16K tree/ll/16</td><td>2,328</td><td>3%</td></tr>
+<tr class=v><td>32K tree/ll/48</td><td>2,328</td><td>3%</td></tr>
+<tr class=v><td>64K tree/ll/32</td><td>2,328</td><td>3%</td></tr>
+</table></div>
+<p class=note>all_reduce sizes with no rule (RCCL default used): 37 sizes, 8,634 calls; largest: 64M, 63.4M, 58.7M, 57.7M, 57.6M</p>
+<h3>qwen · d128 · arm dummy · <code>qwen/d128/detect/hitmap_dummy.csv</code></h3>
+<div class=tw><table class=fit><tr><th>rule</th><th>hits</th><th>share</th></tr>
+<tr class=v><td>0B..4096.0M ring/simple/1</td><td>134,256</td><td>100%</td></tr>
+</table></div>
+<h3>qwen · mix · arm sc2 · node amd-mi355x-9 · <code>qwen/mix/detect/hitmap_sc2.csv</code></h3>
+<div class=tw><table class=fit><tr><th>rule</th><th>hits</th><th>share</th></tr>
+<tr class=v><td>512K..1M ring/ll/64</td><td>39,576</td><td>61%</td></tr>
+<tr class=v><td>128K..256K tree/ll/64</td><td>11,640</td><td>18%</td></tr>
+<tr class=v><td>4K tree/ll/2</td><td>2,328</td><td>4%</td></tr>
+<tr class=v><td>8K tree/ll/48</td><td>2,328</td><td>4%</td></tr>
+<tr class=v><td>16K tree/ll/16</td><td>2,328</td><td>4%</td></tr>
+<tr class=v><td>32K tree/ll/48</td><td>2,328</td><td>4%</td></tr>
+<tr class=v><td>64K tree/ll/32</td><td>2,328</td><td>4%</td></tr>
+<tr class=v><td>2M ring/ll/72</td><td>2,328</td><td>4%</td></tr>
+</table></div>
+<p class=note>all_reduce sizes with no rule (RCCL default used): 32 sizes, 9,895 calls; largest: 64M, 54.2M, 53.8M, 46.8M, 8M</p>
+<h3>qwen · mix · arm dummy · <code>qwen/mix/detect/hitmap_dummy.csv</code></h3>
+<div class=tw><table class=fit><tr><th>rule</th><th>hits</th><th>share</th></tr>
+<tr class=v><td>0B..4096.0M ring/simple/1</td><td>144,344</td><td>100%</td></tr>
+</table></div>
+<h3>gptoss · d32 · arm sc2 · node amd-mi355x-des2-2 · <code>gptoss/d32/detect/hitmap_sc2.csv</code></h3>
+<div class=tw><table class=fit><tr><th>rule</th><th>hits</th><th>share</th></tr>
+<tr class=v><td>512K..1M ring/ll/64</td><td>19,272</td><td>79%</td></tr>
+<tr class=v><td>128K..256K tree/ll/64</td><td>5,256</td><td>21%</td></tr>
+<tr><td>4K tree/ll/2</td><td>0</td><td>0%</td></tr>
+<tr><td>8K tree/ll/48</td><td>0</td><td>0%</td></tr>
+<tr><td>16K tree/ll/16</td><td>0</td><td>0%</td></tr>
+<tr><td>32K tree/ll/48</td><td>0</td><td>0%</td></tr>
+<tr><td>64K tree/ll/32</td><td>0</td><td>0%</td></tr>
+<tr><td>2M ring/ll/72</td><td>0</td><td>0%</td></tr>
+</table></div>
+<p class=note>all_reduce sizes with no rule (RCCL default used): 43 sizes, 9,053 calls; largest: 87.0M, 86.8M, 86.6M, 2.8M, 2.7M</p>
+<h3>gptoss · d32 · arm dummy · <code>gptoss/d32/detect/hitmap_dummy.csv</code></h3>
+<div class=tw><table class=fit><tr><th>rule</th><th>hits</th><th>share</th></tr>
+<tr class=v><td>0B..4096.0M ring/simple/1</td><td>96,952</td><td>100%</td></tr>
+</table></div>
+<h3>gptoss · p8k · arm sc2 · node amd-mi355x-des2-2 · <code>gptoss/p8k/detect/hitmap_sc2.csv</code></h3>
+<div class=tw><table class=fit><tr><th>rule</th><th>hits</th><th>share</th></tr>
+<tr class=v><td>512K..1M ring/ll/64</td><td>19,272</td><td>79%</td></tr>
+<tr class=v><td>128K..256K tree/ll/64</td><td>5,256</td><td>21%</td></tr>
+<tr><td>4K tree/ll/2</td><td>0</td><td>0%</td></tr>
+<tr><td>8K tree/ll/48</td><td>0</td><td>0%</td></tr>
+<tr><td>16K tree/ll/16</td><td>0</td><td>0%</td></tr>
+<tr><td>32K tree/ll/48</td><td>0</td><td>0%</td></tr>
+<tr><td>64K tree/ll/32</td><td>0</td><td>0%</td></tr>
+<tr><td>2M ring/ll/72</td><td>0</td><td>0%</td></tr>
+</table></div>
+<p class=note>all_reduce sizes with no rule (RCCL default used): 45 sizes, 12,192 calls; largest: 90M, 45M, 41.5M, 38.9M, 35.6M</p>
+<h3>gptoss · p8k · arm dummy · <code>gptoss/p8k/detect/hitmap_dummy.csv</code></h3>
+<div class=tw><table class=fit><tr><th>rule</th><th>hits</th><th>share</th></tr>
+<tr class=v><td>0B..4096.0M ring/simple/1</td><td>122,064</td><td>100%</td></tr>
+</table></div>
+<h3>gptoss · d128 · arm sc2 · node amd-mi355x-ses2-1 · <code>gptoss/d128/detect/hitmap_sc2.csv</code></h3>
+<div class=tw><table class=fit><tr><th>rule</th><th>hits</th><th>share</th></tr>
+<tr class=v><td>512K..1M ring/ll/64</td><td>19,272</td><td>79%</td></tr>
+<tr class=v><td>128K..256K tree/ll/64</td><td>5,256</td><td>21%</td></tr>
+<tr><td>4K tree/ll/2</td><td>0</td><td>0%</td></tr>
+<tr><td>8K tree/ll/48</td><td>0</td><td>0%</td></tr>
+<tr><td>16K tree/ll/16</td><td>0</td><td>0%</td></tr>
+<tr><td>32K tree/ll/48</td><td>0</td><td>0%</td></tr>
+<tr><td>64K tree/ll/32</td><td>0</td><td>0%</td></tr>
+<tr><td>2M ring/ll/72</td><td>0</td><td>0%</td></tr>
+</table></div>
+<p class=note>all_reduce sizes with no rule (RCCL default used): 44 sizes, 9,564 calls; largest: 90M, 86.9M, 85.7M, 83.7M, 2.8M</p>
+<h3>gptoss · d128 · arm dummy · <code>gptoss/d128/detect/hitmap_dummy.csv</code></h3>
+<div class=tw><table class=fit><tr><th>rule</th><th>hits</th><th>share</th></tr>
+<tr class=v><td>0B..4096.0M ring/simple/1</td><td>101,040</td><td>100%</td></tr>
+</table></div>
+<h3>gptoss · mix · arm sc2 · node amd-mi355x-ses2-1 · <code>gptoss/mix/detect/hitmap_sc2.csv</code></h3>
+<div class=tw><table class=fit><tr><th>rule</th><th>hits</th><th>share</th></tr>
+<tr class=v><td>512K..1M ring/ll/64</td><td>19,272</td><td>79%</td></tr>
+<tr class=v><td>128K..256K tree/ll/64</td><td>5,256</td><td>21%</td></tr>
+<tr><td>4K tree/ll/2</td><td>0</td><td>0%</td></tr>
+<tr><td>8K tree/ll/48</td><td>0</td><td>0%</td></tr>
+<tr><td>16K tree/ll/16</td><td>0</td><td>0%</td></tr>
+<tr><td>32K tree/ll/48</td><td>0</td><td>0%</td></tr>
+<tr><td>64K tree/ll/32</td><td>0</td><td>0%</td></tr>
+<tr><td>2M ring/ll/72</td><td>0</td><td>0%</td></tr>
+</table></div>
+<p class=note>all_reduce sizes with no rule (RCCL default used): 45 sizes, 10,440 calls; largest: 90M, 78.0M, 75.7M, 75.5M, 11.2M</p>
+<h3>gptoss · mix · arm dummy · <code>gptoss/mix/detect/hitmap_dummy.csv</code></h3>
+<div class=tw><table class=fit><tr><th>rule</th><th>hits</th><th>share</th></tr>
+<tr class=v><td>0B..4096.0M ring/simple/1</td><td>108,048</td><td>100%</td></tr>
+</table></div>

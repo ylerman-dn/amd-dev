@@ -1,0 +1,7 @@
+model,arm,tuner_line,rules_loaded,applied_lines_8ranks,tok_s_rep2,tok_s_rep3,executed_decode_allreduce
+Qwen,csv (built-in),Using built-in CSV tuner config: sc2_plus_amd.conf,16 (header skipped WARN),133480,4255,4254,131072 B TREE/LL channel{0..63}
+Qwen,plug (DN-TUNER v4),TUNER/Plugin: Using DN-TUNER (v4),16 (header = dummy rule),133480,4256,4257,131072 B TREE/LL channel{0..63}
+gpt-oss,csv (built-in),Using built-in CSV tuner config: sc2_plus_amd.conf,16,74760,5939,5951,184320 B
+gpt-oss,plug (DN-TUNER v4),TUNER/Plugin: Using DN-TUNER (v4),16,74760,5939,5925,184320 B
+DeepSeek,csv (built-in),Using built-in CSV tuner config: sc2_plus_amd.conf,16,66920,2118,2118,458752 B
+DeepSeek,plug (DN-TUNER v4),TUNER/Plugin: Using DN-TUNER (v4),16,66920,2105,2112,458752 B
