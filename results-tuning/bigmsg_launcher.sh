@@ -10,7 +10,7 @@ while true; do
     echo "=== idle node $node at $(date -u +%FT%TZ); launching rccl_tune" >> $LOG
     python3 tools/rccl-sweep/rccl_tune.py run --collectives all_reduce --scales 1 --name bigmsg \
       --grid "32,48,56,64,112,224" --combos "RING:LL,RING:LL128,RING:SIMPLE,TREE:LL,TREE:LL128" \
-      --min-size 128M --max-size 2G --image lmsysorg/sglang:v0.5.19-rocm10-mi35x --minutes 300 --nodes $node >> $LOG 2>&1
+      --min-size 128M --max-size 2G --image lmsysorg/sglang:v0.5.19-rocm10-mi35x --minutes 300 --nodes ${node##*-} >> $LOG 2>&1
     rc=$?
     echo "=== rccl_tune exited rc=$rc at $(date -u +%FT%TZ)" >> $LOG
     if [ $rc = 0 ]; then echo "=== BIGMSG_DONE" >> $LOG; exit 0; fi
