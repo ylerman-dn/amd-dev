@@ -6,3 +6,8 @@
   there) -> gpt-oss B' chain launched there by hand 16:08Z with that path; started_gptoss marker set so the launcher skips it. Pending for other nodes: dsr1, qwen.
 - infer_paired.sh prints "mkdir: cannot create directory ..._srv/logs: Permission denied" once per server: docker creates the mount dir as root before the host-side mkdir; the container
   writes /workspace/out/logs itself. Benign (same on every paired run); only gzip of those logs is skipped.
+- 16:2xZ gpt-oss b32768 search round 1 (input tok/s): none 104.6k | rs8 47k | rs16 75k | rs24 92k | rs32 103k | rs48 118k | rs64 127k | rs80 131k | rs112 133.4k | rl32 132.9k | rl64 132.9k |
+  rl112 133.2k | tl112 133.0k. Two things to verify before believing the picture: (a) RCCL default (none) = 104k ~ the 32-channel level, far below rccl-tests' ring/simple/112 default ->
+  the in-model default may pick fewer channels (read channel{Lo..Hi} of the 188,743,680 B all_reduce from the A/B default arm's INFO log, or a TUNING detect); (b) rl32/rl64/rl112/tl112 all equal
+  rs112 to 0.3% although rccl-tests showed LL128 far slower -> suspect RCCL ignores a plugin LL128/TREE request in the model's comm and runs its own config with 112 channels, or the hot-reload
+  swap did not take. Check the paired log's "hot-reload events per logs" count (expect 39 x 8 ranks for 13 arms x 3 rounds) and, post-hoc, a TUNING detect with the winning conf.
