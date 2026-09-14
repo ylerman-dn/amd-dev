@@ -39,14 +39,14 @@ while [ -n "$(pending)" ]; do
     hrs=$(echo $left | awk -F: '{if (NF==3) print $1; else if (NF==2) print 0; else print 0}' | sed 's/.*-//')
     if [ -n "$jid" ] && [ "${hrs:-0}" -ge 3 ]; then touch $B.node2_used; try_node $jid amd-mi355x-2 && continue
     else
-      out=$(salloc --no-shell -p XAI -N1 -w amd-mi355x-2 --gres=gpu:8 -t 12:00:00 -J ylerman-bigmsgB 2>&1); jid=$(echo "$out" | grep -oE "allocation [0-9]+" | awk '{print $2}')
+      out=$(salloc --no-shell -p XAI -N1 -w amd-mi355x-2 --gres=gpu:8 -t 12:00:00 -J ylerman-bigmsgB 2>&1); jid=$(echo "$out" | grep -oE "allocation [0-9]+" | head -1 | awk '{print $2}')
       if [ -n "$jid" ]; then touch $B.node2_used; try_node $jid amd-mi355x-2 && continue; else log "node2 rebook failed: $(echo $out | head -c 120)"; fi
     fi
   fi
   # (b) any idle node
   for n in $(sinfo -h -p XAI -t idle -o "%N" | tr ',' '\n' | grep -oE "amd-mi355x-[0-9]+"); do
     [ -n "$(pending)" ] || break
-    out=$(salloc --no-shell -p XAI -N1 -w $n --gres=gpu:8 -t 12:00:00 -J ylerman-bigmsgB 2>&1); jid=$(echo "$out" | grep -oE "allocation [0-9]+" | awk '{print $2}')
+    out=$(salloc --no-shell -p XAI -N1 -w $n --gres=gpu:8 -t 12:00:00 -J ylerman-bigmsgB 2>&1); jid=$(echo "$out" | grep -oE "allocation [0-9]+" | head -1 | awk '{print $2}')
     if [ -z "$jid" ]; then log "salloc $n failed: $(echo $out | head -c 120)"; continue; fi
     if ! try_node $jid $n; then log "releasing $n ($jid): nothing launchable"; scancel $jid; fi
   done
