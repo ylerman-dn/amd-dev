@@ -581,6 +581,8 @@ class LiveOracle:
         # the run goes out with the channel request only
         if algo != "P2P":
             cmd += f" --algo {algo} --proto {proto}"
+        if getattr(self, "image", None):
+            cmd += f" --image {self.image}"
         t0 = time.time()
         p = subprocess.run(remote_argv(cmd, self.exec_node, self.jobid,
                                        self.slurm_host),
@@ -754,6 +756,8 @@ def cmd_baseline(args):
 def cmd_live(args):
     if args.collective == "all_reduce":
         combos = COMBOS_1N if args.nodes == 1 else COMBOS_MN
+        if args.combos:
+            combos = [tuple(x.upper().split(":")) for x in args.combos.split(",")]
     elif args.collective == "alltoall":
         # alltoall never reaches the collective tuner: it is decomposed into
         # p2p send/recv tasks at enqueue (enqueue.cc taskAppend, deployed
@@ -776,6 +780,7 @@ def cmd_live(args):
                         args.servers_file, args.nodes, args.collective,
                         args.min_size, args.max_size, args.my_path, log,
                         jobid=args.jobid, slurm_host=args.slurm_host)
+    oracle.image = args.image
 
     # substitution-aware wrapper: a substituted combo is dropped whole
     class Guard:
@@ -994,6 +999,10 @@ def main():
     pl.add_argument("--collective", default="all_reduce")
     pl.add_argument("--min-size", default="4K")
     pl.add_argument("--max-size", default="512M")
+    # 2026-09-14 (bigmsg campaign): explicit combo list "ALGO:PROTO,..." overrides COMBOS_1N/MN,
+    # and --image overrides the remote sweep_config runtime.image. Defaults = old behaviour.
+    pl.add_argument("--combos", default=None)
+    pl.add_argument("--image", default=None)
     pl.add_argument("--my-path", default="/opt/shared/ylerman/GPU-107/bin")
     pl.add_argument("--default-runs", type=int, default=3,
                     help="NCCL-default context runs after the search")

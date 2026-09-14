@@ -698,6 +698,11 @@ Examples:
     )
     
     parser.add_argument(
+        '--image',
+        help='Override runtime.image of the config (container mode)'
+    )
+
+    parser.add_argument(
         '--min-size',
         help='Override minimum message size (e.g., 1M, 256M)'
     )
@@ -753,6 +758,8 @@ Examples:
         config.setdefault('test_defaults', {})['max_bytes'] = args.max_size
     if args.step_size:
         config.setdefault('test_defaults', {})['step_bytes'] = args.step_size
+    if getattr(args, 'image', None):
+        config.setdefault('runtime', {})['image'] = args.image
     
     # Run sweep
     run_sweep(args, config)

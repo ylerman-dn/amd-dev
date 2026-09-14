@@ -61,6 +61,25 @@ NODE_PREFERENCE = [5, 8, 3, 7, 6, 1]
 
 # the validated search policy (findings/07); changing any of these is a
 # measurement-parameter change and needs explicit user approval
+# 2026-09-14 (bigmsg campaign): optional overrides threaded to search (adaptive_search live) and A/B (ab_run ->
+# validate): combos "ALGO:PROTO,...", size window, container image. Empty = the validated defaults.
+EXTRA = dict(combos=None, min_size=None, max_size=None, image=None)
+
+
+def size_bytes(s):
+    s = str(s).strip().upper()
+    mult = {"K": 1 << 10, "M": 1 << 20, "G": 1 << 30}
+    return int(float(s[:-1]) * mult[s[-1]]) if s and s[-1] in mult else int(s)
+
+
+def ab_extra_args():
+    out = []
+    if EXTRA.get("min_size"): out += ["--min-bytes", str(size_bytes(EXTRA["min_size"]))]
+    if EXTRA.get("max_size"): out += ["--max-bytes", str(size_bytes(EXTRA["max_size"]))]
+    if EXTRA.get("image"): out += ["--image", EXTRA["image"]]
+    return " ".join(out)
+
+
 POLICY = dict(anchors="1,8,24,48", margin="15", tol="0.5",
               grid="1,2,4,8,16,24,32,40,48")
 
@@ -295,6 +314,9 @@ def phase_search(c, coll, scale, nodes, outdir, remote_base, exec_node,
              "--servers-file", servers, "--my-path", MY_PATH,
              "--local-out", local_out, "--default-runs", "3",
              "--emit-optimized", opt_csv]
+    for k, flag in (("combos", "--combos"), ("min_size", "--min-size"), ("max_size", "--max-size"), ("image", "--image")):
+        if EXTRA.get(k):
+            args_ += [flag, str(EXTRA[k])]
     if jobid:
         # 2026-09-08: benchmarks run as srun steps INSIDE our allocation
         # (killed with it, never orphaned on a released node), not bare ssh
@@ -414,6 +436,7 @@ def phase_ab(c, confs, jobid, nodes, repeats, remote_base, outdir,
         inner = (f"cd {SHARED} && python3 {REMOTE_TOOL}/ab_run.py "
                  f"--jobid {jobid} --nodelist {nodelist} --repeats {repeats} "
                  f"--retries {ab_retries} "
+                 f"{ab_extra_args()} "
                  f"--outdir {ab_out} {conf_args}")
         c.remote(f"setsid nohup srun --jobid={jobid} -N1 -w {nodelist.split(',')[0]} "
                  f"bash -c {shlex.quote(inner)} "
@@ -518,6 +541,8 @@ def cmd_run(args):
             sys.exit(f"--results-root {RESULTS} does not exist")
     c = Cmd(args.dry_run)
     POLICY["grid"] = args.grid
+    for k in ("combos", "min_size", "max_size", "image"):
+        EXTRA[k] = getattr(args, k, None)
     colls = args.collectives.split(",")
     scales = [int(s) for s in args.scales.split(",")]
     for coll in colls:
@@ -621,6 +646,10 @@ def main():
     pr.add_argument("--grid", default=POLICY["grid"],
                     help="channel grid for the search (measurement parameter; "
                          f"default = validated policy {POLICY['grid']})")
+    pr.add_argument("--combos", default=None, help="search combos ALGO:PROTO,... (default: tool policy per node count)")
+    pr.add_argument("--min-size", default=None, help="size window start for search AND A/B, e.g. 128M (default 4K)")
+    pr.add_argument("--max-size", default=None, help="size window end, e.g. 2G (default 512M)")
+    pr.add_argument("--image", default=None, help="container image for search AND A/B (default: sweep_config / validator default)")
     pr.add_argument("--nodes", default=None,
                     help="override node pick, e.g. 5,8 (still blacklisted-checked)")
     pr.add_argument("--dry-run", action="store_true",

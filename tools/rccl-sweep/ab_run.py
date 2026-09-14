@@ -58,6 +58,10 @@ def main():
     ap.add_argument("--my-path", default="/opt/shared/ylerman/GPU-107/bin")
     ap.add_argument("--plugin", default="/opt/shared/ylerman/GPU-107/ab-tuner-test/librccl-tunerv4-dn.so")
     ap.add_argument("--repeats", type=int, default=7)
+    # 2026-09-14 (bigmsg): size window and image passed through to the validator (defaults = old behaviour)
+    ap.add_argument("--min-bytes", default="4096")
+    ap.add_argument("--max-bytes", default="536870912")
+    ap.add_argument("--image", default=None)
     ap.add_argument("--retries", type=int, default=3,
                     help="max attempts per conf on exit 2/3")
     ap.add_argument("--outdir", required=True,
@@ -93,7 +97,8 @@ def main():
                    "--nodelist", ",".join(nodes_all[:n]),
                    "--repeats", str(args.repeats),
                    "--warmup-runs", str(WARMUP_RUNS[n]),
-                   "--min-bytes", "4096", "--max-bytes", "536870912",
+                   "--min-bytes", str(args.min_bytes), "--max-bytes", str(args.max_bytes),
+                   *(["--image", args.image] if args.image else []),
                    "--iters", "20", "--warmup", "5",
                    "--preflight-scope", "rules",
                    "--noise-gate", "cv-core",
