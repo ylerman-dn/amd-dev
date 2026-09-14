@@ -5,7 +5,7 @@ cd /home/dn/ylerman/tasks/GPU-107/amd-dev
 LOG=results-tuning/2026-09-14-bigmsg.driver.log
 echo "=== launcher start $(date -u +%FT%TZ)" >> $LOG
 while true; do
-  node=$(ssh -o BatchMode=yes amd-mi355x-1 'sinfo -h -p XAI -t idle -o "%N" | tr "," "\n" | grep -oE "amd-mi355x-[0-9]+" | grep -vE "amd-mi355x-(2|9)$" | head -1' </dev/null 2>/dev/null)
+  node=$(ssh -o BatchMode=yes amd-mi355x-1 'sinfo -h -p XAI -t idle -o "%N" | tr "," "\n" | grep -oE "amd-mi355x-[0-9]+" | head -1' </dev/null 2>/dev/null)
   if [ -n "$node" ]; then
     echo "=== idle node $node at $(date -u +%FT%TZ); launching rccl_tune" >> $LOG
     python3 tools/rccl-sweep/rccl_tune.py run --collectives all_reduce --scales 1 --name bigmsg \
