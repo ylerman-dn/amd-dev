@@ -79,6 +79,7 @@ d. Housekeeping: old 8807-page edit still uncommitted on main checkout; broadcas
   does at 1.47M (gpt-oss d256) and 448K/1.75M (DeepSeek d32/d128). Cause (SUMMARY section 7, reproduced with an empty conf): **RCCL 2.30.4 ships a built-in CSV tuner with an MI355X table**
   (`share/rccl/tuner/rccl_tuner_gfx950.csv`: allreduce <16K tree/ll/1, 16K-512K ring/ll, 512K-1M ring/ll/32, 1M-2M ring/ll/56) that an external plugin REPLACES, so uncovered sizes fall to the generic
   cost model (SIMPLE instead of LL). Any conf for RCCL >= 2.30 must carry those rules for what it does not override.
+- Source evidence for the RCCL changes (PR numbers, commits, verbatim motivations, code paths): results-tuning/2026-09-10-2-inmodel-rocm10/RCCL_2.27.7_to_2.30.4.md. Monorepo clone for future digging: /home/dn/ylerman/wg/rocm-systems (projects/rccl).
 - Consequence for GPU-107: on this stack a single-node tuner conf has no lever at all for SGLang TP-8 all_reduce (custom AR, and behind it DDA). Remaining candidates: multi-node
   (nNodes > 1), sizes above the DDA threshold, other collectives (AllGathers DO go through the tuner: the probe applied a rule to every AllGather), other frameworks.
 - Tools: infer_many.sh knobs IM_EXTRA_ENV, IM_NO_EXPANDABLE, IM_PLUGIN, RM_MSCCL=image; fetch_node.sh in the run dir; build_inmodel_page.py reads models/modes/nodes.txt and switches
