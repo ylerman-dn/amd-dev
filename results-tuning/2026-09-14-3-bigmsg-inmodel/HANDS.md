@@ -18,3 +18,9 @@
   Likely reading of rl32/rl64/rl112/tl112 == rs112 (all 133k): RCCL 2.30.4 rejects a plugin LL128/TREE choice the comm has not enabled and runs its own default, which per rccl-tests is
   ring/simple/112 = the same as rs112; then the in-model default is ~133k and rs112 has NO gain. To verify: TUNING detect with rl32 and tl112 confs and a fresh-server none (queued: verify_arms.sh).
 - 16:30Z waiter armed (dev VM background): when the gptoss driver log shows 'b65536 detect', the srun step is cancelled, containers/b65536 dir cleaned, and b65536 relaunched on chain2 (nomatch no-rule arm) into gptoss65536.driver.log.
+- 16:30Z gpt-oss b32768 done (16:08-16:30Z, 22 min: 1 detect + 1 search server (13 arms x 3 rounds = 39 bench runs) + 1 stock server (3 reps)). Stock (INT8 quick-reduce) output tok/s 2159-2163
+  vs the RCCL arms ~2080 (+4% for stock); input tok/s from the bench logs at fetch time. "[sgptoss] hot-reload events per logs: 0" is a LOGGING artefact: the search server runs with
+  NCCL_DEBUG_SUBSYS=INIT,ENV, which filters the plugin's TUNING-class "hot-reloaded" lines (the detect server with TUNING shows 8 = 1 reload x 8 ranks); the swaps did act (47k..133k spread).
+- 16:30Z b65536 moved to chain2 (step 21253.1 cancelled at its detect start, containers removed; the root-owned detgptoss_srv/{server.log,logs} of the cancelled server could not be removed
+  (docker-created), so the new detect's rank logs share that dir with a few init-phase lines of the killed server: hit counts for b65536 detect may include them; sizes/algos unaffected).
+  New step 21253.4, driver log bigmsg-inmodel-2026-09-14.gptoss65536.driver.log, no-rule arm = nomatch.conf.
