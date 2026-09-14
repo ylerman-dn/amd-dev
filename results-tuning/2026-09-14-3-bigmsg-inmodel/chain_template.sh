@@ -21,7 +21,7 @@ H=/opt/shared/ylerman/GPU-107/rccl-sweep-optuna/infer_hitmap.py
 C=/opt/shared/ylerman/GPU-107/infer-2026-08-30
 ROOT=/data/ylerman/bigmsg-inmodel-2026-09-14
 ROUNDS=${BM_ROUNDS:-3}
-ARMS="none:NONE rs8:big_ring_simple_8.conf rs16:big_ring_simple_16.conf rs24:big_ring_simple_24.conf rs32:big_ring_simple_32.conf rs48:big_ring_simple_48.conf rs64:big_ring_simple_64.conf rs80:big_ring_simple_80.conf rs112:big_ring_simple_112.conf rl32:big_ring_ll128_32.conf rl64:big_ring_ll128_64.conf rl112:big_ring_ll128_112.conf tl112:big_tree_ll128_112.conf"
+ARMS="none:nomatch.conf rs8:big_ring_simple_8.conf rs16:big_ring_simple_16.conf rs24:big_ring_simple_24.conf rs32:big_ring_simple_32.conf rs48:big_ring_simple_48.conf rs64:big_ring_simple_64.conf rs80:big_ring_simple_80.conf rs112:big_ring_simple_112.conf rl32:big_ring_ll128_32.conf rl64:big_ring_ll128_64.conf rl112:big_ring_ll128_112.conf tl112:big_tree_ll128_112.conf"
 export IM_CUDA_GRAPH=1 IM_NO_EXPANDABLE=1 IM_KEEP_CUSTOM_AR=1 IM_IMAGE=lmsysorg/sglang:v0.5.19-rocm10-mi35x
 export IM_ISL=8192 IM_OSL=128 IM_CONC=32 IM_NPROMPTS=96
 QR="ROCM_QUICK_REDUCE_QUANTIZATION=NONE"
@@ -30,7 +30,7 @@ for B in $BATCHES; do
   D=$ROOT/$TAG/b$B; mkdir -p $D
   PF="--chunked-prefill-size $B --max-prefill-tokens $B $XTRA"
   echo "=== $TAG b$B detect $(date -u +%FT%TZ)"
-  IM_BASE=$D/detect IM_DROP_FLOOR=1 IM_EXTRA_ENV="$QR" RM_SUBSYS=INIT,TUNING,ENV IM_EXTRA="$PF --disable-radix-cache" bash $P $M det$TAG 1 none:NONE rs112:big_ring_simple_112.conf
+  IM_BASE=$D/detect IM_DROP_FLOOR=1 IM_EXTRA_ENV="$QR" RM_SUBSYS=INIT,TUNING,ENV IM_EXTRA="$PF --disable-radix-cache" bash $P $M det$TAG 1 none:nomatch.conf rs112:big_ring_simple_112.conf
   python3 $H --logs $D/detect/det${TAG}_srv/logs --conf $C/big_ring_simple_112.conf -o $D/detect/hitmap_big.csv > /dev/null 2>&1
   big=$(awk -F, 'NR>1 && $1=="rule"{h+=$7} END{print h+0}' $D/detect/hitmap_big.csv); echo "=== BIG_HITS $TAG b$B $big"
   echo "=== AR_SIZES $TAG b$B $(zcat -f $D/detect/det${TAG}_srv/logs/*.log* | grep -oE 'AllReduce: [0-9]+ Bytes' | awk '{print $2}' | sort -n | uniq -c | awk '$2>67108864{printf "%s x%s; ", $2, $1}')"

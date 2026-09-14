@@ -11,3 +11,9 @@
   the in-model default may pick fewer channels (read channel{Lo..Hi} of the 188,743,680 B all_reduce from the A/B default arm's INFO log, or a TUNING detect); (b) rl32/rl64/rl112/tl112 all equal
   rs112 to 0.3% although rccl-tests showed LL128 far slower -> suspect RCCL ignores a plugin LL128/TREE request in the model's comm and runs its own config with 112 channels, or the hot-reload
   swap did not take. Check the paired log's "hot-reload events per logs" count (expect 39 x 8 ranks for 13 arms x 3 rounds) and, post-hoc, a TUNING detect with the winning conf.
+- 16:3xZ round 2: none = 133.1k (round 1: 104.6k). Reading of the plugin source (/opt/shared/ylerman/GPU-107/dn-tuner-src/plugin.c:317, 182): hot-reload keeps the PREVIOUS table when the new
+  file yields no valid configuration -> the NONE arm (header-only file) after any real conf does NOT reset to "no rules"; from round 2 on "none" = the previous arm's conf. Round-1 none (fresh
+  server, empty table) 104.6k is therefore the only true no-rule sample in the search, and it is also the first request batch after server start (TTFT 1388 ms vs 837 later): cold, not trustworthy.
+  Consequence: the search's PICK compares against a polluted "none"; the real default-vs-conf answer comes from the A/B / stockref phase (fresh servers, no plugin in the default arm).
+  Likely reading of rl32/rl64/rl112/tl112 == rs112 (all 133k): RCCL 2.30.4 rejects a plugin LL128/TREE choice the comm has not enabled and runs its own default, which per rccl-tests is
+  ring/simple/112 = the same as rs112; then the in-model default is ~133k and rs112 has NO gain. To verify: TUNING detect with rl32 and tl112 confs and a fresh-server none (queued: verify_arms.sh).
