@@ -51,3 +51,20 @@ Everything below happened between those two points. PR links: `https://github.co
 | 2026-09-10 | image `v0.5.19-rocm10-mi35x` built with RCCL 2.30.4 | docker inspect |
 
 Note on the CHANGELOG version labels: the file says "RCCL 2.30.4 for ROCm 7.14.0" and "2.28.3 for ROCm 7.13"; the image reports ROCm "10.0.0.0-9999-6b0e43f3" (TheRock numbering, development build). The RCCL version string in the rank logs, 2.30.4, is the anchor.
+
+## 5. DDA in depth (added 2026-09-14; page `results-tuning/2026-08-23-1-pages/dda_2026-09-14.html`)
+
+- Origin: Meta's `torchcomms` (github.com/meta-pytorch/torchcomms, "a new experimental communications API for PyTorch", BSD-3) keeps its own collective kernels under `comms/common/algorithms/{all_reduce,all_gather,all_to_all,reduce_scatter}`;
+  `all_reduce/all_reduce_dda.cuh` there has the same two kernels (`ddaAllReduceFlatIpc`, `ddaAllReduceTreeIpc`, "Copyright (c) Meta Platforms"). `comms/ctran` = Meta's NCCL-independent transport/collective
+  layer ("a solution to challenges in NCCL ... across different GPU types (NVIDIA, AMD)"); `comms/rcclx/develop` = Meta's copy of the rocm-systems tree with internal patches (`rcclx_remerge.sh`,
+  `apply_smart_patch.py`); `comms/rcclx/MSCCL_STUB_APPROACH.md` shows Meta stubbed MSCCL in its fork before AMD deleted it upstream.
+- RCCL vendored the kernels (header "Derived from Meta torchcomms ..."), no build or runtime dependency; PR #4958 reviewer asked about maintenance, author: maintain independently. AMD since diverged
+  (fabric/VMM variant for gfx1250 #8155 2026-07-14, LL/LL128 lanes, LL two-shot #9748 2026-08-21, GIN/LSA #10783 2026-09-06, moved to src/algorithms/dda #10072).
+- Mechanism: per communicator a 64 MiB uncached scratch per GPU exported with hipIpcGetMemHandle, handles exchanged by bootstrapAllGather, peer pointer table on device, mailbox flags for a GPU-side
+  barrier (`IpcGpuBarrier::syncOnSameBlockIdx`, CAS flags, release/acquire). Per collective one kernel, <= 24 blocks x 512 threads. One-shot (<= 256 KB): copy own buffer to scratch, barrier, read all
+  7 peers' full vectors over XGMI and reduce, barrier. Two-shot (> 256 KB, count % 8 == 0): reduce-scatter own slice from 7 peers into own scratch, barrier, all-gather the 7 reduced slices, barrier.
+  1.75N bytes per GPU, 2 hops, no ring, no channels, no protocol: nothing a tuner can steer.
+- Our image ran the IPC variant: 16 x `ncclDdaIpcCommInit` per server, no "taking DDA fabric (VMM) path" line, "Symmetric memory is not supported" (probe_tun and nodda_tun logs, ses2-1).
+- Speed-up evidence: PR #4958 "up to 3x" (sentence only); PR #6549 "up to 1.9x MI300 / 2.5x MI350" (RS/AG/A2A, sentence only); PR #9777 (2026-08-12) has numbers: 8x MI355X, 4 MB float all_reduce,
+  DDA two-shot 264.99 GB/s vs generic ring/tree 117.76 GB/s (2.25x), "up to a 55% busbw regression" for 4-32 MB without DDA. Ours: none (DDA) vs nodda +7..+41% tok/s (SUMMARY.md section 2).
+  No rccl-tests A/B of DDA on/off run by us yet.
