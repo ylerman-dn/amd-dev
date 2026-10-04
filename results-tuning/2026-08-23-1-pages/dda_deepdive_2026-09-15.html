@@ -1,0 +1,280 @@
+<!doctype html><meta charset=utf-8><title>DDA all-reduce: one-shot and two-shot, barriers, IPC, XGMI</title>
+<style>
+:root{--ink:#e6e9ef;--mut:#9aa4b2;--bg:#12161d;--card:#1a1f27;--line:#2c3340;--acc:#5aa2f0;--g:#6fcf7a;--o:#f0a94a;--r:#f27c72;--code:#232a35}
+body{font:15px/1.55 system-ui,Segoe UI,Roboto,sans-serif;color:var(--ink);background:var(--bg);margin:0;padding:28px 40px 80px;max-width:1180px}
+h1{font-size:26px;margin:0 0 6px}h2{font-size:20px;margin:44px 0 10px;padding-top:12px;border-top:1px solid var(--line)}h3{font-size:16px;margin:22px 0 6px}
+p,li{max-width:900px}code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:13px}
+pre{background:var(--code);padding:12px 14px;border-radius:8px;overflow-x:auto;font-size:12.5px;line-height:1.45;max-width:900px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0}
+.tldr{border-left:5px solid var(--acc)}.warn{border-left:5px solid var(--o)}.ok{border-left:5px solid var(--g)}
+.note{color:var(--mut);font-size:13px}.src{color:var(--mut);font-size:12.5px;margin-top:6px}
+table{border-collapse:collapse;font-size:13.5px;margin:10px 0}th,td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}th{background:#222935}
+.tw{overflow-x:auto}.fig{margin:16px 0 6px}.fig svg{max-width:100%;height:auto;display:block}.cap{font-size:13px;color:var(--mut);margin:4px 0 0}
+.steps li{margin:6px 0}.kv td:first-child{font-weight:600;white-space:nowrap}
+.pill{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;background:#1f2b3d;color:var(--acc);margin-right:4px}
+svg text:not([fill]){fill:var(--ink)}
+a{color:var(--acc)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:900px){.two{grid-template-columns:1fr}}
+</style>
+
+<p class=note><a href='index.html'>&larr; index</a> · <a href='dda_2026-09-14.html'>DDA explainer (short, 09-14)</a> · <a href='night_2026-09-14.html'>night 2026-09-14 (A, B', C, D)</a></p>
+<h1>How RCCL's DDA all-reduce works: one-shot, two-shot, the GPU barrier, IPC and XGMI</h1>
+<p class=note>Read from source, not from docs. Tree: <code>github.com/ROCm/rocm-systems</code>, clone <code>/home/dn/ylerman/wg/rocm-systems</code>, <code>projects/rccl/</code>. Files quoted at the 2026-06-29 state (local HEAD <code>a98014c18b</code>), which is the code our image runs: RCCL <code>2.30.4-HEAD:6b0e43f</code> logs <code>ncclDdaIpcCommInit: scratch 67108864 bytes, IpcGpuBarrier nBlocks=24</code> (rank logs of the 2026-09-14 D run on node 2, <code>/data/ylerman/csvtuner-2026-09-14/qwen/csv_tun/logs/rccl.amd-mi355x-2.*.log.gz</code>), the constants of that tree. The September <code>origin/develop</code> (b70c089619, 2026-09-14) has the same two kernels line for line after a rename (<code>meta::comms</code> &rarr; <code>dda::common</code>, files moved to <code>src/algorithms/dda/</code>); the differences that matter are listed at the end.</p>
+
+<div class="card tldr">
+<b>In one paragraph.</b> At communicator creation every one of the 8 GPUs allocates a 64 MiB "scratch" buffer and a small "mailbox" of flags in <i>uncached</i> VRAM, exports them with HIP IPC, and opens the other seven so that each GPU holds device pointers into its peers' memory. An all-reduce is then one kernel launch on each GPU, no channels, no protocol, no proxy thread: every GPU copies its input into its own scratch, all eight meet at a GPU-side barrier (flags in the mailboxes), then each GPU <i>reads its peers' scratch directly over XGMI</i> and adds. Up to 256 KB every GPU reads everything and reduces the whole vector itself (one-shot, 2 barriers). Above 256 KB each GPU reduces only its 1/8 slice, writes the result back into its own scratch, another barrier, and everybody gathers the eight reduced slices (two-shot, 3 barriers, four times less traffic). The whole thing happens before RCCL's algorithm/protocol/channel selection, so a tuner never sees it.
+</div>
+
+<h2>1. Where DDA sits in the call</h2>
+<p>The public <code>ncclAllReduce</code> lands in <code>ncclAllReduce_impl</code> (<code>src/collectives.cc:440</code>). Before the normal path (<code>ncclEnqueueCheck</code>, which is where algorithm, protocol and channel count are chosen and where a tuner plugin is consulted), two checks decide whether the call is taken by DDA instead:</p>
+<div class=fig><svg viewBox="0 0 900 250" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif" font-size="13">
+<defs><marker id="a" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#9aa4b2"/></marker></defs>
+<rect x="10" y="95" width="150" height="50" rx="8" fill="#1e242e" stroke="#c9d1dc"/><text x="85" y="116" text-anchor="middle">ncclAllReduce()</text><text x="85" y="133" text-anchor="middle" fill="#9aa4b2" font-size="11">collectives.cc:440</text>
+<line x1="160" y1="120" x2="210" y2="120" stroke="#9aa4b2" marker-end="url(#a)"/>
+<rect x="210" y="80" width="200" height="80" rx="8" fill="#3a2a14" stroke="#f0a94a"/><text x="310" y="103" text-anchor="middle" font-weight="600">rcclDdaEnabled()</text><text x="310" y="121" text-anchor="middle" font-size="11.5">DDA_ENABLE=1, gfx950, 8 ranks,</text><text x="310" y="136" text-anchor="middle" font-size="11.5">bytes &le; RCCL_DDA_THRESHOLD (64 MiB),</text><text x="310" y="151" text-anchor="middle" font-size="11.5">no group, no implicit launch order</text>
+<line x1="410" y1="120" x2="460" y2="120" stroke="#9aa4b2" marker-end="url(#a)"/>
+<rect x="460" y="80" width="200" height="80" rx="8" fill="#3a2a14" stroke="#f0a94a"/><text x="560" y="103" text-anchor="middle" font-weight="600">…DdaIpcEligible()</text><text x="560" y="121" text-anchor="middle" font-size="11.5">1 node, exactly 8 ranks, ncclSum,</text><text x="560" y="136" text-anchor="middle" font-size="11.5">fp32 / fp16 / bf16, 16-byte aligned,</text><text x="560" y="151" text-anchor="middle" font-size="11.5">&gt;256 KB: count % 8 == 0</text>
+<line x1="660" y1="105" x2="720" y2="60" stroke="#6fcf7a" marker-end="url(#a)"/><text x="690" y="70" fill="#6fcf7a" font-size="12">both true</text>
+<rect x="720" y="20" width="170" height="60" rx="8" fill="#15301a" stroke="#6fcf7a"/><text x="805" y="45" text-anchor="middle" font-weight="600">DDA kernel</text><text x="805" y="63" text-anchor="middle" font-size="11.5">flat (&le;256 KB) or tree</text>
+<line x1="660" y1="140" x2="720" y2="185" stroke="#f27c72" marker-end="url(#a)"/><text x="672" y="180" fill="#f27c72" font-size="12">any false</text>
+<rect x="720" y="165" width="170" height="70" rx="8" fill="#3a1715" stroke="#f27c72"/><text x="805" y="190" text-anchor="middle" font-weight="600">ncclEnqueueCheck()</text><text x="805" y="207" text-anchor="middle" font-size="11.5">classic ring / tree kernels,</text><text x="805" y="222" text-anchor="middle" font-size="11.5">algo/proto/channels, tuner</text>
+</svg><p class=cap>Fig. 1. The DDA branch returns before <code>ncclEnqueueCheck</code>. A tuner plugin (or the built-in CSV tuner) lives inside the red box, so nothing it says can reach a DDA call. Source: <code>src/collectives.cc:134-146, 440-452</code>; <code>src/dda_all_reduce_ipc.cu:116-166</code>.</p></div>
+
+<div class=tw><table class=kv>
+<tr><th>condition</th><th>value on our stack</th><th>where</th></tr>
+<tr><td>RCCL_DDA_ENABLE</td><td>default 1 (this is the knob we set to 0 in the "nodda" arms)</td><td><code>collectives.cc:127</code></td></tr>
+<tr><td>RCCL_DDA_THRESHOLD</td><td>gfx950: default 64 MiB (<code>67108864</code>), user-settable. gfx942: fixed 8 MiB for all-reduce. Other GPUs: never</td><td><code>collectives.cc:128, 134-146</code></td></tr>
+<tr><td>size test</td><td><code>totalBytes &lt;= threshold</code>: 64 MiB itself still goes to DDA, 64 MiB + 16 B does not</td><td><code>collectives.cc:145</code></td></tr>
+<tr><td>ranks / nodes</td><td>exactly 8 ranks, 1 node (kernels are compiled for <code>NRANKS = 8</code>)</td><td><code>dda_all_reduce_ipc.cu:133-138</code>, <code>ipc_gpu_barrier.h:49</code></td></tr>
+<tr><td>op / dtype</td><td><code>ncclSum</code> only; float32, float16, bfloat16 only</td><td><code>dda_all_reduce_ipc.cu:139-145</code></td></tr>
+<tr><td>alignment</td><td>bytes % 16 == 0 (kernel does 16-byte loads); above 256 KB also count % 8 == 0 and each 1/8 slice 16-byte aligned</td><td><code>dda_all_reduce_ipc.cu:153-163</code></td></tr>
+<tr><td>not inside <code>ncclGroupStart/End</code></td><td><code>ncclGroupDepth == 0</code>; a grouped all-reduce takes the classic path</td><td><code>collectives.cc:135</code></td></tr>
+<tr><td>NCCL_LAUNCH_ORDER_IMPLICIT</td><td>must be unset (PR #6663: DDA skips the enqueue code that honours it)</td><td><code>collectives.cc:135</code></td></tr>
+<tr><td>symmetric memory</td><td>must be off (it is: "Symmetric memory is not supported. cuMemEnable 0" in every rank log)</td><td><code>collectives.cc:135</code></td></tr>
+</table></div>
+<p>Every decode and prefill all-reduce of a TP-8 SGLang server (bf16, sum, 128 KB to a few MB) passes all of these, which is why the 2026-09-10 and 2026-09-14 in-model runs saw zero tuner hits with RCCL as shipped.</p>
+
+<h2>2. One-time setup at communicator creation</h2>
+<p><code>ncclDdaIpcCommInit</code> (<code>src/ipc_init.cu:33-167</code>) runs once per communicator, from <code>ncclCommInitRank</code> (<code>src/init.cc:2571</code>). It builds three things on every GPU:</p>
+<div class=fig><svg viewBox="0 0 900 330" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif" font-size="12.5">
+<defs><marker id="b" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#5aa2f0"/></marker></defs>
+<!-- GPU 0 -->
+<rect x="20" y="30" width="260" height="230" rx="10" fill="#1e242e" stroke="#c9d1dc"/><text x="150" y="52" text-anchor="middle" font-weight="600">GPU 0 (rank 0)</text>
+<rect x="40" y="65" width="220" height="60" rx="6" fill="#152a45" stroke="#5aa2f0"/><text x="150" y="87" text-anchor="middle">scratch: 64 MiB</text><text x="150" y="104" text-anchor="middle" font-size="11" fill="#9aa4b2">hipDeviceMallocUncached</text><text x="150" y="118" text-anchor="middle" font-size="11" fill="#9aa4b2">ipc_init.cu:58-68</text>
+<rect x="40" y="135" width="220" height="50" rx="6" fill="#3a2a14" stroke="#f0a94a"/><text x="150" y="155" text-anchor="middle">mailbox: 8 &times; 24 flags (uint32)</text><text x="150" y="172" text-anchor="middle" font-size="11" fill="#9aa4b2">uncached; ipc_gpu_barrier.cu:26-45</text>
+<rect x="40" y="195" width="220" height="50" rx="6" fill="#15301a" stroke="#6fcf7a"/><text x="150" y="215" text-anchor="middle">peer table on device: 8 pointers</text><text x="150" y="232" text-anchor="middle" font-size="11" fill="#9aa4b2">ipcbuffs[0..7]; ipc_init.cu:93-131</text>
+<!-- GPU 1 -->
+<rect x="620" y="30" width="260" height="230" rx="10" fill="#1e242e" stroke="#c9d1dc"/><text x="750" y="52" text-anchor="middle" font-weight="600">GPU 1 (rank 1) … GPU 7</text>
+<rect x="640" y="65" width="220" height="60" rx="6" fill="#152a45" stroke="#5aa2f0"/><text x="750" y="87" text-anchor="middle">scratch: 64 MiB</text>
+<rect x="640" y="135" width="220" height="50" rx="6" fill="#3a2a14" stroke="#f0a94a"/><text x="750" y="155" text-anchor="middle">mailbox</text>
+<rect x="640" y="195" width="220" height="50" rx="6" fill="#15301a" stroke="#6fcf7a"/><text x="750" y="215" text-anchor="middle">peer table</text>
+<!-- host exchange -->
+<rect x="330" y="60" width="240" height="120" rx="8" fill="#1a1f27" stroke="#9aa4b2" stroke-dasharray="4 3"/><text x="450" y="82" text-anchor="middle" font-weight="600">host: NCCL bootstrap</text><text x="450" y="102" text-anchor="middle" font-size="11.5">hipIpcGetMemHandle(my scratch)</text><text x="450" y="118" text-anchor="middle" font-size="11.5">bootstrapAllGather(handles, 64 B each)</text><text x="450" y="134" text-anchor="middle" font-size="11.5">hipIpcOpenMemHandle(peer handle)</text><text x="450" y="150" text-anchor="middle" font-size="11.5">&rarr; peer VRAM mapped into my address space</text><text x="450" y="168" text-anchor="middle" font-size="11" fill="#9aa4b2">ipc_mem_handler.cc:40-66 (once for scratch, once for mailbox)</text>
+<line x1="280" y1="95" x2="330" y2="110" stroke="#5aa2f0" marker-end="url(#b)"/><line x1="620" y1="95" x2="570" y2="110" stroke="#5aa2f0" marker-end="url(#b)"/>
+<!-- XGMI -->
+<path d="M150 265 Q450 330 750 265" stroke="#c77dff" stroke-width="5" fill="none"/><text x="450" y="318" text-anchor="middle" fill="#c77dff" font-weight="600">XGMI (Infinity Fabric) links: after init, a plain load from ipcbuffs[1] on GPU 0 is a read of GPU 1's HBM over this wire</text>
+</svg><p class=cap>Fig. 2. Setup. Handles travel once over the host bootstrap sockets; data never touches the host afterwards.</p></div>
+
+<h3>2.1 What "IPC" means here</h3>
+<ol class=steps>
+<li><b>Export.</b> <code>hipIpcGetMemHandle</code> turns a device allocation into a 64-byte opaque handle that another process on the same machine can use (<code>ipc_mem_handler.cc:52</code>). RCCL runs one process per GPU (SGLang TP-8 too), so the eight ranks are eight processes: ordinary pointers are meaningless across them, handles are not.</li>
+<li><b>Exchange.</b> The handles are all-gathered with the NCCL bootstrap network (<code>bootstrapAllGather</code>, <code>ipc_mem_handler.cc:53</code>), the same host TCP ring RCCL used to set up the communicator. 8 &times; 64 bytes, once.</li>
+<li><b>Import.</b> <code>hipIpcOpenMemHandle(&hellip;, hipIpcMemLazyEnablePeerAccess)</code> (<code>ipc_mem_handler.cc:59-62</code>) maps the peer's allocation into the local process's GPU address space and enables peer access on the way. From now on <code>ipcbuffs[p]</code> is a normal device pointer; a kernel dereferences it like local memory.</li>
+<li><b>Peer table.</b> The eight resulting pointers (index = rank, own rank included) are copied into a tiny device array (<code>ipc_init.cu:104-122</code>) and passed to every DDA kernel as <code>ipcbuffs</code>.</li>
+<li>The barrier owns a second <code>ncclIpcMemHandler</code> and does the same three steps for its mailbox (<code>ipc_gpu_barrier.cu:71-105</code>).</li>
+</ol>
+<p>Contrast with the classic RCCL path: there, data moves through RCCL's own per-channel FIFO buffers with a protocol (Simple/LL/LL128) that interleaves flags with data, driven by ring or tree steps. DDA has none of that machinery: two buffers per GPU, one kernel, the user's data is reduced straight out of the peers' scratch.</p>
+
+<h3>2.2 Why uncached memory</h3>
+<p>Both scratch and mailbox are allocated with <code>hipDeviceMallocUncached</code> (fine-grained fallback on old HIP; <code>ipc_init.cu:64-68</code>, <code>device_buffer.cc:33-37</code>). A peer GPU reads this memory over XGMI; if the owner's L2 held a newer copy of a line, the peer would read stale HBM. Uncached (fine-grained) memory makes every write visible at the memory side without a cache flush, and it is the memory kind on which cross-GPU atomics (the barrier's compare-and-swap) are coherent. The price is that the owner's own accesses to its scratch are also uncached, which is one reason the kernels touch scratch exactly once per element.</p>
+
+<h3>2.3 What XGMI contributes</h3>
+<p>XGMI is the GPU-to-GPU Infinity Fabric on the MI355X board; all 8 GPUs are directly connected. Once a peer allocation is mapped, a kernel's ordinary 16-byte load from <code>ipcbuffs[p][i]</code> becomes a read transaction across the XGMI link to GPU p's HBM, with no copy engine, no host, no intermediate buffer. This is the "direct" in Direct Data Access. In the classic path a rank never reads a peer's memory; it writes into the peer's FIFO and the peer reads locally. DDA turns the dataflow around: the <i>consumer</i> pulls what it needs, and pulls from all seven peers in parallel (the reduce loop issues the eight loads back to back, <code>CollCommon.h:129-139</code>). The gfx1250 "fabric" variants added later (MNNVL-style) are a different transport and are not compiled in for gfx950 (<code>ipc_init.cu:48-56</code> gates to gfx942/gfx950).</p>
+
+<h2>3. One-shot ("flat") kernel: messages up to 256 KB</h2>
+<p><code>ddaAllReduceFlatIpc</code>, <code>src/include/algorithms/all_reduce/all_reduce_dda.h:17-50</code>. Chosen when <code>sizeBytes &lt;= kDdaFlatTreeThresholdBytes = 1 &lt;&lt; 18</code> (256 KB, <code>dda_all_reduce_ipc.cu:31, 55</code>), or when the count is not divisible by 8.</p>
+<div class=fig><svg viewBox="0 0 900 360" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif" font-size="12.5">
+<defs><marker id="c" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#5aa2f0"/></marker></defs>
+<!-- phase labels -->
+<text x="20" y="30" font-weight="600">Phase A: copy in</text><text x="20" y="150" font-weight="600">Phase B: barrier #1</text><text x="20" y="215" font-weight="600">Phase C: everyone reduces everything</text><text x="20" y="335" font-weight="600">Phase D: barrier #2</text>
+<!-- phase A -->
+<g>
+<rect x="200" y="15" width="90" height="34" rx="5" fill="#1e242e" stroke="#c9d1dc"/><text x="245" y="37" text-anchor="middle">GPU0 send</text>
+<rect x="320" y="15" width="90" height="34" rx="5" fill="#152a45" stroke="#5aa2f0"/><text x="365" y="37" text-anchor="middle">scratch0</text>
+<line x1="290" y1="32" x2="320" y2="32" stroke="#5aa2f0" marker-end="url(#c)"/>
+<rect x="460" y="15" width="90" height="34" rx="5" fill="#1e242e" stroke="#c9d1dc"/><text x="505" y="37" text-anchor="middle">GPU1 send</text>
+<rect x="580" y="15" width="90" height="34" rx="5" fill="#152a45" stroke="#5aa2f0"/><text x="625" y="37" text-anchor="middle">scratch1</text>
+<line x1="550" y1="32" x2="580" y2="32" stroke="#5aa2f0" marker-end="url(#c)"/>
+<text x="720" y="37">… same on GPU 2..7</text>
+<text x="200" y="75" font-size="11.5" fill="#9aa4b2">in-kernel copy, 16 B per thread per step (copyFromSrcToDest, CollCommon.h:94-105). Local write, no XGMI.</text>
+</g>
+<!-- barrier bars -->
+<rect x="200" y="135" width="680" height="22" rx="4" fill="#3a2a14" stroke="#f0a94a"/><text x="540" y="151" text-anchor="middle" font-size="12">syncOnSameBlockIdx&lt;prev=true, next=true&gt;: release my copy, acquire everyone's copy</text>
+<!-- phase C -->
+<g>
+<rect x="200" y="235" width="80" height="30" rx="5" fill="#152a45" stroke="#5aa2f0"/><text x="240" y="255" text-anchor="middle">scratch0</text>
+<rect x="290" y="235" width="80" height="30" rx="5" fill="#152a45" stroke="#5aa2f0"/><text x="330" y="255" text-anchor="middle">scratch1</text>
+<rect x="380" y="235" width="80" height="30" rx="5" fill="#152a45" stroke="#5aa2f0"/><text x="420" y="255" text-anchor="middle">scratch2</text>
+<text x="475" y="255">…</text>
+<rect x="500" y="235" width="80" height="30" rx="5" fill="#152a45" stroke="#5aa2f0"/><text x="540" y="255" text-anchor="middle">scratch7</text>
+<rect x="640" y="228" width="120" height="44" rx="6" fill="#15301a" stroke="#6fcf7a"/><text x="700" y="247" text-anchor="middle">GPU0: sum of 8</text><text x="700" y="263" text-anchor="middle" font-size="11">&rarr; recvbuff[i]</text>
+<line x1="280" y1="250" x2="640" y2="250" stroke="#c77dff" stroke-width="2"/><text x="450" y="290" text-anchor="middle" fill="#c77dff" font-size="11.5">7 of the 8 loads cross XGMI (reads of the peers' scratch); 1 is local. Every GPU does this for every element i.</text>
+<text x="200" y="312" font-size="11.5" fill="#9aa4b2">reduceScatter(…, pattern=2): srcIdx = destIdx = i (CollCommon.h:107-144). Result lands directly in the user's recvbuff.</text>
+</g>
+<rect x="200" y="322" width="680" height="22" rx="4" fill="#3a2a14" stroke="#f0a94a"/><text x="540" y="338" text-anchor="middle" font-size="12">syncOnSameBlockIdx&lt;prev=true, next=false&gt;: "I am done reading your scratch" so nobody overwrites it for the next call</text>
+</svg><p class=cap>Fig. 3. One-shot. Each GPU ends with the full result after reading the full input of all peers.</p></div>
+<pre>// all_reduce_dda.h:36-49, condensed
+copyFromSrcToDest(sendbuff, ipcbuffs[selfRank], idxStart, count, idxStride);   // A: stage my input in MY scratch
+barrier.syncOnSameBlockIdx&lt;true, true&gt;();                                       // B: all 8 staged, visible
+reduceScatter&lt;T, 8, hasAcc&gt;(ipcbuffs, recvbuff, acc, selfRank, idxStart, count, idxStride, /*pattern=*/2); // C: recv[i] = sum_r ipcbuffs[r][i]
+barrier.syncOnSameBlockIdx&lt;true, false&gt;();                                      // D: all 8 finished reading</pre>
+<p><b>Traffic per GPU:</b> N bytes written locally, 7N bytes read over XGMI (N = message size). <b>Latency:</b> two barriers. For a 128 KB decode all-reduce that is 896 KB of XGMI reads per GPU, roughly a microsecond of wire time, so the barriers and launch dominate, and doing the reduction eight times redundantly is cheaper than adding a third barrier.</p>
+
+<h2>4. Two-shot ("tree") kernel: messages above 256 KB</h2>
+<p><code>ddaAllReduceTreeIpc</code>, <code>all_reduce_dda.h:52-96</code>. The name "tree" is historical; it is reduce-scatter followed by all-gather, the same skeleton as every bandwidth-optimal all-reduce. Rank r "owns" slice r (elements <code>[r&middot;N/8, (r+1)&middot;N/8)</code>).</p>
+<div class=fig><svg viewBox="0 0 900 470" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif" font-size="12.5">
+<defs><marker id="d" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#c77dff"/></marker><marker id="e" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#5aa2f0"/></marker></defs>
+<text x="20" y="28" font-weight="600">Phase 0 (host, in-stream): hipMemcpyAsync sendbuff &rarr; my scratch</text><text x="20" y="46" font-size="11.5" fill="#9aa4b2">dda_all_reduce_ipc.cu:82-87. Stream order guarantees the copy is complete before the kernel starts.</text>
+<text x="20" y="80" font-weight="600">Phase 1: barrier #1 &lt;prev=false, next=true&gt; (acquire only: nothing to release, the memcpy already finished)</text>
+<!-- RS -->
+<text x="20" y="120" font-weight="600">Phase 2: reduce-scatter. GPU r reads slice r from all 8 scratches, sums, writes the result into ITS OWN scratch, slice r</text>
+<g transform="translate(60,135)">
+<!-- 4 scratch buffers drawn as 8-slice bars -->
+<g id="bar"><rect x="0" y="0" width="240" height="26" fill="#152a45" stroke="#5aa2f0"/>
+<line x1="30" y1="0" x2="30" y2="26" stroke="#5aa2f0"/><line x1="60" y1="0" x2="60" y2="26" stroke="#5aa2f0"/><line x1="90" y1="0" x2="90" y2="26" stroke="#5aa2f0"/><line x1="120" y1="0" x2="120" y2="26" stroke="#5aa2f0"/><line x1="150" y1="0" x2="150" y2="26" stroke="#5aa2f0"/><line x1="180" y1="0" x2="180" y2="26" stroke="#5aa2f0"/><line x1="210" y1="0" x2="210" y2="26" stroke="#5aa2f0"/></g>
+<text x="-45" y="18" font-size="11.5">scratch0</text>
+<use href="#bar" y="40"/><text x="-45" y="58" font-size="11.5">scratch1</text>
+<use href="#bar" y="80"/><text x="-45" y="98" font-size="11.5">scratch2</text>
+<text x="120" y="130" text-anchor="middle">…</text>
+<use href="#bar" y="140"/><text x="-45" y="158" font-size="11.5">scratch7</text>
+<!-- highlight slice 2 on each -->
+<rect x="60" y="0" width="30" height="26" fill="#9c4dcc" opacity=".8"/><rect x="60" y="40" width="30" height="26" fill="#9c4dcc" opacity=".8"/><rect x="60" y="80" width="30" height="26" fill="#9c4dcc" opacity=".8"/><rect x="60" y="140" width="30" height="26" fill="#9c4dcc" opacity=".8"/>
+<text x="75" y="-6" text-anchor="middle" font-size="11" fill="#c77dff">slice 2</text>
+<!-- arrows to GPU2 sum -->
+<line x1="90" y1="13" x2="330" y2="80" stroke="#c77dff" stroke-width="1.5" marker-end="url(#d)"/><line x1="90" y1="53" x2="330" y2="83" stroke="#c77dff" stroke-width="1.5" marker-end="url(#d)"/><line x1="90" y1="93" x2="330" y2="88" stroke="#c77dff" stroke-width="1.5" marker-end="url(#d)"/><line x1="90" y1="153" x2="330" y2="95" stroke="#c77dff" stroke-width="1.5" marker-end="url(#d)"/>
+<rect x="335" y="65" width="130" height="44" rx="6" fill="#15301a" stroke="#6fcf7a"/><text x="400" y="84" text-anchor="middle">GPU2: &Sigma; slice 2</text><text x="400" y="101" text-anchor="middle" font-size="11">7 XGMI reads + 1 local</text>
+<line x1="465" y1="87" x2="560" y2="87" stroke="#5aa2f0" stroke-width="1.5" marker-end="url(#e)"/>
+<rect x="565" y="74" width="30" height="26" fill="#2e7d32" stroke="#6fcf7a"/><text x="580" y="65" text-anchor="middle" font-size="11" fill="#6fcf7a">scratch2, slice 2</text><text x="620" y="92" font-size="11.5">= reduced slice 2, in place</text>
+<text x="0" y="200" font-size="11.5" fill="#9aa4b2">reduceScatter(…, ipcbuffs[selfRank], pattern=1): srcIdx = destIdx = i + selfRank&middot;N/8 (CollCommon.h:121-122). Every GPU does this for its own slice at the same time.</text>
+</g>
+<text x="20" y="375" font-weight="600">Phase 3: barrier #2 &lt;prev=true, next=true&gt; (release my reduced slice, acquire everyone's)</text>
+<text x="20" y="405" font-weight="600">Phase 4: all-gather. GPU r copies slice p from scratch p, for p = 0..7, into recvbuff[p&middot;N/8 ..]</text>
+<text x="20" y="424" font-size="11.5" fill="#9aa4b2">allGather(…, enable_offset=true): srcIdx = destIdx (CollCommon.h:146-171). 7 XGMI reads of N/8 each; the loop starts at the GPU's own rank and rotates (srcRank = (selfRank + r) % 8, line 159), so the 8 GPUs do not all hit the same peer first.</text>
+<text x="20" y="455" font-weight="600">Phase 5: barrier #3 &lt;prev=true, next=false&gt; (nobody may overwrite the reduced slices until all have gathered)</text>
+</svg><p class=cap>Fig. 4. Two-shot. Each GPU reduces one eighth and gathers seven eighths.</p></div>
+<pre>// all_reduce_dda.h:64-95, condensed (memcpyAsync sendbuff -> scratch happened in the stream just before)
+barrier.syncOnSameBlockIdx&lt;false, true&gt;();                                        // 1: all 8 staged
+reduceScatter&lt;T, 8, hasAcc&gt;(ipcbuffs, ipcbuffs[selfRank], acc, selfRank, idxStart, count/8, idxStride, /*pattern=*/1); // 2: my slice, in place
+barrier.syncOnSameBlockIdx&lt;true, true&gt;();                                         // 3: all 8 slices reduced
+allGather&lt;T, 8&gt;(ipcbuffs, recvbuff, selfRank, idxStart, count/8, idxStride, /*enable_offset=*/true); // 4: collect 8 slices
+barrier.syncOnSameBlockIdx&lt;true, false&gt;();                                        // 5: all 8 done reading</pre>
+<p><b>Traffic per GPU:</b> N bytes memcpy locally, 7N/8 XGMI reads in the reduce-scatter, 7N/8 in the all-gather: <b>1.75N</b> over the wire against 7N for one-shot, four times less. <b>Latency:</b> three barriers plus a separate memcpy launch. The in-place trick (write the reduced slice back into the same scratch it was read from) is safe because slice r is read by rank r only, and each thread writes exactly the 16 bytes it just read.</p>
+
+<div class="card ok"><b>Why the split is at 256 KB.</b> The two kernels move 7N and 1.75N bytes over XGMI and pay 2 and 3 barriers respectively. A barrier round is a few microseconds of flag ping-pong across the fabric, independent of N; the wire time grows with N. Below a few hundred KB the barrier saved by one-shot outweighs the 5.25N of extra reads; above it the reads win. <code>kDdaFlatTreeThresholdBytes = 1 &lt;&lt; 18</code> is a hard-coded constant, not an env var (<code>dda_all_reduce_ipc.cu:31</code>). For our models this puts Qwen d32 (128 KB), gpt-oss d32 (180 KB) on one-shot and every larger decode/prefill size on two-shot.</div>
+
+<h2>5. The GPU barrier, in detail</h2>
+<p><code>IpcGpuBarrier::syncOnSameBlockIdx</code>, <code>src/include/ipc_gpu_barrier.h:112-148</code>. Nothing runs on the host during an all-reduce; the eight kernels synchronise among themselves through flags in the mailboxes.</p>
+<h3>5.1 Layout</h3>
+<p>Each GPU owns one mailbox: <code>nRanks &times; nBlocks = 8 &times; 24</code> 32-bit flags, index <code>block&middot;8 + rank</code> (<code>ipc_gpu_barrier.h:87-89</code>). Flag <code>[b][s]</code> in GPU d's mailbox means "block b of GPU s has arrived at the barrier, for GPU d". Every GPU holds pointers to all eight mailboxes (its own plus seven IPC-mapped), so a GPU can write into any peer's mailbox and only ever <i>waits</i> on its own.</p>
+<div class=fig><svg viewBox="0 0 900 300" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif" font-size="12.5">
+<defs><marker id="f" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#f0a94a"/></marker></defs>
+<text x="20" y="25" font-weight="600">Mailbox of GPU 3 (uncached VRAM on GPU 3, IPC-mapped by all others)</text>
+<g transform="translate(20,40)">
+<text x="0" y="22" font-size="11">block 0</text><text x="0" y="52" font-size="11">block 1</text><text x="0" y="82" font-size="11">block 2</text><text x="0" y="112" font-size="11">…</text><text x="0" y="142" font-size="11">block 23</text>
+<g>
+<rect x="60" y="8" width="320" height="24" fill="#1e242e" stroke="#f0a94a"/><rect x="60" y="38" width="320" height="24" fill="#1e242e" stroke="#f0a94a"/><rect x="60" y="68" width="320" height="24" fill="#1e242e" stroke="#f0a94a"/><rect x="60" y="128" width="320" height="24" fill="#1e242e" stroke="#f0a94a"/>
+</g>
+<g stroke="#f0a94a"><line x1="100" y1="8" x2="100" y2="32"/><line x1="140" y1="8" x2="140" y2="32"/><line x1="180" y1="8" x2="180" y2="32"/><line x1="220" y1="8" x2="220" y2="32"/><line x1="260" y1="8" x2="260" y2="32"/><line x1="300" y1="8" x2="300" y2="32"/><line x1="340" y1="8" x2="340" y2="32"/>
+<line x1="100" y1="38" x2="100" y2="62"/><line x1="140" y1="38" x2="140" y2="62"/><line x1="180" y1="38" x2="180" y2="62"/><line x1="220" y1="38" x2="220" y2="62"/><line x1="260" y1="38" x2="260" y2="62"/><line x1="300" y1="38" x2="300" y2="62"/><line x1="340" y1="38" x2="340" y2="62"/>
+<line x1="100" y1="68" x2="100" y2="92"/><line x1="140" y1="68" x2="140" y2="92"/><line x1="180" y1="68" x2="180" y2="92"/><line x1="220" y1="68" x2="220" y2="92"/><line x1="260" y1="68" x2="260" y2="92"/><line x1="300" y1="68" x2="300" y2="92"/><line x1="340" y1="68" x2="340" y2="92"/>
+<line x1="100" y1="128" x2="100" y2="152"/><line x1="140" y1="128" x2="140" y2="152"/><line x1="180" y1="128" x2="180" y2="152"/><line x1="220" y1="128" x2="220" y2="152"/><line x1="260" y1="128" x2="260" y2="152"/><line x1="300" y1="128" x2="300" y2="152"/><line x1="340" y1="128" x2="340" y2="152"/></g>
+<text x="80" y="0" text-anchor="middle" font-size="10.5">from r0</text><text x="120" y="0" text-anchor="middle" font-size="10.5">r1</text><text x="160" y="0" text-anchor="middle" font-size="10.5">r2</text><text x="200" y="0" text-anchor="middle" font-size="10.5">r3</text><text x="240" y="0" text-anchor="middle" font-size="10.5">r4</text><text x="280" y="0" text-anchor="middle" font-size="10.5">r5</text><text x="320" y="0" text-anchor="middle" font-size="10.5">r6</text><text x="360" y="0" text-anchor="middle" font-size="10.5">r7</text>
+<rect x="141" y="39" width="38" height="22" fill="#6b4a1c"/><text x="160" y="55" text-anchor="middle" font-size="11">1</text>
+</g>
+<line x1="600" y1="95" x2="200" y2="90" stroke="#f0a94a" stroke-width="2" marker-end="url(#f)"/>
+<rect x="600" y="70" width="280" height="50" rx="6" fill="#1e242e" stroke="#c9d1dc"/><text x="740" y="90" text-anchor="middle">GPU 2, block 1, thread 3:</text><text x="740" y="108" text-anchor="middle" font-size="11.5">CAS 0&rarr;1 on mailbox3[block1][from r2] over XGMI</text>
+<text x="20" y="225" font-size="12.5">Rows are <b>blocks</b>, columns are <b>sender ranks</b>. Block b of GPU 3 waits only on row b of its own mailbox: eight flags, one per sender (its own included).</text>
+<text x="20" y="248" font-size="12.5">Only eight threads of each block take part (threadIdx.x &lt; 8, ipc_gpu_barrier.h:131): thread p talks to GPU p.</text>
+<text x="20" y="271" font-size="12.5">24 blocks &times; 8 ranks &times; 4 B = 768 B per mailbox. Tiny, but it is the hottest memory in the whole algorithm.</text>
+</svg><p class=cap>Fig. 5. One mailbox. Every barrier is a row-wise all-to-all of single 32-bit flags.</p></div>
+
+<h3>5.2 The algorithm of one barrier</h3>
+<pre>// ipc_gpu_barrier.h:112-148, annotated
+template &lt;bool hasPreviousMemAccess, bool hasSubsequentMemAccess&gt;
+void syncOnSameBlockIdx() {
+  if (hasPreviousMemAccess) __syncthreads();          // (1) all 512 threads of MY block finished their loads/stores
+  if (threadIdx.x &lt; 8) {                                // (2) eight threads, one per peer
+    peer = threadIdx.x;
+    allMailboxes_[peer].setFlag…(selfRank_, blockIdx.x);   //   put 1 into PEER's mailbox at [my block][my rank]
+    allMailboxes_[selfRank_].waitFlag…(peer, blockIdx.x);  //   wait until MY mailbox [my block][peer] holds 1, then reset it to 0
+  }
+  if (hasSubsequentMemAccess) __syncthreads();        // (3) the 8 waiting threads release the other 504
+}</pre>
+<ol class=steps>
+<li><b>Arrive.</b> After the local <code>__syncthreads</code>, thread p of block b writes flag 1 into GPU p's mailbox at <code>[b][me]</code>. The write is a compare-and-swap 0&rarr;1 that <i>spins while the slot is still 1</i> (<code>putFlag</code>, <code>ipc_gpu_barrier.h:37-41</code>). That spin is back-pressure: if GPU p has not yet consumed my flag from the previous barrier, I cannot post the next one, so two consecutive barriers can never be confused. This is why no epoch counter is needed.</li>
+<li><b>Wait.</b> The same thread then spins on its <i>own</i> mailbox slot <code>[b][p]</code> until GPU p has written 1 there, and consumes it with a CAS 1&rarr;0 (<code>waitFlag</code>, lines 43-47). Consuming resets the slot for the next barrier. All spinning is on local memory (my mailbox lives in my HBM); only the arrive-write crosses XGMI. Eight threads spin in parallel, one per peer.</li>
+<li><b>Same block index only.</b> Block b on GPU 0 synchronises with block b on GPUs 1..7, never with block b+1. That is enough because the index range a thread processes depends only on its global thread id (<code>idxStart = gtIdx&middot;countPerThread</code>, stride <code>gridDim&middot;blockDim&middot;countPerThread</code>, <code>all_reduce_dda.h:29-34</code>), so block b reads exactly the elements that block b on the peers wrote. 24 small barriers instead of one grid-wide barrier: no block ever waits for a slower block it does not depend on.</li>
+<li><b>Memory ordering</b> is chosen per barrier by the two template flags (<code>ipc_gpu_barrier.h:114-126</code>):</li>
+</ol>
+<div class=tw><table>
+<tr><th>call</th><th>fence type</th><th>arrive write</th><th>wait read</th><th>why</th></tr>
+<tr><td>flat after copy-in; tree after reduce-scatter</td><td>RELEASE_ACQUIRE</td><td>release CAS</td><td>acquire CAS</td><td>my stores to scratch must be visible to the peer before it sees my flag; the peer's stores must be visible to me after I see its flag</td></tr>
+<tr><td>tree, first barrier</td><td>ACQUIRE_ONLY (<code>prev=false</code>)</td><td>relaxed CAS</td><td>acquire CAS</td><td>the kernel has written nothing yet (the staging memcpy completed under stream order), so nothing to release; still need to see the peers' staged data</td></tr>
+<tr><td>last barrier of both kernels</td><td>RELEASE_ONLY (<code>next=false</code>)</td><td>release CAS</td><td>relaxed CAS</td><td>publish "I finished reading your scratch"; I read nothing after, so no acquire</td></tr>
+</table></div>
+<p>The CAS is <code>__atomic_compare_exchange_n</code> with the chosen order on a <code>uint32_t</code> in uncached memory (<code>ipc_gpu_barrier.h:30-33</code>). On MI300-class GPUs a release/acquire atomic on fine-grained memory is what orders the preceding 16-byte stores (which went to HBM uncached) against the peer's subsequent XGMI loads.</p>
+
+<div class="card warn"><b>What the last barrier buys, and what the kernel does not do.</b> The trailing RELEASE_ONLY barrier exists because the scratch is reused by the very next all-reduce on the same stream. Without it GPU 0 could start the next call's copy-in while GPU 5 is still reading GPU 0's scratch from the previous call. There is no double buffering and no epoch: one scratch, serialised by barriers. Consequently a DDA all-reduce cannot overlap with the next DDA all-reduce of the same communicator, and two communicators each get their own scratch and mailbox (per-<code>ncclComm</code> state, <code>comm.h:621-626</code>).</div>
+
+<h2>6. Launch geometry: how many CUs it takes</h2>
+<p><code>getGridAndBlockDims</code> (<code>CollCommon.h:195-221</code>): 512 threads per block (8 wavefronts of 64), each thread handles 16 bytes per loop step (<code>uint4</code> = 8 bf16 or 4 fp32), grid capped at <code>DDA_IPC_MAXBLOCKS = 24</code> (<code>ipc_init_detail.h:18</code>, the value in our log). Small messages get one partially filled block; large ones 24 blocks and a grid-stride loop.</p>
+<div class=tw><table>
+<tr><th>message (bf16)</th><th>kernel</th><th>elements per GPU to reduce</th><th>threads needed at 16 B each</th><th>blocks &times; threads launched</th><th>loop steps per thread</th></tr>
+<tr><td>128 KB (Qwen d32)</td><td>one-shot</td><td>65,536 (all)</td><td>8,192</td><td>16 &times; 512</td><td>1</td></tr>
+<tr><td>180 KB (gpt-oss d32)</td><td>one-shot</td><td>92,160</td><td>11,520</td><td>23 &times; 512</td><td>1</td></tr>
+<tr><td>512 KB (Qwen d128)</td><td>two-shot</td><td>32,768 (1/8)</td><td>4,096</td><td>24 &times; 512 (grid sized on the full count)</td><td>&lt;1 (some threads idle)</td></tr>
+<tr><td>1.75 MB (DeepSeek d128)</td><td>two-shot</td><td>114,688</td><td>14,336</td><td>24 &times; 512</td><td>~1.2</td></tr>
+<tr><td>64 MiB (the ceiling)</td><td>two-shot</td><td>4.2 M</td><td>524,288</td><td>24 &times; 512</td><td>~43</td></tr>
+</table></div>
+<p class=note>Grid is computed from the full <code>count</code> (<code>dda_all_reduce_ipc.cu:70</code>) even for the tree kernel, which only loops to <code>count/8</code>; so in two-shot up to 7/8 of the launched threads exit their loop immediately. Harmless but worth knowing when reading profiles.</p>
+<p>So DDA occupies at most 24 of the MI355X's 256 CUs and never more than 24 &times; 512 threads, for any size. The classic ring kernel at the same sizes runs on up to 112 channels (one block each). In a model server this matters twice: the all-reduce kernel leaves the rest of the GPU free for the compute kernels queued behind it, and its single launch has no proxy-thread or channel setup. Bandwidth is not the constraint here: at 64 MiB two-shot the 1.75 &times; 64 MiB = 112 MiB of XGMI reads per GPU are spread over seven links.</p>
+
+<h2>7. What DDA does not do, and what that means for a tuner</h2>
+<ul>
+<li><b>No algorithm/protocol/channel choice.</b> The kernel is fixed; the only knobs are the two env vars (<code>RCCL_DDA_ENABLE</code>, <code>RCCL_DDA_THRESHOLD</code>) and the compiled constants (256 KB split, 24 blocks, 64 MiB scratch). <code>NCCL_ALGO</code>, <code>NCCL_PROTO</code>, <code>NCCL_MIN/MAX_NCHANNELS</code>, the built-in CSV tuner and any tuner plugin act on <code>ncclEnqueueCheck</code>, which a DDA call never reaches (Fig. 1).</li>
+<li><b>No pipelining.</b> Copy in, barrier, reduce, barrier. Latency is the sum of the phases; there is no overlap of the reduction with the transfer as in ring/LL. It wins because the phases are short and the fabric is fully connected.</li>
+<li><b>No support for</b> other ops (min/max/prod/avg), integer types, fp8, non-8-rank communicators, multi-node, grouped calls, or sizes above the scratch. Those fall back to the classic path and are tuner-visible.</li>
+<li><b>Measured on our cluster:</b> RCCL as shipped (DDA) beats the best classic-path configuration by 8-29% tok/s at every decode size we ran (campaign C, <code>results-tuning/2026-09-14-2-sc2plusamd/SUMMARY.md</code>), and stock SGLang's own AITER custom all-reduce beats DDA in turn (2026-09-10-2). Above 64 MiB, where DDA stops, the classic default is already the optimum (campaigns A and B', <code>night_2026-09-14.html</code>).</li>
+</ul>
+
+<h2>8. Same idea, one layer up: AITER's custom all-reduce</h2>
+<p>SGLang's AITER custom all-reduce is also a one-shot / two-shot direct algorithm over IPC-mapped peer buffers with a flag barrier. The difference is ownership of the buffers: AITER registers the <i>model's</i> tensors (or its own graph-captured buffers) with the peers once, so there is no per-call copy into a staging scratch and no host memcpy; DDA lives inside a generic library that receives arbitrary user pointers per call and must stage them. That staging copy (phase A / phase 0 above) plus the extra barrier it implies is the cost DDA pays for being generic, and it is the gap stock SGLang showed over the "none" arm (+2..+13% depending on size, 2026-09-10-2). Above 64 MiB AITER declines (<code>_DEFAULT_CAR_MAX_SIZE = 8192&middot;8192</code>) and DDA is out of range, so those sizes are the only ones a TP-8 server ever hands to RCCL's classic path.</p>
+
+<h2>9. History and what changed after our image</h2>
+<div class=tw><table>
+<tr><th>date</th><th>PR / commit</th><th>what</th><th>in our image (2.30.4-HEAD:6b0e43f)?</th></tr>
+<tr><td>2026-05-17</td><td>#4958 <code>c2c4b25f6d</code> (Nusrat Islam, AMD)</td><td>"Direct Allreduce for scaleup": both kernels, IPC init, barrier, 20 files, +1360 lines, vendored from Meta torchcomms (<code>all_reduce_dda.cuh</code>, <code>IpcGpuBarrier.cuh</code>, <code>IpcMemHandler</code>). Commit text: "up to 3x speedup over RCCL default allreduce algorithm", tested on MI350.</td><td>yes</td></tr>
+<tr><td>2026-06-03</td><td>#6663</td><td>gate on <code>NCCL_LAUNCH_ORDER_IMPLICIT</code> (DDA skipped the code that honours it)</td><td>yes</td></tr>
+<tr><td>2026-06-05</td><td>#6783</td><td>skip IPC init for directMode (one process, many GPUs) and MNNVL</td><td>yes</td></tr>
+<tr><td>2026-06-10</td><td>#6549</td><td>DDA reduce-scatter, all-gather, all-to-all (same scratch, same barrier); all-reduce file trimmed</td><td>yes</td></tr>
+<tr><td>2026-06-30</td><td>#7982</td><td>init only on gfx942/gfx950 (no XGMI on gfx1100)</td><td>not verified for #7982 itself (dated after the tree we read); the arch gate is present there via commit <code>cbce0bbd2c</code></td></tr>
+<tr><td>2026-08-12</td><td>#9777</td><td>dispatch rewritten around the new CE (copy-engine) all-reduce: DDA taken whenever CE will not handle the call; fixes a 4-32 MB regression on gfx950 caused by #8945</td><td>no</td></tr>
+<tr><td>2026-08-14</td><td>#9325</td><td><code>RCCL_DDA_THRESHOLD</code> default 64 MiB &rarr; 128 MiB; scratch <code>DDA_IPC_BUFFER_SIZE</code> 64 MiB &rarr; 256 MiB; LL/LL128 tiers (gfx1250 fabric only)</td><td>no (our log: scratch 67108864)</td></tr>
+<tr><td>2026-08-21</td><td>#9748</td><td>DDA fabric LL two-shot (gfx1250)</td><td>no</td></tr>
+<tr><td>2026-08-25</td><td>#10072</td><td>files moved to <code>src/algorithms/dda/</code>, namespace <code>meta::comms</code> &rarr; <code>dda::common</code>; "No functional change"</td><td>no</td></tr>
+</table></div>
+<p>Diffing the June and September versions of <code>all_reduce_dda.h</code>, <code>ipc_gpu_barrier.h</code> and <code>dda_all_reduce_ipc.cu</code>: identical logic; only the namespace, include paths, formatting, an explicit <code>nRanks</code> argument to the helpers, a P2P capability check at init, and a one-time <code>hipMemset</code> of the scratch were added. The two constants that changed (threshold, scratch) would move DDA's ceiling from 64 MiB to 128 MiB on a newer image; the 256 KB one-shot/two-shot split did not change.</p>
+
+<h2>10. Source index</h2>
+<div class=tw><table>
+<tr><th>file (June tree = our image)</th><th>September path</th><th>contains</th></tr>
+<tr><td><code>src/include/algorithms/all_reduce/all_reduce_dda.h</code></td><td><code>src/algorithms/dda/all_reduce/all_reduce_dda.h</code></td><td>the two kernels <code>ddaAllReduceFlatIpc</code>, <code>ddaAllReduceTreeIpc</code> (98 lines)</td></tr>
+<tr><td><code>src/dda_all_reduce_ipc.cu</code></td><td><code>src/algorithms/dda/all_reduce/dda_all_reduce_ipc.cu</code></td><td>eligibility, 256 KB split, staging memcpy, launch</td></tr>
+<tr><td><code>src/include/algorithms/CollCommon.h</code></td><td><code>src/algorithms/dda/device/CollCommon.h</code></td><td><code>copyFromSrcToDest</code>, <code>reduceScatter</code> (patterns 1 and 2), <code>allGather</code>, <code>vecElementAdd</code>, grid sizing</td></tr>
+<tr><td><code>src/include/ipc_gpu_barrier.h</code>, <code>src/ipc_gpu_barrier.cu</code></td><td><code>src/algorithms/dda/ipc/</code></td><td><code>DeviceMailbox</code>, <code>IpcGpuBarrier::syncOnSameBlockIdx</code>, CAS flag put/wait</td></tr>
+<tr><td><code>src/ipc_init.cu</code>, <code>src/include/ipc_init_detail.h</code></td><td><code>src/algorithms/dda/ipc/ipc_init.cu</code>, <code>src/algorithms/dda/dda_init_detail.h</code></td><td><code>ncclDdaIpcCommInit</code>: scratch, handle exchange, peer table, barrier; <code>DDA_IPC_MAXBLOCKS 24</code>, <code>DDA_IPC_BUFFER_SIZE</code></td></tr>
+<tr><td><code>src/ipc_mem_handler.cc</code>, <code>src/include/ipc_mem_handler.h</code></td><td><code>src/algorithms/dda/ipc/</code></td><td><code>hipIpcGetMemHandle</code> / <code>bootstrapAllGather</code> / <code>hipIpcOpenMemHandle</code></td></tr>
+<tr><td><code>src/device_buffer.cc</code></td><td><code>src/algorithms/dda/device/</code></td><td>uncached device allocation wrapper</td></tr>
+<tr><td><code>src/collectives.cc:127-146, 440-452</code></td><td><code>src/rccl_wrap.cc:682-701</code> + <code>collectives.cc</code> decision switch</td><td><code>rcclDdaEnabled</code>, the early return before <code>ncclEnqueueCheck</code></td></tr>
+</table></div>
+<p class=note>Cluster evidence quoted: rank logs of the 2026-09-14 campaign D Qwen csv arm on node 2 (16 &times; <code>ncclDdaIpcCommInit: scratch 67108864 bytes, IpcGpuBarrier nBlocks=24, peer IPC table on device</code>, 8 &times; <code>RCCL version : 2.30.4-HEAD:6b0e43f</code>, 16 &times; <code>Symmetric memory is not supported</code>). Behavioural evidence (0 tuner hits with DDA on, hits with <code>RCCL_DDA_ENABLE=0</code>): <code>results-tuning/2026-09-10-2-inmodel-rocm10/SUMMARY.md</code> section 1 and its probe hit-maps. No rocprof trace of the DDA kernels was taken by us; kernel names and phases above come from the source only.</p>

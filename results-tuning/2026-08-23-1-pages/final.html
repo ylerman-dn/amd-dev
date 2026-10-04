@@ -1,0 +1,28 @@
+<!doctype html><meta charset=utf-8><title>GPU-107 final pages</title>
+<style>
+:root{--ink:#e6e9ef;--mut:#9aa4b2;--bg:#12161d;--card:#1a1f27;--line:#2c3340;--acc:#5aa2f0;--g:#6fcf7a;--o:#f0a94a;--r:#f27c72;--code:#232a35;--p:#c77dff}
+body{font:15px/1.55 system-ui,Segoe UI,Roboto,sans-serif;color:var(--ink);background:var(--bg);margin:0;padding:28px 40px 80px;max-width:1180px}
+h1{font-size:26px;margin:0 0 6px}h2{font-size:20px;margin:40px 0 10px;padding-top:12px;border-top:1px solid var(--line)}h3{font-size:16px;margin:20px 0 6px}
+p,li{max-width:920px}code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:13px}a{color:var(--acc)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0}
+.tldr{border-left:5px solid var(--acc)}.warn{border-left:5px solid var(--o)}.ok{border-left:5px solid var(--g)}
+.note{color:var(--mut);font-size:13px}
+table{border-collapse:collapse;font-size:13.5px;margin:10px 0}th,td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}th{background:#222935}
+.tw{overflow-x:auto}.fig{margin:16px 0 6px}.fig svg{max-width:100%;height:auto;display:block}.cap{font-size:13px;color:var(--mut);margin:4px 0 0}
+svg text:not([fill]){fill:var(--ink)}
+.kv td:first-child{font-weight:600;white-space:nowrap}
+.tag{display:inline-block;padding:0 7px;border-radius:9px;font-size:11.5px;margin-right:4px;border:1px solid var(--line)}
+.live{color:var(--g)}.todo{color:var(--o)}.human{color:var(--p)}
+</style>
+<h1>GPU-107: RCCL tuner configuration on MI355X, the pages that matter</h1>
+<p class=note>Verdict: for single-node inference the tuning job is already done by the vendor stack, twice: SGLang's custom all-reduce handles every all_reduce below 64 MiB before RCCL sees it, and inside RCCL 2.30 AMD's direct all-reduce (DDA) handles the same range before any tuner is consulted. Above 64 MiB RCCL's default is already the optimum. The pages below carry the evidence; everything else in this folder is working material.</p>
+<ul style="line-height:1.6">
+<li><a href='index.html'><b>Results from rccl-tests</b></a><br><span class=note>Rules validated per collective and node count (6 collectives, 1-5 nodes, RCCL 2.27.7), with the full accept/reject audit: 395 rules judged, 120 kept.</span></li>
+<li><a href='inmodel_rocm10_2026-09-10.html'><b>In-model results on the current stack</b></a><br><span class=note>3 models, 6 traffic modes, 5 arms on RCCL 2.30.4. SGLang as shipped > RCCL as shipped (DDA) > our conf > no tuner, in every table.</span></li>
+<li><a href='night_2026-09-14.html'><b>Final single-node campaigns</b></a><br><span class=note>Above 64 MiB in rccl-tests and in the live models: nothing beats the default. Our conf plus AMD's rules removes the miss penalty. The conf loads through RCCL's built-in tuner, no plugin needed.</span></li>
+<li><a href='msccl_2026-09-10.html'><b>Why stock SGLang beats tuned RCCL</b></a><br><span class=note>The layers that can execute an all_reduce on one node and who wins, with an interactive step-by-step all-reduce walkthrough (4 or 8 GPUs).</span></li>
+<li><a href='dda_deepdive_2026-09-15.html'><b>RCCL's DDA all-reduce, from source</b></a><br><span class=note>One-shot and two-shot kernels, the GPU barrier, IPC handle exchange, XGMI, launch geometry; why a tuner never sees these calls.</span></li>
+<li><a href='approaches.html'><b>How we search</b></a><br><span class=note>Grid vs racing vs Optuna vs random, replayed on the same measured data. Racing wins.</span></li>
+<li><a href='codeflow.html'><b>The tuning tool</b></a><br><span class=note>Process A (rccl-tests sweep to proven conf) and Process B (live model A/B), files by role, design choices and why.</span></li>
+</ul>
+<p class=note>Repo: <code>results-tuning/2026-08-23-1-pages/</code>, branch gpu107-clean. Confirmed findings in plain language: <code>findings/INSIGHTS.md</code>.</p>

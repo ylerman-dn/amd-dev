@@ -1,0 +1,103 @@
+<!doctype html><meta charset=utf-8><title>GPU-107 tuning tool: flow and design choices</title>
+<style>
+:root{--ink:#e6e9ef;--mut:#9aa4b2;--bg:#12161d;--card:#1a1f27;--line:#2c3340;--acc:#5aa2f0;--g:#6fcf7a;--o:#f0a94a;--r:#f27c72;--code:#232a35;--p:#c77dff}
+body{font:15px/1.55 system-ui,Segoe UI,Roboto,sans-serif;color:var(--ink);background:var(--bg);margin:0;padding:28px 40px 80px;max-width:1180px}
+h1{font-size:26px;margin:0 0 6px}h2{font-size:20px;margin:40px 0 10px;padding-top:12px;border-top:1px solid var(--line)}h3{font-size:16px;margin:20px 0 6px}
+p,li{max-width:920px}code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:13px}a{color:var(--acc)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin:14px 0}
+.tldr{border-left:5px solid var(--acc)}.warn{border-left:5px solid var(--o)}.ok{border-left:5px solid var(--g)}
+.note{color:var(--mut);font-size:13px}
+table{border-collapse:collapse;font-size:13.5px;margin:10px 0}th,td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}th{background:#222935}
+.tw{overflow-x:auto}.fig{margin:16px 0 6px}.fig svg{max-width:100%;height:auto;display:block}.cap{font-size:13px;color:var(--mut);margin:4px 0 0}
+svg text:not([fill]){fill:var(--ink)}
+.kv td:first-child{font-weight:600;white-space:nowrap}
+.tag{display:inline-block;padding:0 7px;border-radius:9px;font-size:11.5px;margin-right:4px;border:1px solid var(--line)}
+.live{color:var(--g)}.todo{color:var(--o)}.human{color:var(--p)}
+</style>
+
+<p class=note><a href='index.html'>&larr; index</a> · <a href='approaches.html'>search approaches compared</a> · <a href='night_2026-09-14.html'>night 2026-09-14</a> · <a href='dda_deepdive_2026-09-15.html'>DDA deep dive</a></p>
+<h1>The GPU-107 tuning tool: what it does, how the pieces connect, and why it is built this way</h1>
+<p class=note>State 2026-09-15. Code: <code>tools/rccl-sweep/</code> (one flat directory, 17 scripts, ~6300 lines of Python + 3 bash drivers) and the tuner plugin <code>dn/dn-tuner/</code>. Everything runs on the allocated cluster node inside the SGLang image; the dev VM only orchestrates over ssh. Supersedes the 2026-09-07 version of this page.</p>
+
+<div class="card tldr"><b>In 30 seconds.</b> RCCL picks an algorithm, a protocol and a channel count for every collective call from a built-in cost model. A <i>tuner conf</i> is a table of rules ("all_reduce, 128 KB..256 KB, 8 ranks, 1 node: use tree/ll/64 channels") that overrides that choice. The tool does two things: <b>Process A</b> finds rules that beat RCCL's default with rccl-tests and proves each one with an A/B (<code>rccl_tune.py</code> end to end); <b>Process B</b> loads the resulting conf into a live SGLang server and measures whether tokens per second move (<code>infer_paired.sh</code> + <code>infer_score.py</code>). Every number that survives is tied to a raw log in <code>results-tuning/&lt;date&gt;-N-&lt;name&gt;/</code> and a row in <code>RUNLOG.md</code>.</div>
+
+<h2>1. Process A: from grid to proven conf</h2>
+<div class=fig><svg viewBox="0 0 1100 260" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif" font-size="12.5">
+<defs><marker id="a" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#9aa4b2"/></marker></defs>
+<g>
+<rect x="10" y="40" width="170" height="80" rx="8" fill="#1e242e" stroke="#c9d1dc"/><text x="95" y="63" text-anchor="middle" font-weight="600">1 book</text><text x="95" y="82" text-anchor="middle" font-size="11.5">salloc --no-shell, hold jobid</text><text x="95" y="98" text-anchor="middle" font-size="11.5">for the whole run, release on exit</text><text x="95" y="114" text-anchor="middle" font-size="11" fill="#9aa4b2">rccl_tune.py</text>
+<line x1="180" y1="80" x2="222" y2="80" stroke="#9aa4b2" marker-end="url(#a)"/>
+<rect x="225" y="40" width="190" height="80" rx="8" fill="#152a45" stroke="#5aa2f0"/><text x="320" y="63" text-anchor="middle" font-weight="600">2 search</text><text x="320" y="82" text-anchor="middle" font-size="11.5">racing search over algo x proto x</text><text x="320" y="98" text-anchor="middle" font-size="11.5">channels, all sizes per run</text><text x="320" y="114" text-anchor="middle" font-size="11" fill="#9aa4b2">adaptive_search.py &rarr; rccl_sweep.py</text>
+<line x1="415" y1="80" x2="457" y2="80" stroke="#9aa4b2" marker-end="url(#a)"/>
+<rect x="460" y="40" width="170" height="80" rx="8" fill="#152a45" stroke="#5aa2f0"/><text x="545" y="63" text-anchor="middle" font-weight="600">3 pick + conf</text><text x="545" y="82" text-anchor="middle" font-size="11.5">per size: fewest channels within</text><text x="545" y="98" text-anchor="middle" font-size="11.5">0.5% of best; write .conf</text><text x="545" y="114" text-anchor="middle" font-size="11" fill="#9aa4b2">optimize_metrics, generate_tuner_config</text>
+<line x1="630" y1="80" x2="672" y2="80" stroke="#9aa4b2" marker-end="url(#a)"/>
+<rect x="675" y="40" width="190" height="80" rx="8" fill="#3a2a14" stroke="#f0a94a"/><text x="770" y="63" text-anchor="middle" font-weight="600">4 A/B gate</text><text x="770" y="82" text-anchor="middle" font-size="11.5">plugin+conf vs default, interleaved,</text><text x="770" y="98" text-anchor="middle" font-size="11.5">7 repeats; keep rule if P(sup)&ge;0.95,</text><text x="770" y="114" text-anchor="middle" font-size="11" fill="#9aa4b2">gain&gt;2%, no size regresses &gt;2%</text>
+<line x1="865" y1="80" x2="907" y2="80" stroke="#9aa4b2" marker-end="url(#a)"/>
+<rect x="910" y="40" width="180" height="80" rx="8" fill="#15301a" stroke="#6fcf7a"/><text x="1000" y="63" text-anchor="middle" font-weight="600">5 record</text><text x="1000" y="82" text-anchor="middle" font-size="11.5">.validated.csv, final conf,</text><text x="1000" y="98" text-anchor="middle" font-size="11.5">raw logs copied to results-tuning/</text><text x="1000" y="114" text-anchor="middle" font-size="11" fill="#9aa4b2">RUNLOG row, SUMMARY.md</text>
+</g>
+<text x="10" y="160" font-weight="600">What one measurement is:</text>
+<text x="10" y="180" font-size="12.5">docker run &lt;SGLang image&gt; + mpirun -np 8 all_reduce_perf -b 4K -e 2G -n 20 -w 5, with NCCL_DEBUG=INFO to a per-rank file and results via the CSV reporter. About 13-30 s. One run reports all 18 sizes at once.</text>
+<text x="10" y="205" font-weight="600">What "verified" means:</text>
+<text x="10" y="225" font-size="12.5">the algo/proto/channels are read back from the rank debug logs (the executed line), never from what was requested. RCCL substitutes silently; -A 1 reports the plan, not the execution.</text>
+<text x="10" y="248" font-size="12.5" fill="#9aa4b2">Steps 2-4 also exist as hand-driven pieces (rccl_sweep.py grid, ab_run.py) for campaigns the one-command form does not cover, e.g. the 128M..2G sweep of 2026-09-14.</text>
+</svg><p class=cap>Fig. 1. Process A. Blue = search, orange = the statistical gate, green = evidence kept.</p></div>
+
+<h2>2. Process B: does the conf move a real model?</h2>
+<div class=fig><svg viewBox="0 0 1100 230" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif" font-size="12.5">
+<defs><marker id="b" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#9aa4b2"/></marker></defs>
+<rect x="10" y="30" width="230" height="90" rx="8" fill="#1e242e" stroke="#c9d1dc"/><text x="125" y="53" text-anchor="middle" font-weight="600">one SGLang server, TP-8</text><text x="125" y="72" text-anchor="middle" font-size="11.5">plugin loaded with hot-reload,</text><text x="125" y="88" text-anchor="middle" font-size="11.5">custom AR off so all_reduce reaches RCCL,</text><text x="125" y="104" text-anchor="middle" font-size="11.5">DDA off when the tuner must be reachable</text>
+<line x1="240" y1="75" x2="282" y2="75" stroke="#9aa4b2" marker-end="url(#b)"/>
+<rect x="285" y="30" width="260" height="90" rx="8" fill="#152a45" stroke="#5aa2f0"/><text x="415" y="53" text-anchor="middle" font-weight="600">arms interleaved per round</text><text x="415" y="72" text-anchor="middle" font-size="11.5">round r: swap conf A, bench; swap conf B, bench; ...</text><text x="415" y="88" text-anchor="middle" font-size="11.5">bench = sglang.bench_serving, fixed ISL/OSL/conc</text><text x="415" y="104" text-anchor="middle" font-size="11" fill="#9aa4b2">infer_paired.sh; infer_modes.sh for the traffic ladder</text>
+<line x1="545" y1="75" x2="587" y2="75" stroke="#9aa4b2" marker-end="url(#b)"/>
+<rect x="590" y="30" width="220" height="90" rx="8" fill="#3a2a14" stroke="#f0a94a"/><text x="700" y="53" text-anchor="middle" font-weight="600">score</text><text x="700" y="72" text-anchor="middle" font-size="11.5">drop warm-up rep, median tok/s per arm,</text><text x="700" y="88" text-anchor="middle" font-size="11.5">P(sup) and % vs reference arm</text><text x="700" y="104" text-anchor="middle" font-size="11" fill="#9aa4b2">infer_score.py</text>
+<line x1="810" y1="75" x2="852" y2="75" stroke="#9aa4b2" marker-end="url(#b)"/>
+<rect x="855" y="30" width="235" height="90" rx="8" fill="#15301a" stroke="#6fcf7a"/><text x="972" y="53" text-anchor="middle" font-weight="600">receipts</text><text x="972" y="72" text-anchor="middle" font-size="11.5">1-rep detect server with TUNING logs:</text><text x="972" y="88" text-anchor="middle" font-size="11.5">which sizes the model emits, which rules hit,</text><text x="972" y="104" text-anchor="middle" font-size="11" fill="#9aa4b2">infer_hitmap.py; never used for timing</text>
+<text x="10" y="155" font-weight="600">Second form, references only:</text><text x="230" y="155" font-size="12.5">infer_many.sh = one server per arm, sequential. Needed when an arm cannot share a server (no plugin at all, different env, built-in CSV tuner). Drifts ~1%/h, so never the A/B of record.</text>
+<text x="10" y="185" font-weight="600">Campaign chains:</text><text x="140" y="185" font-size="12.5">per campaign a <code>chain_template.sh</code> in its results dir strings detect &rarr; pass 1 &rarr; pass 2 (reversed order) &rarr; fetch/score, with receipts per server. Runs unattended under Slurm for hours.</text>
+<text x="10" y="212" font-size="12.5" fill="#9aa4b2">Message sizes are workload-determined: decode all_reduce = concurrency x hidden x 2 B; prefill = chunk tokens x hidden x 2 B. Traffic modes are how we choose the size, not a flag.</text>
+</svg><p class=cap>Fig. 2. Process B. The server stays up; only the rule file changes between reps.</p></div>
+
+<h2>3. The files, by role</h2>
+<div class=tw><table>
+<tr><th>file</th><th>role</th><th>one line</th></tr>
+<tr><td><code>rccl_tune.py</code></td><td>A, end to end</td><td>book &rarr; search &rarr; conf &rarr; A/B &rarr; record in one command; holds the policy constants (anchors 1,8,24,48, margin 15%, tol 0.5%, median of 3). <span class=note>Deleted once as "stale" by caller count and restored: it is the product, not a helper.</span></td></tr>
+<tr><td><code>adaptive_search.py</code></td><td>A2</td><td>racing search: sketch every combo at 4 anchor channel counts, kill combos that lose everywhere, hill-climb survivors per size. <code>--combos</code>, <code>--image</code>.</td></tr>
+<tr><td><code>rccl_sweep.py</code> + <code>sweep_executor.py</code> + <code>container_run.py</code></td><td>A2</td><td>the grid engine underneath: loop cells, build the docker+mpirun command, run with timeout, keep command.txt / output.log / 8 rank logs per cell.</td></tr>
+<tr><td><code>sweep_parser.py</code>, <code>sweep_db.py</code></td><td>A2</td><td>parse the CSV reporter output into rows (with a "substituted" flag), sqlite + metrics.csv.</td></tr>
+<tr><td><code>sweep_config.yaml</code>, <code>servers.txt</code></td><td>A1</td><td>the measurement parameters live here (-n 20 -w 5, runtime, MSCCL, env). Changing one changes what every downstream number means, so it is a file, not a flag.</td></tr>
+<tr><td><code>merge_metrics.py</code>, <code>optimize_metrics.py</code></td><td>A3</td><td>collapse repeats (median), read executed algo/proto/channels from the debug logs, then per size keep the fewest channels within tolerance of the best busbw.</td></tr>
+<tr><td><code>generate_tuner_config.py</code></td><td>A4</td><td>winners &rarr; <code>.conf</code> lines <code>coll,min,max,algo,proto,ch,nNodes,nRanks,-1,-1</code>. Same format RCCL 2.30's built-in CSV tuner reads.</td></tr>
+<tr><td><code>validate_tuner_config.py</code>, <code>ab_run.py</code></td><td>A5</td><td>the gate: plugin+conf vs default, interleaved pairs, 7 repeats, P(sup) &ge; 0.95, gain &gt; 2%, drop a rule if any size inside its range regresses &gt; 2% (the "landmine" check). <code>ab_run.py</code> launches it on a held allocation.</td></tr>
+<tr><td><code>infer_paired.sh</code>, <code>infer_modes.sh</code></td><td>B2</td><td>the recommended in-model A/B (one server, hot-reload swaps) and its traffic-mode campaign wrapper.</td></tr>
+<tr><td><code>infer_many.sh</code></td><td>B2</td><td>one server per arm; knobs for every experiment we needed (no plugin, built-in CSV tuner, DDA off, quick-reduce NONE, extra env).</td></tr>
+<tr><td><code>infer_score.py</code>, <code>infer_hitmap.py</code></td><td>B3</td><td>score an arm set (median, P(sup), % vs reference); hit-map of rules per message size from a detect server's logs.</td></tr>
+<tr><td><code>dn/dn-tuner/plugin.c</code></td><td>A5, B2</td><td>the tuner plugin (API v4, v5 build available): matches a call to a rule, sets the cost-table cell to 0 unless RCCL marked it IGNORE, sets channels; hot-reload variant re-reads the conf between calls.</td></tr>
+</table></div>
+
+<h2>4. Design choices: what we considered, what we chose, why</h2>
+<div class=tw><table class=kv>
+<tr><th>question</th><th>options considered</th><th>chosen</th><th>why (evidence)</th></tr>
+<tr><td>Where to run the benchmark</td><td>bare metal with the team's RCCL fork (original tool) · inside the SGLang container with stock RCCL</td><td>container, default</td><td>only the container's numbers transfer to deployment: the fork measured a different library, channel policy and launch regime (<code>2026-09-03-2-stackcmp</code>). Parity check tool vs hand harness: 512M 390.5 vs 390.5 GB/s.</td></tr>
+<tr><td>How to search the space</td><td>full grid · Optuna (TPE) · random · racing/adaptive</td><td>racing search</td><td>one run reports all 18 sizes, so cheap anchor sketches carry most of the information; racing found the grid winner at 235 of 236 sizes with ~20% fewer runs and stops by itself. Optuna needs a huge space and a single objective; here 810 proposals contained 788 repeats and it missed winners in 2-7 of 10 seeds (<a href='approaches.html'>details</a>).</td></tr>
+<tr><td>Which winner per size</td><td>max busbw · fewest channels within a tolerance</td><td>fewest channels within 0.5%</td><td>busbw ties are common; fewer channels means fewer CUs taken from the model. Tolerance is a measurement parameter and lives in the tool policy.</td></tr>
+<tr><td>Trust what was requested?</td><td>trust NCCL_ALGO/PROTO env and -A 1 · read the executed line from debug logs</td><td>debug logs</td><td>RCCL substitutes silently (LL128 and tree/simple are IGNORE on this node; tree only honoured for all_reduce), and -A 1 reports 56 channels where 222 ran (<code>findings/01, 09, 10</code>).</td></tr>
+<tr><td>Logging during measurement</td><td>none · INFO to stdout · INFO to a per-rank file</td><td>per-rank file, always, both arms</td><td>INFO on stdout costs up to 4% at small sizes; to a file -0.06% mean. Compared runs must share the logging config (<code>2026-08-03-5-lognoise</code>).</td></tr>
+<tr><td>How to prove a rule</td><td>compare medians · A/B with a statistical gate</td><td>interleaved A/B, P(sup) &ge; 0.95, gain &gt; 2%, landmine &lt; 2%</td><td>node speed drifts ~1%/h and single repeats show transient dips; a sequential 30-rep block once produced a fake +2% (p = 1e-4) for a no-op arm. Interleaving cancels drift; the landmine check catches a range that helps at 128K and hurts at 200K.</td></tr>
+<tr><td>Allocation policy</td><td>salloc per step · one held allocation</td><td>hold for the whole run, release on exit</td><td>a bare srun releases nodes the moment it ends; per-step booking lost nodes to co-tenants and broke comparability.</td></tr>
+<tr><td>Where outputs go</td><td>/opt/shared (NFS) · node local disk</td><td>node <code>/data/ylerman</code>, then copied to the repo</td><td>the container runs as root; NFS root_squash refused the debug-file writes, INFO spilled to stdout and the parser lost every row (sanity-check-1).</td></tr>
+<tr><td>In-model A/B form</td><td>one server per arm · one server, conf swapped between reps</td><td>one server + hot-reload plugin</td><td>same minutes for every arm, no server restarts, drift cancels by construction. One server per arm kept for what cannot share (no plugin, other env).</td></tr>
+<tr><td>Detect vs time</td><td>always log rule hits · separate 1-rep detect run</td><td>separate detect</td><td>TUNING logging writes millions of lines mid-benchmark and produced fake 1.8-2.8% regressions.</td></tr>
+<tr><td>Delivery format</td><td>plugin .so + conf · conf only</td><td>conf (plugin optional)</td><td>RCCL 2.30's built-in CSV tuner reads the same file and gave identical rule counts and tok/s within 0.5% (campaign D). The plugin remains useful for hot-reload searches.</td></tr>
+<tr><td>Where the numbers live</td><td>tool output dir · dated results dirs + RUNLOG</td><td><code>results-tuning/&lt;date&gt;-N-&lt;name&gt;/</code> + one RUNLOG row per run</td><td>a run that is not in RUNLOG did not happen; the node list column is what keeps runs comparable months later.</td></tr>
+</table></div>
+
+<h2>5. What we could still do, and what the tool cannot reach</h2>
+<div class=card>
+<p><b>Could do with the tool as is.</b> Multi-node campaigns (2-5 nodes: the tuner is fully visible there, DDA and AITER are single-node only; our 2n-5n rules validated at +11..+36% for all_reduce on RCCL 2.27.7 and need re-deriving on 2.30.4). Broadcast and reduce on 1 node (no DDA path; +150% rules exist but nothing in inference calls them hot). Re-running Process A on the rocm10 image with <code>RCCL_DDA_ENABLE=0</code> to refresh the classic-path rules.</p>
+<p><b>Could do with small additions.</b> An env-var sweep (<code>NCCL_BUFFSIZE</code>, <code>NCCL_NTHREADS</code>, WarpSpeed knobs) to test whether ring/simple at 128M..2G can exceed its 390 GB/s; the deliverable would be env settings, not a conf. A multi-node in-model driver (SGLang <code>--nnodes 2</code>).</p>
+<p><b>Cannot reach, by construction.</b> Anything RCCL decides before the cost model: DDA below 64 MiB on 1 node, and SGLang's own AITER all-reduce below 64 MiB. Above 64 MiB the default was already the optimum in every dimension a tuner controls (<a href='night_2026-09-14.html'>night 2026-09-14</a>). alltoall (p2p path, tuner never consulted). Kernel internals such as chunk pipelining.</p>
+</div>
+
+<div class="card warn"><b>Known gaps in the tool.</b> <span class=todo>todo</span> <code>rccl_tune.py</code> assumes the search runs from the first booked node over ssh; the flat-grid path (<code>rccl_sweep.py</code> + <code>ab_run.py</code>) is what the September campaigns used. <span class=todo>todo</span> <code>infer_hitmap.py</code> does not recognise the built-in CSV tuner's log line (no <code>collType=</code>), so it reports 0 hits for that arm. <span class=human>human</span> PLAN.md, RUNLOG rows, receipts review and the copy from node to repo are still manual steps; the consistency risk sits there.</div>
+
+<p class=note>Sources: <code>tools/rccl-sweep/README.md</code> (runtimes, hard-won rules), <code>rccl_tune.py</code> and <code>validate_tuner_config.py</code> docstrings, <code>findings/README.md</code> (13 confirmed findings), <code>approaches.html</code>, the 2026-09-14 campaign SUMMARY.md files. Older version of this page: git history of <code>results-tuning/2026-08-23-1-pages/codeflow.html</code>.</p>
