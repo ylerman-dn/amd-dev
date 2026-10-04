@@ -91,8 +91,18 @@ class SweepExecutor:
                             num_channels: Optional[int] = None,
                             test_params: Optional[Dict] = None,
                             algo: Optional[str] = None,
-                            proto: Optional[str] = None) -> Tuple[List[str], Dict[str, str]]:
-        """Build the mpirun command with all environment variables.
+                            proto: Optional[str] = None,
+                            debug_file: Optional[str] = None,
+                            run_dir: Optional[str] = None,
+                            run_name: Optional[str] = None) -> Tuple[List[str], Dict[str, str], Optional[str]]:
+        """Build the launch command with all environment variables.
+
+        Two runtimes (config key `runtime.mode`, default `container`):
+          container — docker run <runtime.image> + mpirun-in-container on the stock
+                      RCCL, the stack rules actually deploy on (single node only).
+          bare      — the original srun-era path: host mpirun + LD_PRELOAD of the
+                      team fork from rccl_path. Kept for fork development.
+        Returns (cmd, env_vars, container_name); container_name is None in bare mode.
         
         Args:
             collective: Collective operation name (e.g., 'all_reduce_perf')
@@ -137,10 +147,77 @@ class SweepExecutor:
                 "Set MY_PATH environment variable or provide absolute path in sweep_config.yaml"
             )
         
-        # Set library paths using the single path
+        # GPU-107: keep the INFO log for every swept run.
+        # CLAUDE.md's standard measured run is NCCL_DEBUG=INFO -> NCCL_DEBUG_FILE=<path>_%p.log, and
+        # the A/B harness already does it -- but the sweep did not, so no sweep row could be verified
+        # in the sense the project requires ("a run only counts if the log confirms which
+        # algo/proto/nchannels were actually SELECTED"). It relied on -A 1 alone, which is explicitly
+        # untrustworthy for channel counts: that column reports a planned ceiling, not what ran.
+        #
+        # Concretely, this is why 2-node 32K could not be explained: the unforced default measured
+        # 1.510/1.490/1.510 and a run forced to the same TREE/LL/16 measured 1.500/1.370/1.370, and
+        # whether they really ran the same channel span is unrecoverable without these logs.
+        #
+        # The cost is measured, not assumed: INFO to a FILE is free within resolution -- mean -0.06%
+        # across 18 sizes with 5-repeat ranges overlapping 18/18
+        # (results-tuning/2026-08-03-5-lognoise/). INFO to stdout is NOT free (up to -4% at small
+        # sizes) and would also interleave with the data rows, so it is never used.
+        # The %p keeps 8 ranks from sharing one descriptor.
+        if debug_file and self.config.get('keep_info_logs', True):
+            env_vars['NCCL_DEBUG'] = 'INFO'
+            env_vars.setdefault('NCCL_DEBUG_SUBSYS', 'INIT,TUNING,GRAPH,ENV')
+            env_vars['NCCL_DEBUG_FILE'] = debug_file
+
+        runtime = self.config.get('runtime', {}) or {}
+        if runtime.get('mode', 'container') == 'container':
+            import container_run
+            # Stock RCCL inside the image: no LD_PRELOAD/LD_LIBRARY_PATH. The image's own
+            # env (NCCL_MIN_NCHANNELS=112) is part of what we are measuring, so it is NOT
+            # overridden here — only explicit num_channels above does that.
+            # MSCCL would execute small/mid sizes without consulting any tuner
+            # (findings 2026-09-03); default it off so sweeps measure the tunable path.
+            env_vars.setdefault('RCCL_MSCCL_ENABLE', str(runtime.get('msccl_enable', 0)))
+            if debug_file and 'NCCL_DEBUG_FILE' in env_vars:
+                env_vars['NCCL_DEBUG_FILE'] = f"{container_run.OUT_MOUNT}/{os.path.basename(debug_file)}"
+            test_argv = [f"{container_run.BIN_MOUNT}/{collective}",
+                         '-b', str(test_defaults.get('min_bytes', '1M')),
+                         '-e', str(test_defaults.get('max_bytes', '16G'))]
+            if test_defaults.get('step_bytes'):
+                test_argv += ['-i', str(test_defaults.get('step_bytes'))]
+            else:
+                test_argv += ['-f', str(test_defaults.get('step_factor', 2))]
+            test_argv += ['-g', str(test_defaults.get('gpus_per_rank', 1)),
+                          '-n', str(test_defaults.get('iterations', 20)),
+                          '-w', str(test_defaults.get('warmup_iters', 5)),
+                          '-c', str(test_defaults.get('check_iters', 1)),
+                          '-A', str(test_defaults.get('show_algo_proto_channels', 1))]
+            if test_defaults.get('report_cputime'):
+                test_argv += ['-C', str(test_defaults.get('report_cputime', 1))]
+            if test_defaults.get('csv_report'):
+                test_argv += ['-Z', 'csv', '-X',
+                              f"{container_run.OUT_MOUNT}/{os.path.basename(str(test_defaults.get('csv_report')))}"]
+            cname = f"rcclsweep-{(run_name or collective)}"[:63]
+            cmd = container_run.build_docker_mpirun(
+                name=cname,
+                image=runtime.get('image', container_run.DEFAULT_IMAGE),
+                num_ranks=num_gpus,
+                bin_dir=rccl_path,
+                out_dir=run_dir or '.',
+                test_argv=test_argv,
+                env_vars=env_vars,
+                bind_to=mpi_config.get('bind_to', 'numa'),
+                # runtime.drop_env (2026-09-08): image env vars REMOVED from the
+                # container, e.g. NCCL_MIN_NCHANNELS=112, so the sweep's default
+                # runs see the same baseline as the validator's --drop-env arm
+                drop_env=list(runtime.get('drop_env', []) or []),
+            )
+            return cmd, env_vars, cname
+
+        # ---- bare runtime (original path): host mpirun + fork librccl ----
         env_vars['LD_LIBRARY_PATH'] = f"/usr/local/lib:{rccl_path}/:/opt/rocm/bin"
-        env_vars['LD_PRELOAD'] = f"{rccl_path}/librccl-net.so:{rccl_path}/librccl.so"
-        
+        # GPU-107: our bin/ has no librccl-net.so (built-in net_ib works on this fabric); preload only librccl.so
+        env_vars['LD_PRELOAD'] = f"{rccl_path}/librccl.so"
+
         # Build base mpirun command
         mpirun_path = mpi_config.get('mpirun_path', '/opt/ompi-4.1.6/bin/mpirun')
         cmd = [
@@ -182,12 +259,23 @@ class SweepExecutor:
         cmd.extend(['-n', str(test_defaults.get('iterations', 20))])
         cmd.extend(['-w', str(test_defaults.get('warmup_iters', 5))])
         cmd.extend(['-c', str(test_defaults.get('check_iters', 1))])
-        cmd.extend(['-M', str(test_defaults.get('show_algo_proto_channels', 1))])
-        
+        # GPU-107: the selection-reporting flag on this build is -A
+        # (--output_algo_proto_channels). It is NOT -M: here -M is --memory_report.
+        # Upstream rccl-tests uses -M; ours moved it. Verified via --help and by
+        # observing 13-field rows with -M vs 16-field rows with -A.
+        cmd.extend(['-A', str(test_defaults.get('show_algo_proto_channels', 1))])
+
+        # GPU-107: -R on this build is --local_register (buffer registration), NOT
+        # --report_cputime (that is -C). Passing -R silently changed performance.
         if test_defaults.get('report_cputime'):
-            cmd.extend(['-R', str(test_defaults.get('report_cputime', 1))])
-        
-        return cmd, env_vars
+            cmd.extend(['-C', str(test_defaults.get('report_cputime', 1))])
+
+        # Results on a separate stream: NCCL_DEBUG=INFO interleaves with stdout and
+        # destroys whole-line parsing of the data rows.
+        if test_defaults.get('csv_report'):
+            cmd.extend(['-Z', 'csv', '-X', str(test_defaults.get('csv_report'))])
+
+        return cmd, env_vars, None
     
     def execute_test(self,
                     collective: str,
@@ -216,21 +304,9 @@ class SweepExecutor:
             Dictionary with execution results
         """
         start_time = time.time()
-        
-        # Build command
-        cmd, env_vars = self.build_mpirun_command(
-            collective=collective,
-            host_string=host_string,
-            num_gpus=num_gpus,
-            num_channels=num_channels,
-            test_params=test_params,
-            algo=algo,
-            proto=proto
-        )
-        
-        cmd_str = ' '.join(shlex.quote(c) if ' ' in c else c for c in cmd)
-        
-        # Create output directory for this run (include channels/algo/proto in name if set)
+
+        # GPU-107: the run directory is now decided BEFORE the command is built, because the INFO
+        # log path has to be baked into the environment that mpirun exports.
         run_name = f"{collective}_{num_nodes}node"
         if num_channels:
             run_name += f"_{num_channels}ch"
@@ -239,7 +315,30 @@ class SweepExecutor:
         if proto:
             run_name += f"_{proto}"
         run_dir = self.output_dir / run_name
-        run_dir.mkdir(exist_ok=True)
+        run_dir.mkdir(parents=True, exist_ok=True)
+
+        # Container runtime is single-node by construction (mpirun lives inside one
+        # container); multi-node sweeps must use runtime.mode=bare for now.
+        if (self.config.get('runtime', {}) or {}).get('mode', 'container') == 'container' \
+                and num_nodes > 1:
+            raise ValueError("runtime.mode=container supports 1 node only; "
+                             "use runtime.mode=bare for multi-node sweeps")
+
+        # Build command
+        cmd, env_vars, container_name = self.build_mpirun_command(
+            collective=collective,
+            host_string=host_string,
+            num_gpus=num_gpus,
+            num_channels=num_channels,
+            test_params=test_params,
+            algo=algo,
+            proto=proto,
+            debug_file=str(run_dir / "dbg_%p.log"),
+            run_dir=str(run_dir),
+            run_name=run_name,
+        )
+        
+        cmd_str = ' '.join(shlex.quote(c) if ' ' in c else c for c in cmd)
         
         # Save command
         cmd_file = run_dir / "command.txt"
@@ -316,6 +415,11 @@ class SweepExecutor:
             
         except subprocess.TimeoutExpired:
             process.kill()
+            if container_name:
+                # killing the docker CLIENT does not stop a GPU-hung container
+                # (observed 2026-09-03); kill the container itself too
+                import container_run
+                container_run.kill_container(container_name)
             duration = time.time() - start_time
             
             result.update({
@@ -392,7 +496,7 @@ if __name__ == '__main__':
     executor = SweepExecutor(sample_config, output_dir='/tmp/sweep_test')
     
     # Test command building (dry run)
-    cmd, env = executor.build_mpirun_command(
+    cmd, env, _cname = executor.build_mpirun_command(
         collective='all_reduce_perf',
         host_string='192.168.1.1:8,192.168.1.2:8',
         num_gpus=16,

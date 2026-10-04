@@ -52,11 +52,73 @@ unsupported:
   
   # Tree+SIMPLE disabled for single-node on MI300X/MI355X (gfx942/gfx950)
   # From tuning.cc line 515:
-  # if (a == NCCL_ALGO_TREE && p == NCCL_PROTO_SIMPLE && 
-  #     (IsArchMatch(..., "gfx942") || IsArchMatch(..., "gfx950")) && 
+  # if (a == NCCL_ALGO_TREE && p == NCCL_PROTO_SIMPLE &&
+  #     (IsArchMatch(..., "gfx942") || IsArchMatch(..., "gfx950")) &&
   #     comm->topo->nodes[GPU].count == comm->topo->nRanks) continue;
   - algo: TREE
     proto: SIMPLE
     max_nodes: 1
     reason: "Tree+SIMPLE disabled for single-node on MI300X/MI355X (gfx942/gfx950)"
+
+  # ============================================================================
+  # GPU-107 MEASURED additions (2026-08-03/04) -- SCOPE-LIMITED, READ THIS FIRST
+  # ============================================================================
+  # The rules ABOVE this line are derived from RCCL SOURCE (tuning.cc) and hold for
+  # any build carrying that source. The rules BELOW are EMPIRICAL: observed on one
+  # machine, one RCCL build. They are NOT known to hold anywhere else.
+  #
+  #   measured on : MI355X (gfx950), RCCL 2.28.3-develop:2e42aa8
+  #                 8 ranks x 1 GPU per node, 1/2/3 nodes
+  #   method      : request a combination, read back the -A 1 selection columns
+  #   evidence    : results-tuning/2026-08-03-2-combomatrix/, -6-acceptmap/,
+  #                 -7-collmap/, -9-multinode/
+  #   full grid   : findings/02-per-collective-defaults-and-accepted.md
+  #
+  # RISK: on a different RCCL version or GPU these may be WRONG, and a wrong rule
+  # here is INVISIBLE -- a skipped combination leaves no trace in the results. If
+  # you are not on the build named above, re-measure before trusting them.
+  # Each rule carries `measured_on:` for that reason; the loader ignores unknown
+  # keys (autotune/combo_validator.py:93-121), so it is metadata today. Enforcing
+  # it -- skipping empirical rules when the running build does not match -- is not
+  # implemented. See results-tuning/OPEN-ITEMS.md.
+  # ============================================================================
+
+  # LL128 is never honoured at 1 node, for ANY collective -- it silently becomes
+  # SIMPLE. At 2+ nodes it works and is in fact RCCL's own common default, so this
+  # rule is deliberately scoped to max_nodes: 1.
+  - proto: LL128
+    max_nodes: 1
+    measured_on: "gfx950 / RCCL 2.28.3-develop:2e42aa8"
+    reason: "LL128 silently substituted to SIMPLE at 1 node (measured, all collectives)"
+
+  # TREE is only ever honoured for all_reduce. reduce_scatter/all_gather/broadcast/
+  # reduce convert it to RING at every node count and size. The per-collective TREE
+  # rules above already cover those, so nothing further is needed here.
+
+  # NVLS and PAT are silently substituted at every node count. tuning.cc claims PAT
+  # is valid for all_gather/reduce_scatter; empirically it is not on this build.
+  - algo: NVLS
+    measured_on: "gfx950 / RCCL 2.28.3-develop:2e42aa8"
+    reason: "NVLS silently substituted (measured, no NVLS hardware path here)"
+  - algo: NVLS_TREE
+    measured_on: "gfx950 / RCCL 2.28.3-develop:2e42aa8"
+    reason: "NVLS_TREE silently substituted (measured)"
+  - algo: PAT
+    measured_on: "gfx950 / RCCL 2.28.3-develop:2e42aa8"
+    reason: "PAT silently substituted, despite tuning.cc claiming allgather/reducescatter support"
+
+  # These do NOT substitute -- they abort the run with exit 3 'invalid usage'.
+  # Sweeping them costs a crashed run each time.
+  - algo: COLLNET_DIRECT
+    measured_on: "gfx950 / RCCL 2.28.3-develop:2e42aa8"
+    reason: "hard error, exit 3 'invalid usage' (measured, not a substitution)"
+  - algo: COLLNET_CHAIN
+    measured_on: "gfx950 / RCCL 2.28.3-develop:2e42aa8"
+    reason: "hard error, exit 3 'invalid usage' (measured, not a substitution)"
+
+  # alltoall has no algo/proto concept at all: -A 1 returns N/A at every size and
+  # INFO logs no channel line. Forcing either is meaningless.
+  - collective: alltoall
+    measured_on: "gfx950 / RCCL 2.28.3-develop:2e42aa8"
+    reason: "no algo/proto concept - -A 1 reports N/A at every size"
 

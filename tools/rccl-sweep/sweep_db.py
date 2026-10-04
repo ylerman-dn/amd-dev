@@ -137,14 +137,43 @@ class SweepDatabase:
                 busbw_ip REAL,
                 errors_ip INTEGER,
                 
-                -- Algorithm/protocol/channels used for this size
+                -- Algorithm/protocol/channels ACTUALLY SELECTED for this size,
+                -- read from rccl-tests' -A 1 columns. RCCL substitutes silently, so
+                -- these can differ from what was requested.
                 algo TEXT,
                 proto TEXT,
                 nchannels INTEGER,
-                
+
+                -- GPU-107: what we asked for, so requested-vs-selected is auditable.
+                requested_algo TEXT,
+                requested_proto TEXT,
+                requested_nchannels INTEGER,
+                -- 1 = RCCL did NOT honour the request. Such rows must never be used
+                -- to pick a winner: their label describes a config that never ran.
+                substituted INTEGER DEFAULT 0,
+                -- algo before stripping the RCCL addon marker (e.g. 'RING*' = WarpSpeed)
+                measured_algo_raw TEXT,
+                -- provenance of nchannels. 'A_flag_ceiling' = a planned ceiling, NOT what
+                -- ran; real counts need NCCL_DEBUG=INFO channel{Lo..Hi}.
+                nchannels_source TEXT,
+
                 FOREIGN KEY (run_id) REFERENCES sweep_runs(id)
             )
         """)
+
+        # Additive migration for databases created before the GPU-107 columns existed.
+        cursor.execute("PRAGMA table_info(sweep_metrics)")
+        _existing = {r[1] for r in cursor.fetchall()}
+        for _col, _decl in (
+            ('requested_algo', 'TEXT'),
+            ('requested_proto', 'TEXT'),
+            ('requested_nchannels', 'INTEGER'),
+            ('substituted', 'INTEGER DEFAULT 0'),
+            ('measured_algo_raw', 'TEXT'),
+            ('nchannels_source', 'TEXT'),
+        ):
+            if _col not in _existing:
+                cursor.execute(f"ALTER TABLE sweep_metrics ADD COLUMN {_col} {_decl}")
         
         cursor.execute("""
             CREATE INDEX IF NOT EXISTS idx_metrics_run_id 
@@ -298,8 +327,10 @@ class SweepDatabase:
                     run_id, size_bytes, count, data_type, redop,
                     time_oop_us, algbw_oop, busbw_oop, errors_oop,
                     time_ip_us, algbw_ip, busbw_ip, errors_ip,
-                    algo, proto, nchannels
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    algo, proto, nchannels,
+                    requested_algo, requested_proto, requested_nchannels,
+                    substituted, measured_algo_raw, nchannels_source
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 run_id,
                 m.get('size_bytes'),
@@ -316,7 +347,13 @@ class SweepDatabase:
                 m.get('errors_ip'),
                 m.get('algo'),
                 m.get('proto'),
-                m.get('nchannels')
+                m.get('nchannels'),
+                m.get('requested_algo'),
+                m.get('requested_proto'),
+                m.get('requested_nchannels'),
+                m.get('substituted', 0),
+                m.get('measured_algo_raw'),
+                m.get('nchannels_source'),
             ))
         
         self.conn.commit()
@@ -544,6 +581,13 @@ class SweepDatabase:
                 'proto': m['proto'],
                 'nchannels': m['nchannels'],
             }
+            # GPU-107: carry the requested-vs-measured audit trail into the CSV.
+            # optimize_metrics.py reads `substituted` from here to exclude rows whose
+            # request RCCL did not honour; without these keys the whole verification
+            # chain silently degrades to the old requested-as-measured behaviour.
+            for _k in ('requested_algo', 'requested_proto', 'requested_nchannels',
+                       'substituted', 'measured_algo_raw', 'nchannels_source'):
+                row[_k] = m[_k] if _k in m.keys() else None
             rows.append(row)
         
         df = pd.DataFrame(rows)
