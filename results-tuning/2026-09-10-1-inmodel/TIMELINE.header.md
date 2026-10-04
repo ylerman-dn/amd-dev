@@ -1,0 +1,8 @@
+- 2026-09-09 22:40  Campaign launched on 4 nodes (one srun step each): node 8 Qwen d32+p8k · node 9 Qwen d128+mix · des2-2 gpt-oss d32+p8k · ses2-1 gpt-oss d128+mix. Detect servers for d32/d128 started 22:40.
+- 2026-09-09 22:55  node 8: first server failed (no Qwen snapshot on that node); model fast-copied (51 s), chain relaunched with the local path.
+- 2026-09-10 00:29  des2-2 (gpt-oss d32+p8k) finished; results fetched and scored; allocation 21124 released.
+- 2026-09-10 00:34  ses2-1 (gpt-oss d128+mix) finished; fetched, scored, allocation 21125 released.
+- 2026-09-10 00:55  node 9 (Qwen d128+mix) finished; fetched, scored, allocation 21123 released.
+- 2026-09-10 01:04  node 8 (Qwen d32+p8k) finished; fetched, scored, allocation 21122 released. All four nodes done.
+- 2026-09-10 01:2x  extra check launched on des2-2: stock + plugin detect servers at p8k and mix, both models (4 servers, ~25 min).
+- 2026-09-10 01:22  stock+plugin detect check finished: 0 rule hits at p8k and mix for both models; allocation 21128 released. Campaign closed.
